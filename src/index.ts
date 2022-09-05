@@ -3,15 +3,22 @@ import { GameLog } from './log';
 import { GameState, peiceSideMap, PieceSide, Point, } from './../types/index';
 import { GameModal } from './modal';
 import { GameRule } from './rule';
-import { findPiece, isPc, getBorderWidth, getCtxWidth, getPaddingWidth } from './../utils/index';
+import { findPiece, getPieceInfo } from './../utils/index';
 import { getPiecesList, gameInitOpions, gameOverOptions } from './data';
 import { getSquarePoints } from '../utils/draw';
 import { ChessOfPeice, PieceList, chessOfPeiceMap } from './piece';
 
 type CTX = CanvasRenderingContext2D
 
+type GameInfo = {
+  id: string
+  aduioInfo?: GameAudioInterface
+  gameWidth?: number
+  gameHeight?: number
+  gamePadding?: number
+}
 
-export class Game {
+export default class Game {
   /**
    * 当前走棋方
    */
@@ -64,11 +71,6 @@ export class Game {
    * 游戏窗口高度
    */
   private height!: number;
-
-  /**
-   * 背景边框宽度
-   */
-  private borderWidth!: number
   /**
    * 操作的canvas的dom节点
    */
@@ -81,42 +83,30 @@ export class Game {
    * 存放棋盘格子的所有坐标
    */
   private gridPostionList: Array<Point>
-
   /**
    * 棋盘是否有棋子在移动
    */
   private isMoving!: boolean;
-
   /**
    * 运行速度 大于或等于 1 的数 越大越慢
    */
   moveSpeed: number
-
   /**
    * 输出日志信息
    */
   isLog: boolean
-
-  /**
-   * 是否画坐标点
-   */
-  isDrawPoint: boolean;
-
   /**
    * 将军验证规则
    */
   private rule: GameRule
-
   /**
    * 玩家方
    */
   private gameSide!: PieceSide
-
   /**
    * 玩家 x轴 格子距离相差
    */
   private gridDiffX!: number
-
   /**
    * 玩家 y轴 格子距离相差
    */
@@ -129,7 +119,6 @@ export class Game {
    * 游戏日志
    */
   logSystem: GameLog
-
   /**
    * 游戏音频
    */
@@ -139,17 +128,19 @@ export class Game {
    */
   gameState!: GameState
 
-
-  constructor(id: string, aduioInfo?: GameAudioInterface) {
+  constructor({ id, aduioInfo, gameWidth = 800, gameHeight = 800, gamePadding = 20 }: GameInfo) {
 
     this.dom = document.getElementById(id) as HTMLCanvasElement
     if (!this.dom) {
       throw new Error("未找到需要操纵的DOM节点！")
     }
-    if (!this.dom.getContext && this.dom.getContext("2d")) {
+
+    if (!this.dom.getContext || !this.dom.getContext("2d")) {
       throw new Error("该dom节点不支持 获取二位渲染")
     }
+
     const ctx = this.dom.getContext("2d")
+
     if (!ctx) {
       throw new Error("该浏览器不支持二维渲染")
     }
@@ -162,12 +153,11 @@ export class Game {
     this.gridPostionList = []
     this.setGridList()
 
-    this.isDrawPoint = false
     this.isLog = false
     this.moveSpeed = 8
     this.ctx = ctx
 
-    this.setGameWindow()
+    this.setGameWindow(gameWidth, gameHeight, gamePadding)
     this.modalSystem = new GameModal(this.ctx, this.width, this.height)
 
     this.init()
@@ -177,37 +167,32 @@ export class Game {
   /**
    * 设置游戏窗口 棋盘
    */
-  private setGameWindow() {
-    const deviceWidth = getCtxWidth();
-    const borderWidth = getBorderWidth();
-    const playPadding = getPaddingWidth();
-    this.dom.width = deviceWidth
-    this.dom.height = deviceWidth
+  private setGameWindow(w: number, h: number, p: number) {
+    this.dom.width = w
+    this.dom.height = h
     // 设置 缩放 来解决移动端模糊问题
     const dpr = window.devicePixelRatio
-    const { height, width } = this.dom.getBoundingClientRect()
-    this.dom.width = width * dpr
-    this.dom.height = height * dpr
+    this.dom.width = w * dpr
+    this.dom.height = h * dpr
     this.ctx.scale(dpr, dpr)
 
-    this.dom.style.height = deviceWidth + "px"
-    this.dom.style.width = deviceWidth + "px"
+    this.dom.style.height = w + "px"
+    this.dom.style.width = h + "px"
 
-    const playHeight = deviceWidth - borderWidth * 2 - playPadding * 2;
+    const playHeight = h - p * 2;
     let playWidth = playHeight;
     while (playWidth % 9 !== 0) {
       playWidth++;
     }
     this.gridWidth = playWidth / 9;
     this.gridHeight = playHeight / 10;
-    this.startX = (deviceWidth - playWidth + this.gridWidth) / 2;
-    this.startY = (deviceWidth - playHeight + this.gridHeight) / 2;
+    this.startX = (w - playWidth + this.gridWidth) / 2;
+    this.startY = (h - playHeight + this.gridHeight) / 2;
     this.endX = this.startX + this.gridWidth * 8;
     this.endY = this.startY + this.gridHeight * 9;
     this.radius = this.gridHeight * 0.45;
-    this.width = deviceWidth
-    this.height = deviceWidth
-    this.borderWidth = borderWidth
+    this.width = w
+    this.height = h
   }
   private setGridDiff() {
     this.gridDiffX = this.gameSide === "BLACK" ? 8 : 0
@@ -248,7 +233,7 @@ export class Game {
     this.deadPieceList = []
     this.ctx.clearRect(0, 0, this.width, this.height)
     this.drawChessLine();
-    this.modalSystem.drawModal("请选择红黑方", gameInitOpions)
+    // this.modalSystem.drawModal("请选择红黑方", gameInitOpions)
   }
 
   private initPiece() {
@@ -265,7 +250,6 @@ export class Game {
     this.ctx.clearRect(0, 0, this.width, this.height)
     this.drawChessLine();
     pieceList.forEach((p) => this.drawSinglePeice(p, true))
-    this.isDrawPoint && this.drawPoint()
   }
 
   /**
@@ -336,11 +320,9 @@ export class Game {
   private drawChessLine() {
     const { startX, startY, endX, endY, gridWidth, gridHeight } = this
     // 画背景
-    this.ctx.fillStyle = "#ff9200";
-    this.ctx.fillRect(0, 0, this.width, this.width);
     this.ctx.fillStyle = "#faebd7";
-    const insideWidth = this.width - this.borderWidth * 2;
-    this.ctx.fillRect(this.borderWidth, this.borderWidth, insideWidth, insideWidth);
+    this.ctx.fillRect(0, 0, this.width, this.width);
+
     this.ctx.strokeStyle = "#000";
     // 横线
     for (let index = 0; index < 10; index++) {
@@ -403,16 +385,9 @@ export class Game {
 
       // 游戏开始
       if (this.gameState === "INIT") {
-        const res = this.modalSystem.getClickOption({ x, y })
-        console.log(res);
-        this.audioSystem?.playChoose()
-        if (res) {
-          this.gameSide = res.val as PieceSide
-          this.setGridDiff()
-          this.initPiece()
-          this.gameState = "START"
-        }
-        return
+
+        return console.log("请选择红黑方");
+
       }
       // 游戏结束
       if (this.gameState === "OVER") {
@@ -423,7 +398,6 @@ export class Game {
           return this.init()
         }
         if (res?.val === "saveToRestart") {
-          this.savePng()
           this.init()
           return
         }
@@ -439,74 +413,7 @@ export class Game {
       if (!clickPoint) {
         return this.isLog && this.logSystem.fail("点击了无效区域");
       }
-      const choosePiece = findPiece(this.livePieceList, clickPoint)
-      // 在棋盘上 还没开始选中的点击
-      if (!this.choosePiece) {
-        // 如果 没点到棋子 
-        if (!choosePiece) {
-          return this.isLog && this.logSystem.fail("未点击到棋子");
-        }
-        // 点击到了敌方的棋子
-        if (this.currentSide !== choosePiece.side) {
-          return this.isLog && this.logSystem.fail("点击到了敌方的棋子")
-        }
-        this.choosePiece = choosePiece
-        this.choosePiece.isChoose = true
-        this.isLog && this.logSystem.succuess(`当前：${this.currentSide} 方 选中了 棋子:${choosePiece}`);
-        this.drawPeice(this.livePieceList)
-        return
-      }
-
-      // 选中之后的点击
-
-
-      // 没有选中棋子 说明 已选中的棋子要移动过去
-      if (!choosePiece) {
-        const moveFlag = this.choosePiece.move(clickPoint, this.livePieceList)
-        if (moveFlag.flag) {
-          const hasTrouble = this.rule.checkGeneralInTrouble(this.currentSide, this.choosePiece, { move: clickPoint }, this.livePieceList)
-          if (hasTrouble) {
-            this.audioSystem?.playFail()
-            this.isLog && this.logSystem.fail("不可以送将！")
-            return
-          }
-          this.isMoving = true
-          return this.moveStart(this.choosePiece, clickPoint, this.livePieceList, this.currentSide)
-        }
-        this.audioSystem?.playFail()
-        return this.isLog && this.logSystem.fail(moveFlag.message);
-      }
-
-      // 如果点击的棋子是己方
-      if (choosePiece.side === this.currentSide) {
-        // 如果是点击选中的棋子
-        if (this.choosePiece === choosePiece) {
-          // 取消选中
-          this.choosePiece.isChoose = false
-          this.choosePiece = null
-          this.isLog && this.logSystem.log("我方： 取消选中 " + choosePiece)
-          return this.redraw()
-        }
-        // 切换选中棋子
-        this.choosePiece.isChoose = false
-        this.isLog && this.logSystem.log(`我方：切换 选中棋子 由${this.choosePiece} --> ${choosePiece}`);
-        this.choosePiece = choosePiece
-        this.choosePiece.isChoose = true
-        this.redraw()
-        return
-
-      }
-
-
-      // 如果点击的的棋子是敌方 ，要移动到敌方的棋子位置上
-      this.isLog && this.logSystem.log(`当前：${this.currentSide} ,棋子:${this.choosePiece} 需要移动到：${clickPoint} 这个点上，并且要吃掉 ${choosePiece}`);
-      const moveFlag = this.choosePiece.move(clickPoint, this.livePieceList)
-      if (moveFlag.flag) {
-        this.eatPeice(clickPoint)
-        return
-      }
-      this.audioSystem?.playFail()
-      this.isLog && this.logSystem.fail(moveFlag.message);
+      this.move(clickPoint)
     }, false)
   }
 
@@ -663,24 +570,10 @@ export class Game {
     })
     this.clearMoveChoosePeiece()
     this.changeSide()
-    this.drawPeice(this.livePieceList)
+    this.redraw()
     this.isMoving = false
   }
 
-  /**
-   * 画坐标
-   */
-  private drawPoint() {
-    this.gridPostionList.forEach(p => {
-      this.ctx.textAlign = "center";
-      this.ctx.textBaseline = "middle";
-      this.ctx.fillStyle = "#1e80ff";
-      this.ctx.font = this.radius / 1.5 + "px yahei";
-      const x = this.startX + p.x * this.gridWidth;
-      const y = this.startY + p.y * this.gridHeight;
-      this.ctx.fillText(`${p}`, x, y);
-    })
-  }
 
   /**
    * 重新绘画当前棋盘
@@ -688,55 +581,96 @@ export class Game {
   redraw() {
     this.drawPeice(this.livePieceList)
   }
-
   /**
-   * 保存图片
+   * 初始化选择玩家方
+   * @param side 玩家方
    */
-  savePng() {
-    const isPC = isPc()
-    this.redraw()
-
-    const imgSrc = this.dom.toDataURL("image/png");
-    if (isPC) {
-      const a = document.createElement("a")
-      a.download = new Date().getTime() + ".png"
-      a.href = imgSrc
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-    } else {
-      const div = document.createElement("div")
-      const btn = document.createElement("button")
-      const p = document.createElement("p")
-      const img = new Image()
-      div.style.textAlign = "center"
-      div.style.color = "#fff"
-      div.style.position = "fixed"
-      div.style.top = "0"
-      div.style.left = "0"
-      div.style.right = "0"
-      div.style.bottom = "0"
-      div.style.fontSize = "16px"
-      div.style.background = "rgba(0,0,0,.6)"
-      p.innerHTML = "长按上方图片,即可保存！"
-      p.style.marginBottom = "10px"
-      img.src = imgSrc
-      img.style.marginBottom = "20px"
-      img.width = this.width
-      img.height = this.height
-      btn.style.background = "#1890ff"
-      btn.style.padding = "8px 15px"
-      btn.style.borderRadius = "8px"
-      btn.style.border = "none"
-      div.appendChild(img)
-      div.appendChild(p)
-      btn.appendChild(document.createTextNode("点击关闭"))
-      div.appendChild(btn)
-
-      document.body.appendChild(div)
-      btn.onclick = () => {
-        document.body.removeChild(div)
+  setGameSide(side: PieceSide) {
+    this.gameSide = side
+    this.setGridDiff()
+    this.initPiece()
+    this.gameState = "START"
+  }
+  /**
+   * 移动棋子
+   * @param clickPoint 移动点
+   */
+  move(clickPoint: Point) {
+    const choosePiece = findPiece(this.livePieceList, clickPoint)
+    // 在棋盘上 还没开始选中的点击
+    if (!this.choosePiece) {
+      // 如果 没点到棋子 
+      if (!choosePiece) {
+        return this.isLog && this.logSystem.fail("未点击到棋子");
       }
+      // 点击到了敌方的棋子
+      if (this.currentSide !== choosePiece.side) {
+        return this.isLog && this.logSystem.fail("点击到了敌方的棋子")
+      }
+      this.choosePiece = choosePiece
+      this.choosePiece.isChoose = true
+      this.isLog && this.logSystem.succuess(`当前：${this.currentSide} 方 选中了 棋子:${choosePiece}`);
+      this.redraw()
+      return
     }
+
+    // 选中之后的点击
+    // 没有选中棋子 说明 已选中的棋子要移动过去
+    if (!choosePiece) {
+      const moveFlag = this.choosePiece.move(clickPoint, this.livePieceList)
+      if (moveFlag.flag) {
+        const hasTrouble = this.rule.checkGeneralInTrouble(this.currentSide, this.choosePiece, { move: clickPoint }, this.livePieceList)
+        if (hasTrouble) {
+          this.audioSystem?.playFail()
+          this.isLog && this.logSystem.fail("不可以送将！")
+          return
+        }
+        this.isMoving = true
+        return this.moveStart(this.choosePiece, clickPoint, this.livePieceList, this.currentSide)
+      }
+      this.audioSystem?.playFail()
+      return this.isLog && this.logSystem.fail(moveFlag.message);
+    }
+
+    // 如果点击的棋子是己方
+    if (choosePiece.side === this.currentSide) {
+      // 如果是点击选中的棋子
+      if (this.choosePiece === choosePiece) {
+        // 取消选中
+        this.choosePiece.isChoose = false
+        this.choosePiece = null
+        this.isLog && this.logSystem.log("我方： 取消选中 " + choosePiece)
+        return this.redraw()
+      }
+      // 切换选中棋子
+      this.choosePiece.isChoose = false
+      this.isLog && this.logSystem.log(`我方：切换 选中棋子 由${this.choosePiece} --> ${choosePiece}`);
+      this.choosePiece = choosePiece
+      this.choosePiece.isChoose = true
+      this.redraw()
+      return
+
+    }
+
+
+    // 如果点击的的棋子是敌方 ，要移动到敌方的棋子位置上
+    this.isLog && this.logSystem.log(`当前：${this.currentSide} ,棋子:${this.choosePiece} 需要移动到：${clickPoint} 这个点上，并且要吃掉 ${choosePiece}`);
+    const moveFlag = this.choosePiece.move(clickPoint, this.livePieceList)
+    if (moveFlag.flag) {
+      this.eatPeice(clickPoint)
+      return
+    }
+    this.audioSystem?.playFail()
+    this.isLog && this.logSystem.fail(moveFlag.message);
+  }
+
+  moveStr(side: PieceSide, str: string) {
+    if (this.currentSide !== side) {
+      return console.log("请等待敌方结束再下棋");
+    }
+
+  }
+  checkMoveStr(side: PieceSide, str: string) {
+    console.log(getPieceInfo(str, side, this.livePieceList));
   }
 }

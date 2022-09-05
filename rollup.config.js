@@ -15,7 +15,8 @@ export default [
         file: "./dist/chess.cjs.js",
         name: "ZhChess",
         format: "cjs",
-        sourcemap: false
+        sourcemap: false,
+        exports: "default"
       }
     ],
     plugins: [
