@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="./chess.min.js"></script>
+
+  <style>
+    #app {
+      height: 100px;
+    }
+
+    select {
+      width: 80px;
+    }
+
+    div {
+      margin: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="app"></canvas>
+  <div>
+    选择红黑方：
+    <select class="side"> </select>
+    <button class="side_btn">确定</button>
+  </div>
+  <div class="select_1">
+    文字移动1：
+    <select class="first">
+    </select>
+    <select class="second">
+    </select>
+    <select class="third">
+    </select>
+    <select class="fourth">
+    </select>
+    <button class="word_1">发送</button>
+  </div>
+</body>
+<script>
+  const zhchess = new ZhChess({ id: "app", gameWidth: 500, gameHeight: 500, gamePadding: 20 })
+</script>
+<script>
+  var chessName = ["车", "将", "兵", "跑", "象", "士", "马"]
+  var num = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  var move = ["进", "平", "退"]
+  var side = [{ lab: "红方", val: "RED" }, { lab: "黑方", val: "BLACK" }]
+  document.querySelector(".select_1").querySelector(".first").innerHTML = chessName.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_1").querySelector(".second").innerHTML = num.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_1").querySelector(".fourth").innerHTML = num.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_1").querySelector(".third").innerHTML = move.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".side").innerHTML = side.map(i => `<option value="${i.val}">${i.lab}</option>`)
+  document.querySelector(".side_btn").addEventListener("click", function () {
+    const side = this.parentElement.querySelector(".side").value
+    zhchess.setGameSide(side)
+  })
+
+  document.querySelector(".word_1").addEventListener("click", function () {
+    let first = this.parentElement.querySelector(".first").value
+    let second = this.parentElement.querySelector(".second").value
+    let third = this.parentElement.querySelector(".third").value
+    let fourth = this.parentElement.querySelector(".fourth").value
+    zhchess.moveStr(first + second + third + fourth)
+  })
+</script>
+
+</html>

@@ -153,7 +153,7 @@ export default class Game {
     this.gridPostionList = []
     this.setGridList()
 
-    this.isLog = false
+    this.isLog = true
     this.moveSpeed = 8
     this.ctx = ctx
 
@@ -664,13 +664,20 @@ export default class Game {
     this.isLog && this.logSystem.fail(moveFlag.message);
   }
 
-  moveStr(side: PieceSide, str: string) {
-    if (this.currentSide !== side) {
-      return console.log("请等待敌方结束再下棋");
+  moveStr(str: string) {
+    console.log(this.currentSide, str);
+    const res = getPieceInfo(str, this.currentSide, this.livePieceList)
+    if (!res) {
+      return console.log("未找到棋子");
     }
 
-  }
-  checkMoveStr(side: PieceSide, str: string) {
-    console.log(getPieceInfo(str, side, this.livePieceList));
+    console.log(res);
+    const posPeice = findPiece(this.livePieceList, res.mp)
+    if (posPeice && posPeice.side === this.currentSide) {
+      return console.error("移动的位置有己方棋子")
+    }
+    this.choosePiece = res.choose
+    this.choosePiece.isChoose = true
+    this.move(res.mp)
   }
 }

@@ -1,6 +1,5 @@
 import { ChessOfPeiceName, HorsePiece } from './../src/piece';
-import { PieceSide } from './../types/index';
-import { Point } from '../types/index';
+import { PieceSide, Point } from './../types/index';
 import { chessOfPeiceMap, PieceList } from '../src/piece';
 export const getCtxWidth = () => {
   const deviceWidth = window.screen.availWidth
@@ -45,19 +44,30 @@ const numPos = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 const zhnumPos = ["一", "二", "三", "四", "五", "六", "七", "八", "九"]
 const strPos = ["前", "中", "后"]
 const moveStyles = ["进", "平", "退"]
+const numMergePos = numPos.concat(zhnumPos)
 const PieceNames = Object.keys(chessOfPeiceMap)
-const move_reg_one = new RegExp(`(${strPos.concat(zhnumPos).concat(numPos).join("|")})(${PieceNames.join("|")})(${moveStyles.join("|")})(${numPos.concat(zhnumPos).join("|")})$`)
-
+const move_reg_one = new RegExp(`(${strPos.concat(numMergePos).join("|")})(${PieceNames.join("|")})(${moveStyles.join("|")})(${numMergePos.join("|")})$`)
+const move_reg_two = new RegExp(`(${PieceNames.join("|")})(${numMergePos.join("|")})(${moveStyles.join("|")})(${numMergePos.join("|")})$`)
 export const getPieceInfo = (str: string, side: PieceSide, pl: PieceList) => {
   let strRes;
+  const currentSidePieceList = pl.filter(p => p.side === side)
+  const isRedSide = side === "RED"
+  const pieceDiffX = side === "BLACK" ? 8 : 0
+  const pieceDiffY = side === "BLACK" ? 9 : 0
+  const sideOpposite = isRedSide ? 1 : - 1
+  //  前车进八  or  一兵进1
   if (move_reg_one.test(str) && (strRes = move_reg_one.exec(str))) {
     move_reg_one.lastIndex = 0
     // 获得 棋子名字
     let pieceName = getSidePieceName(strRes[2] as ChessOfPeiceName, side)
     let moveStyle = strRes[3], moveStep = formatChooseNum(strRes[4]);
-    let isRedSide = side === "RED"
-    const findPL = pl.filter(p => p.side === side && p.name === pieceName)
-    if (findPL.length) {
+    if (moveStyle === "平") {
+      moveStep -= 1
+    }
+    // 获取 该棋子列表 
+    const findPL = currentSidePieceList.filter(p => p.name === pieceName)
+    // 如果小于 2 不适用 此正则匹配
+    if (findPL.length < 2) {
       return false
     }
     // 获取 棋子所对应的 x轴 的次数
@@ -75,30 +85,139 @@ export const getPieceInfo = (str: string, side: PieceSide, pl: PieceList) => {
     const linexs = Object.keys(xmap).sort((a, b) => xmap[b] - xmap[a])
     lineX = linexs[0]
     maxX = xmap[lineX]
+    if (maxX < 2) {
+      return false
+    }
     const linePL = findPL.filter(p => String(p.x) === lineX)
-    let first = strRes[1] as string
+    let firstStr = strRes[1] as string
     // 如果多个兵在一条竖线上 数字开头
-    if (zhnumPos.concat(numPos).concat(strPos).includes(first) && maxX >= 3) {
-      findPL.sort((a, b) => side === "RED" ? a.y - b.y : b.y - a.y)
+    if (maxX >= 3) {
+      findPL.sort((a, b) => isRedSide ? a.y - b.y : b.y - a.y)
       // 获取到棋子
-      const choose = linePL[formatChooseNum(first) - 1]
+      const choose = linePL[formatChooseNum(firstStr) - 1]
+      const cy = Math.abs(choose.y - pieceDiffY)
+
       // 前进
-      let y = side === "RED" ? choose.y - moveStep : choose.y + moveStep
+      let y = isRedSide ? cy - moveStep * sideOpposite : cy + moveStep * sideOpposite
       if (moveStyle === moveStyles[0]) {
         const mp = new Point(choose.x, y)
         return { mp, choose }
       }
       // 平
       if (moveStyle === moveStyles[1]) {
-        const mp = new Point(moveStep, choose.y)
+        const mp = new Point(Math.abs(moveStep - pieceDiffX), cy)
         return { mp, choose }
       }
     }
     // 如果两个相同的棋子在一条竖线上
-    if (strPos.includes(first)) {
-      
+    if (maxX === 2 && strPos.filter(i => i !== "中").includes(firstStr)) {
+      const index = firstStr === strPos[0] ? 0 : 1
+      const choose = linePL[index]
+      const cy = choose.y
+      const cx = choose.x
+      // x 距离差
+      const diffX = cx - moveStep
+      // 前进 后退 x 一致 y取想法
+      if (moveStyle === moveStyles[0] || moveStyle === moveStyles[2]) {
+        // 距离长度
+        const absDiffX = Math.abs(diffX)
+        const yOpposite = moveStyle === moveStyles[2] ? -1 : 1
+        // 马
+        if (pieceName === "马" || pieceName === "馬") {
+          if (absDiffX >= 1 && absDiffX <= 2) {
+            const isRow = absDiffX == 1 ? true : false
+            const y = isRow ? cy - (2 * sideOpposite * yOpposite) : cy - (1 * sideOpposite * yOpposite)
+            const x = diffX < 0 ? (isRow ? cx - (1 * sideOpposite) : cx - (2 * sideOpposite)) : (isRow ? cx + (1 * sideOpposite) : cx + (2 * sideOpposite))
+            return { choose, mp: new Point(x, y) }
+          } else {
+            return false
+          }
+        }
+        // 象 士
+        const elePieceList = ["相", "象"], kinPieceList = ["仕", "士"], isEle = elePieceList.includes(pieceName as string);
+        if (isEle || kinPieceList.includes(pieceName as string)) {
+          const mStep = isEle ? 2 : 1
+          if (isEle && absDiffX !== 3) {
+            return false
+          }
+          if (!isEle && absDiffX !== 1) {
+            return false
+          }
+          const x = diffX > 0 ? cx + (mStep * sideOpposite) : cx - (mStep * sideOpposite)
+          const y = cy - (mStep * sideOpposite * yOpposite)
+          return { choose, mp: new Point(x, y) }
+        }
+        // 车 将 兵 跑
+        const y = cy - (moveStep * sideOpposite * yOpposite)
+        return { choose, mp: new Point(cx, y) }
+      }
+      // 平
+      if (moveStyle === moveStyles[1]) {
+        // 车 将 兵 跑
+        return { choose, mp: new Point(Math.abs(moveStep - pieceDiffX), cy) }
+      }
+
     }
     return false
+  }
+  // 车9进1
+  let execRes
+  if (move_reg_two.test(str) && (execRes = move_reg_two.exec(str))) {
+    let pieceName = getSidePieceName(execRes[1] as ChessOfPeiceName, side)
+    const pieceXPos = formatChooseNum(execRes[2]) - 1;
+    const moveStyle = execRes[3];
+    let moveStep = formatChooseNum(execRes[4]);
+    if (moveStyle === "平") {
+      moveStep -= 1
+    }
+    const px = Math.abs(pieceXPos - pieceDiffX)
+    const choose = currentSidePieceList.find(p => p.x === px && p.name === pieceName)
+    // 没找到棋子
+    if (!choose) {
+      return false
+    }
+    const cy = choose.y
+    const cx = choose.x
+    const diffX = Math.abs(cx -pieceDiffX) - moveStep
+    const absDiffX = Math.abs(diffX)
+    // 前进 后退 x 一致 y取移动相反
+    if (moveStyle === moveStyles[0] || moveStyle === moveStyles[2]) {
+      // 距离长度
+      const yOpposite = moveStyle === moveStyles[2] ? -1 : 1
+      // 马
+      if (pieceName === "马" || pieceName === "馬") {
+        if ((absDiffX - 1) >= 1 && (absDiffX - 1) <= 2) {
+          const isRow = (absDiffX - 1) === 1 ? true : false
+          const y = isRow ? cy - (2 * sideOpposite * yOpposite) : cy - (1 * sideOpposite * yOpposite)
+          const x = (diffX + 1) < 0 ? (isRow ? cx + (1 * sideOpposite) : cx + (2 * sideOpposite)) : (isRow ? cx - (1 * sideOpposite) : cx - (2 * sideOpposite))
+          return { choose, mp: new Point(x, y) }
+        } else {
+          return false
+        }
+      }
+      // 象 士
+      const elePieceList = ["相", "象"], kinPieceList = ["仕", "士"], isEle = elePieceList.includes(pieceName as string);
+      if (isEle || kinPieceList.includes(pieceName as string)) {
+        const mStep = isEle ? 2 : 1
+        if (isEle && absDiffX !== 3) {
+          return false
+        }
+        if (!isEle && absDiffX !== 1) {
+          return false
+        }
+        const x = diffX > 0 ? cx + (mStep * sideOpposite) : cx - (mStep * sideOpposite)
+        const y = cy - (mStep * sideOpposite * yOpposite)
+        return { choose, mp: new Point(x, y) }
+      }
+      // 车 将 兵 跑
+      const y = cy - (moveStep * sideOpposite * yOpposite)
+      return { choose, mp: new Point(cx, y) }
+    }
+    // 平
+    if (moveStyle === moveStyles[1]) {
+      // 车 将 兵 跑
+      return { choose, mp: new Point(Math.abs(moveStep - pieceDiffX), cy) }
+    }
   }
   return false
 }
@@ -146,5 +265,18 @@ function formatChooseNum(str: string): number {
       return 9
     default:
       return 10
+  }
+}
+
+function formatMoveStyle(str: string): string {
+  switch (str) {
+    case "进": case "進":
+      return "进"
+    case "平":
+      return "平"
+    case "退": case "后":
+      return "退"
+    default:
+      return ""
   }
 }
