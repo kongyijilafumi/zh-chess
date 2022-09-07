@@ -5,8 +5,7 @@
   "main": "./src/index.ts",
   "scripts": {
     "dev": "rollup -c -w",
-    "bulid": "rollup -c",
-    "test": "node test.js"
+    "bulid": "rollup -c"
   },
   "keywords": [],
   "author": "",

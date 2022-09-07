@@ -71,7 +71,7 @@ export const getPieceInfo = (str: string, side: PieceSide, pl: PieceList) => {
       return false
     }
     // 获取 棋子所对应的 x轴 的次数
-    let maxX: number, lineX: string;
+    let maxX = 0, lineX: string;
     const xmap: {
       [props: string]: number
     } = {}
@@ -82,7 +82,16 @@ export const getPieceInfo = (str: string, side: PieceSide, pl: PieceList) => {
         xmap[p.x] = 1
       }
     })
-    const linexs = Object.keys(xmap).sort((a, b) => xmap[b] - xmap[a])
+    const linexs = Object.keys(xmap)
+    for (let i = 0; i < linexs.length; i++) {
+      const ele = xmap[linexs[i]];
+      if (maxX < ele) {
+        maxX = ele
+      } else if (maxX === ele) {
+        // 如果两个兵 两组并排 不适用 此正则
+        return false
+      }
+    }
     lineX = linexs[0]
     maxX = xmap[lineX]
     if (maxX < 2) {
@@ -90,9 +99,13 @@ export const getPieceInfo = (str: string, side: PieceSide, pl: PieceList) => {
     }
     const linePL = findPL.filter(p => String(p.x) === lineX)
     let firstStr = strRes[1] as string
+    // 如果取中字 必须有三个兵在一条竖线上
+    if (firstStr === strPos[1] && maxX !== 3) {
+      return false
+    }
     // 如果多个兵在一条竖线上 数字开头
     if (maxX >= 3) {
-      findPL.sort((a, b) => isRedSide ? a.y - b.y : b.y - a.y)
+      linePL.sort((a, b) => isRedSide ? a.y - b.y : b.y - a.y)
       // 获取到棋子
       const choose = linePL[formatChooseNum(firstStr) - 1]
       const cy = Math.abs(choose.y - pieceDiffY)
@@ -178,7 +191,7 @@ export const getPieceInfo = (str: string, side: PieceSide, pl: PieceList) => {
     }
     const cy = choose.y
     const cx = choose.x
-    const diffX = Math.abs(cx -pieceDiffX) - moveStep
+    const diffX = Math.abs(cx - pieceDiffX) - moveStep
     const absDiffX = Math.abs(diffX)
     // 前进 后退 x 一致 y取移动相反
     if (moveStyle === moveStyles[0] || moveStyle === moveStyles[2]) {
@@ -186,8 +199,9 @@ export const getPieceInfo = (str: string, side: PieceSide, pl: PieceList) => {
       const yOpposite = moveStyle === moveStyles[2] ? -1 : 1
       // 马
       if (pieceName === "马" || pieceName === "馬") {
-        if ((absDiffX - 1) >= 1 && (absDiffX - 1) <= 2) {
-          const isRow = (absDiffX - 1) === 1 ? true : false
+        const absx = Math.abs((Math.abs(cx - pieceDiffX) - (moveStep - 1)))
+        if (absx >= 1 && absx <= 2) {
+          const isRow = absx === 1 ? true : false
           const y = isRow ? cy - (2 * sideOpposite * yOpposite) : cy - (1 * sideOpposite * yOpposite)
           const x = (diffX + 1) < 0 ? (isRow ? cx + (1 * sideOpposite) : cx + (2 * sideOpposite)) : (isRow ? cx - (1 * sideOpposite) : cx - (2 * sideOpposite))
           return { choose, mp: new Point(x, y) }

@@ -42,31 +42,92 @@
     </select>
     <button class="word_1">发送</button>
   </div>
+  <div class="select_2">
+    文字移动2：
+    <select class="first">
+    </select>
+    <select class="second">
+    </select>
+    <select class="third">
+    </select>
+    <select class="fourth">
+    </select>
+    <button class="word_1">发送</button>
+  </div>
+  <div class="select_3">
+    随意移动模式：
+    <select class="first">
+    </select>
+    <button class="word_2">确定</button>
+
+  </div>
+  <div class="select_4">
+    设置位置：
+    <select class="first">
+    </select>
+    <select class="second">
+    </select>
+    <button class="word_3">确定</button>
+  </div>
+  <div class="select_5">
+    删除选中棋子： <button class="del">删除</button>
+  </div>
 </body>
 <script>
-  const zhchess = new ZhChess({ id: "app", gameWidth: 500, gameHeight: 500, gamePadding: 20 })
+  let zhchess = new ZhChess({ id: "app", gameWidth: 375, gameHeight: 375, gamePadding: 20 })
 </script>
 <script>
-  var chessName = ["车", "将", "兵", "跑", "象", "士", "马"]
-  var num = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-  var move = ["进", "平", "退"]
   var side = [{ lab: "红方", val: "RED" }, { lab: "黑方", val: "BLACK" }]
-  document.querySelector(".select_1").querySelector(".first").innerHTML = chessName.map(i => `<option value="${i}">${i}</option>`)
-  document.querySelector(".select_1").querySelector(".second").innerHTML = num.map(i => `<option value="${i}">${i}</option>`)
-  document.querySelector(".select_1").querySelector(".fourth").innerHTML = num.map(i => `<option value="${i}">${i}</option>`)
-  document.querySelector(".select_1").querySelector(".third").innerHTML = move.map(i => `<option value="${i}">${i}</option>`)
   document.querySelector(".side").innerHTML = side.map(i => `<option value="${i.val}">${i.lab}</option>`)
   document.querySelector(".side_btn").addEventListener("click", function () {
     const side = this.parentElement.querySelector(".side").value
     zhchess.setGameSide(side)
   })
 
-  document.querySelector(".word_1").addEventListener("click", function () {
+
+  var chessName = ["车", "将", "兵", "炮", "象", "士", "马"]
+  var num = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  var move = ["进", "平", "退"]
+  var moveStyle = ["前", "中", "后"]
+
+  document.querySelector(".select_1").querySelector(".first").innerHTML = chessName.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_1").querySelector(".second").innerHTML = num.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_1").querySelector(".fourth").innerHTML = num.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_1").querySelector(".third").innerHTML = move.map(i => `<option value="${i}">${i}</option>`)
+
+  document.querySelector(".select_2").querySelector(".first").innerHTML = moveStyle.concat(num).map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_2").querySelector(".second").innerHTML = chessName.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_2").querySelector(".fourth").innerHTML = num.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_2").querySelector(".third").innerHTML = move.map(i => `<option value="${i}">${i}</option>`)
+
+
+  document.querySelectorAll(".word_1").forEach(item => {
+    item.addEventListener("click", function () {
+      let first = this.parentElement.querySelector(".first").value
+      let second = this.parentElement.querySelector(".second").value
+      let third = this.parentElement.querySelector(".third").value
+      let fourth = this.parentElement.querySelector(".fourth").value
+      zhchess.moveStr(first + second + third + fourth)
+    })
+  })
+  var setMode = [{ lab: "是", val: 1 }, { lab: "否", val: 0 }]
+  document.querySelector(".select_3").querySelector(".first").innerHTML = setMode.map(i => `<option value="${i.val}">${i.lab}</option>`)
+  document.querySelector(".select_4").querySelector(".first").innerHTML = num.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_4").querySelector(".second").innerHTML = num.map(i => `<option value="${i}">${i}</option>`)
+
+  document.querySelector(".word_2").addEventListener("click", function () {
+    let first = this.parentElement.querySelector(".first").value
+    zhchess.isSetMode = first === "1"
+  })
+
+  document.querySelector(".word_3").addEventListener("click", function () {
     let first = this.parentElement.querySelector(".first").value
     let second = this.parentElement.querySelector(".second").value
-    let third = this.parentElement.querySelector(".third").value
-    let fourth = this.parentElement.querySelector(".fourth").value
-    zhchess.moveStr(first + second + third + fourth)
+    zhchess.setPeicePoint(Number(first), Number(second))
+  })
+
+  document.querySelector(".del").addEventListener("click", () => {
+    zhchess.deletePeice()
   })
 </script>
 

@@ -127,6 +127,7 @@ export default class Game {
    * 游戏进行状态
    */
   gameState!: GameState
+  isSetMode: boolean;
 
   constructor({ id, aduioInfo, gameWidth = 800, gameHeight = 800, gamePadding = 20 }: GameInfo) {
 
@@ -156,7 +157,7 @@ export default class Game {
     this.isLog = true
     this.moveSpeed = 8
     this.ctx = ctx
-
+    this.isSetMode = false
     this.setGameWindow(gameWidth, gameHeight, gamePadding)
     this.modalSystem = new GameModal(this.ctx, this.width, this.height)
 
@@ -382,7 +383,6 @@ export default class Game {
     this.dom.addEventListener("click", (e) => {
       const { offsetX: x, offsetY: y } = e
 
-
       // 游戏开始
       if (this.gameState === "INIT") {
 
@@ -605,6 +605,11 @@ export default class Game {
       }
       // 点击到了敌方的棋子
       if (this.currentSide !== choosePiece.side) {
+        if (this.isSetMode) {
+          this.choosePiece = choosePiece
+          this.choosePiece.isChoose = true
+          return this.redraw()
+        }
         return this.isLog && this.logSystem.fail("点击到了敌方的棋子")
       }
       this.choosePiece = choosePiece
@@ -617,6 +622,13 @@ export default class Game {
     // 选中之后的点击
     // 没有选中棋子 说明 已选中的棋子要移动过去
     if (!choosePiece) {
+      if (this.isSetMode) {
+        this.choosePiece.x = clickPoint.x
+        this.choosePiece.y = clickPoint.y
+        this.choosePiece.isChoose = false
+        this.choosePiece = null
+        return this.redraw()
+      }
       const moveFlag = this.choosePiece.move(clickPoint, this.livePieceList)
       if (moveFlag.flag) {
         const hasTrouble = this.rule.checkGeneralInTrouble(this.currentSide, this.choosePiece, { move: clickPoint }, this.livePieceList)
@@ -652,6 +664,14 @@ export default class Game {
 
     }
 
+    if (this.isSetMode) {
+      this.choosePiece.isChoose = false
+      this.choosePiece = choosePiece
+      this.choosePiece.isChoose = true
+      return this.redraw()
+    }
+
+
 
     // 如果点击的的棋子是敌方 ，要移动到敌方的棋子位置上
     this.isLog && this.logSystem.log(`当前：${this.currentSide} ,棋子:${this.choosePiece} 需要移动到：${clickPoint} 这个点上，并且要吃掉 ${choosePiece}`);
@@ -670,7 +690,10 @@ export default class Game {
     if (!res) {
       return console.log("未找到棋子");
     }
-
+    if (this.choosePiece) {
+      this.choosePiece.isChoose = false
+      this.choosePiece = null
+    }
     console.log(res);
     const posPeice = findPiece(this.livePieceList, res.mp)
     if (posPeice && posPeice.side === this.currentSide) {
@@ -679,5 +702,26 @@ export default class Game {
     this.choosePiece = res.choose
     this.choosePiece.isChoose = true
     this.move(res.mp)
+  }
+  setGameState(state: GameState) {
+    this.gameState = state
+  }
+  deletePeice() {
+    if (this.choosePiece) {
+      this.livePieceList = this.livePieceList.filter(i => i !== this.choosePiece)
+      this.choosePiece = null
+      this.redraw()
+    } else {
+      console.log("请选择删除的棋子");
+    }
+  }
+  setPeicePoint(x: number, y: number) {
+    if (this.choosePiece) {
+      this.choosePiece.x = x
+      this.choosePiece.y = y
+      this.redraw()
+    } else {
+      console.log("请选择移动的棋子");
+    }
   }
 }
