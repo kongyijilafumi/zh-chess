@@ -1,3 +1,4 @@
+import { ChessOfPeice } from './../src/piece';
 import { ChessOfPeiceName } from '../src/piece';
 
 export type PieceSide = "RED" | "BLACK"
@@ -102,3 +103,15 @@ export type ModalChooseInfo = {
   title: string
   options: ModalOptionList
 }
+
+export type MoveCallback = (peice: ChessOfPeice, cp: CheckPoint, enemyhasTrouble: boolean) => void
+
+export type MoveFailCallback = (peice: ChessOfPeice, p: Point, currentSideDanger: boolean, msg: string) => void
+
+export type GameLogCallback = (str: any) => void
+
+export type GameOverCallback = (winnerSide: PieceSide) => void
+
+export type GameEventName = "move" | "moveFail" | "log" | "over"
+
+export type GameEventCallback = MoveCallback | MoveFailCallback | GameLogCallback | GameOverCallback

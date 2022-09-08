@@ -1,4 +1,4 @@
-import { ChessOfPeiceName, HorsePiece } from './../src/piece';
+import { ChessOfPeiceName } from './../src/piece';
 import { PieceSide, Point } from './../types/index';
 import { chessOfPeiceMap, PieceList } from '../src/piece';
 export const getCtxWidth = () => {
@@ -45,9 +45,11 @@ const zhnumPos = ["一", "二", "三", "四", "五", "六", "七", "八", "九"]
 const strPos = ["前", "中", "后"]
 const moveStyles = ["进", "平", "退"]
 const numMergePos = numPos.concat(zhnumPos)
+const numMergePosStr = numMergePos.join("|")
 const PieceNames = Object.keys(chessOfPeiceMap)
-const move_reg_one = new RegExp(`(${strPos.concat(numMergePos).join("|")})(${PieceNames.join("|")})(${moveStyles.join("|")})(${numMergePos.join("|")})$`)
-const move_reg_two = new RegExp(`(${PieceNames.join("|")})(${numMergePos.join("|")})(${moveStyles.join("|")})(${numMergePos.join("|")})$`)
+const move_reg_one = new RegExp(`(${strPos.concat(numMergePos).join("|")})(${PieceNames.join("|")})(${moveStyles.join("|")})(${numMergePosStr})$`)
+const move_reg_two = new RegExp(`(${PieceNames.join("|")})(${numMergePosStr})(${moveStyles.join("|")})(${numMergePosStr})$`)
+const move_reg_three = new RegExp(`(${strPos.join("|")})(${numMergePosStr})(${moveStyles.join("|")})(${numMergePosStr})$`)
 export const getPieceInfo = (str: string, side: PieceSide, pl: PieceList) => {
   let strRes;
   const currentSidePieceList = pl.filter(p => p.side === side)
@@ -55,6 +57,40 @@ export const getPieceInfo = (str: string, side: PieceSide, pl: PieceList) => {
   const pieceDiffX = side === "BLACK" ? 8 : 0
   const pieceDiffY = side === "BLACK" ? 9 : 0
   const sideOpposite = isRedSide ? 1 : - 1
+  // 前6进1 只有兵才会出现这种情况
+  let strRes1;
+  if (move_reg_three.test(str) && (strRes1 = move_reg_three.exec(str))) {
+    const pieceXPos = Math.abs((formatChooseNum(strRes1[2]) - 1) - pieceDiffX);
+    const moveStyle = strRes1[3];
+    let moveStep = formatChooseNum(strRes1[4]);
+    const pieceName = getSidePieceName("兵", side)
+    if (moveStyle === "平") {
+      moveStep -= 1
+    }
+    // 获取 该棋子列表 
+    const findPL = currentSidePieceList.filter(p => p.x === pieceXPos && p.name === pieceName)
+    // 如果小于 2 不适用 此正则匹配
+    if (findPL.length < 2) {
+      return false
+    }
+    findPL.sort((a, b) => isRedSide ? a.y - b.y : b.y - a.y)
+    const index = findPL.length === 3 ? formatChooseNum(strRes1[1]) - 1 : (strRes1[1] === "前" ? 0 : 1)
+    // 获取到棋子
+    const choose = findPL[index]
+    const cy = Math.abs(choose.y - pieceDiffY)
+
+    // 前进
+    let y = isRedSide ? cy - moveStep * sideOpposite : cy + moveStep * sideOpposite
+    if (moveStyle === moveStyles[0]) {
+      const mp = new Point(choose.x, y)
+      return { mp, choose }
+    }
+    // 平
+    if (moveStyle === moveStyles[1]) {
+      const mp = new Point(Math.abs(moveStep - pieceDiffX), cy)
+      return { mp, choose }
+    }
+  }
   //  前车进八  or  一兵进1
   if (move_reg_one.test(str) && (strRes = move_reg_one.exec(str))) {
     move_reg_one.lastIndex = 0

@@ -1,21 +1,18 @@
-import { GameAudio, GameAudioInterface } from './audio';
-import { GameLog } from './log';
-import { GameState, peiceSideMap, PieceSide, Point, } from './../types/index';
-import { GameModal } from './modal';
+import { GameState, PieceSide, Point, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint } from './../types/index';
 import { GameRule } from './rule';
 import { findPiece, getPieceInfo } from './../utils/index';
-import { getPiecesList, gameInitOpions, gameOverOptions } from './data';
+import { getPiecesList, } from './data';
 import { getSquarePoints } from '../utils/draw';
 import { ChessOfPeice, PieceList, chessOfPeiceMap } from './piece';
 
 type CTX = CanvasRenderingContext2D
 
 type GameInfo = {
-  id: string
-  aduioInfo?: GameAudioInterface
   gameWidth?: number
   gameHeight?: number
   gamePadding?: number
+  ctx: CTX
+  scaleRatio?: number
 }
 
 export default class Game {
@@ -72,10 +69,6 @@ export default class Game {
    */
   private height!: number;
   /**
-   * 操作的canvas的dom节点
-   */
-  private dom: HTMLCanvasElement
-  /**
    * 背景 和 线条 二维操作上下文
    */
   private ctx: CTX
@@ -91,10 +84,6 @@ export default class Game {
    * 运行速度 大于或等于 1 的数 越大越慢
    */
   moveSpeed: number
-  /**
-   * 输出日志信息
-   */
-  isLog: boolean
   /**
    * 将军验证规则
    */
@@ -112,74 +101,42 @@ export default class Game {
    */
   private gridDiffY!: number
   /**
-   * 游戏弹窗
-   */
-  private modalSystem: GameModal;
-  /**
-   * 游戏日志
-   */
-  logSystem: GameLog
-  /**
-   * 游戏音频
-   */
-  audioSystem?: GameAudio
-  /**
    * 游戏进行状态
    */
   gameState!: GameState
   isSetMode: boolean;
 
-  constructor({ id, aduioInfo, gameWidth = 800, gameHeight = 800, gamePadding = 20 }: GameInfo) {
-
-    this.dom = document.getElementById(id) as HTMLCanvasElement
-    if (!this.dom) {
-      throw new Error("未找到需要操纵的DOM节点！")
-    }
-
-    if (!this.dom.getContext || !this.dom.getContext("2d")) {
-      throw new Error("该dom节点不支持 获取二位渲染")
-    }
-
-    const ctx = this.dom.getContext("2d")
-
+  moveEvents: Array<MoveCallback>
+  moveFailEvents: Array<MoveFailCallback>
+  logEvents: Array<GameLogCallback>
+  overEvents: Array<GameOverCallback>
+  constructor({ ctx, gameWidth = 800, gameHeight = 800, gamePadding = 20, scaleRatio = 1 }: GameInfo) {
     if (!ctx) {
-      throw new Error("该浏览器不支持二维渲染")
+      throw new Error("请传入画布")
     }
-
-    if (aduioInfo) {
-      this.audioSystem = new GameAudio(aduioInfo)
-    }
-    this.logSystem = new GameLog()
+    this.moveEvents = []
+    this.moveFailEvents = []
+    this.logEvents = []
+    this.overEvents = []
+    this.ctx = ctx
+    // 设置 缩放 来解决移动端模糊问题
+    this.ctx.scale(scaleRatio, scaleRatio)
+    this.listenClick = this.listenClick.bind(this)
     this.rule = new GameRule()
     this.gridPostionList = []
     this.setGridList()
 
-    this.isLog = true
     this.moveSpeed = 8
     this.ctx = ctx
     this.isSetMode = false
     this.setGameWindow(gameWidth, gameHeight, gamePadding)
-    this.modalSystem = new GameModal(this.ctx, this.width, this.height)
-
     this.init()
-    this.listenClick()
   }
 
   /**
    * 设置游戏窗口 棋盘
    */
   private setGameWindow(w: number, h: number, p: number) {
-    this.dom.width = w
-    this.dom.height = h
-    // 设置 缩放 来解决移动端模糊问题
-    const dpr = window.devicePixelRatio
-    this.dom.width = w * dpr
-    this.dom.height = h * dpr
-    this.ctx.scale(dpr, dpr)
-
-    this.dom.style.height = w + "px"
-    this.dom.style.width = h + "px"
-
     const playHeight = h - p * 2;
     let playWidth = playHeight;
     while (playWidth % 9 !== 0) {
@@ -234,7 +191,6 @@ export default class Game {
     this.deadPieceList = []
     this.ctx.clearRect(0, 0, this.width, this.height)
     this.drawChessLine();
-    // this.modalSystem.drawModal("请选择红黑方", gameInitOpions)
   }
 
   private initPiece() {
@@ -252,7 +208,6 @@ export default class Game {
     this.drawChessLine();
     pieceList.forEach((p) => this.drawSinglePeice(p, true))
   }
-
   /**
    * 绘画单个象棋
    * @param piece 单个象棋
@@ -312,9 +267,6 @@ export default class Game {
     this.ctx.font = piece.radius + "px yahei";
     this.ctx.fillText(piece.name, x, y + ty);
   }
-
-
-
   /**
    * 画棋盘
    */
@@ -376,46 +328,7 @@ export default class Game {
       this.ctx.stroke();
     }
   }
-  /**
-   * 监听棋盘点击
-   */
-  private listenClick() {
-    this.dom.addEventListener("click", (e) => {
-      const { offsetX: x, offsetY: y } = e
 
-      // 游戏开始
-      if (this.gameState === "INIT") {
-
-        return console.log("请选择红黑方");
-
-      }
-      // 游戏结束
-      if (this.gameState === "OVER") {
-        const res = this.modalSystem.getClickOption({ x, y })
-        console.log(res);
-        this.audioSystem?.playChoose()
-        if (res?.val === "restart") {
-          return this.init()
-        }
-        if (res?.val === "saveToRestart") {
-          this.init()
-          return
-        }
-        return this.isLog && this.logSystem.log("棋盘结束 等待重开！");
-      }
-      // 正在移动
-      if (this.isMoving) {
-        this.isLog && this.logSystem.log("棋子正在移动，无法做任何操作");
-        return
-      }
-      const clickPoint = this.getGridPosition({ x, y })
-
-      if (!clickPoint) {
-        return this.isLog && this.logSystem.fail("点击了无效区域");
-      }
-      this.move(clickPoint)
-    }, false)
-  }
 
 
   /**
@@ -508,8 +421,7 @@ export default class Game {
       const lastChoosePeice = this.choosePiece
       const hasTrouble = this.rule.checkGeneralInTrouble(side, this.choosePiece, { eat: p }, this.livePieceList)
       if (hasTrouble) {
-        this.audioSystem?.playFail()
-        this.isLog && this.logSystem.fail("不可以送将！")
+        this.moveFailEvents.forEach(f => f(lastChoosePeice, p, true, "不可以送将！"))
         return
       }
       this.livePieceList = this.livePieceList.filter(i => !(i.x === p.x && i.y === p.y))
@@ -529,7 +441,7 @@ export default class Game {
    */
   private moveStart(mp: ChessOfPeice, p: Point, drawList: PieceList, side: PieceSide, isEat?: boolean) {
     const enemySide: PieceSide = side === "RED" ? "BLACK" : "RED"
-    this.audioSystem?.playMove()
+    const checkPoint: CheckPoint = isEat ? { eat: p } : { move: p }
     this.movePeiec(p, drawList).then(() => {
       const enemyhasTrouble = this.rule.checkGeneralInTrouble(enemySide, mp, { move: p }, drawList)
       if (enemyhasTrouble) {
@@ -538,21 +450,12 @@ export default class Game {
         movedPeiceList.push(newMp)
         const hasSolution = this.rule.checkEnemySideInTroubleHasSolution(enemySide, movedPeiceList)
         if (!hasSolution) {
-          this.audioSystem?.playOver()
-          this.isLog && this.logSystem.log("绝杀")
           this.gameState = "OVER"
-          setTimeout(() => {
-            this.modalSystem.drawModal(`${peiceSideMap[side]}胜`, gameOverOptions)
-          }, 1500);
+          this.overEvents.forEach(f => f(side))
           return
         }
-        this.audioSystem?.playTrouble()
-        this.isLog && this.logSystem.log("将军")
-      } else {
-        if (isEat) {
-          this.audioSystem?.playEat()
-        }
       }
+      this.moveEvents.forEach(f => f(mp, checkPoint, enemyhasTrouble))
     })
 
   }
@@ -574,7 +477,6 @@ export default class Game {
     this.isMoving = false
   }
 
-
   /**
    * 重新绘画当前棋盘
    */
@@ -585,8 +487,13 @@ export default class Game {
    * 初始化选择玩家方
    * @param side 玩家方
    */
-  setGameSide(side: PieceSide) {
+  gameStart(side: PieceSide) {
+    if (this.gameState === "START") {
+      this.logEvents.forEach(f => f("刚开始不可以结束"))
+      return
+    }
     this.gameSide = side
+    this.init()
     this.setGridDiff()
     this.initPiece()
     this.gameState = "START"
@@ -601,7 +508,7 @@ export default class Game {
     if (!this.choosePiece) {
       // 如果 没点到棋子 
       if (!choosePiece) {
-        return this.isLog && this.logSystem.fail("未点击到棋子");
+        return;
       }
       // 点击到了敌方的棋子
       if (this.currentSide !== choosePiece.side) {
@@ -610,11 +517,11 @@ export default class Game {
           this.choosePiece.isChoose = true
           return this.redraw()
         }
-        return this.isLog && this.logSystem.fail("点击到了敌方的棋子")
+        return
       }
       this.choosePiece = choosePiece
       this.choosePiece.isChoose = true
-      this.isLog && this.logSystem.succuess(`当前：${this.currentSide} 方 选中了 棋子:${choosePiece}`);
+      this.logEvents.forEach(f => f(`当前：${this.currentSide} 方 选中了 棋子:${choosePiece}`))
       this.redraw()
       return
     }
@@ -630,18 +537,17 @@ export default class Game {
         return this.redraw()
       }
       const moveFlag = this.choosePiece.move(clickPoint, this.livePieceList)
+      let mp = this.choosePiece
       if (moveFlag.flag) {
         const hasTrouble = this.rule.checkGeneralInTrouble(this.currentSide, this.choosePiece, { move: clickPoint }, this.livePieceList)
         if (hasTrouble) {
-          this.audioSystem?.playFail()
-          this.isLog && this.logSystem.fail("不可以送将！")
+          this.moveFailEvents.forEach(f => f(mp, clickPoint, true, "不可以送将！"))
           return
         }
         this.isMoving = true
         return this.moveStart(this.choosePiece, clickPoint, this.livePieceList, this.currentSide)
       }
-      this.audioSystem?.playFail()
-      return this.isLog && this.logSystem.fail(moveFlag.message);
+      return this.moveFailEvents.forEach(f => f(mp, clickPoint, true, moveFlag.message))
     }
 
     // 如果点击的棋子是己方
@@ -651,12 +557,12 @@ export default class Game {
         // 取消选中
         this.choosePiece.isChoose = false
         this.choosePiece = null
-        this.isLog && this.logSystem.log("我方： 取消选中 " + choosePiece)
+        this.logEvents.forEach(f => f("我方： 取消选中 " + choosePiece))
         return this.redraw()
       }
       // 切换选中棋子
       this.choosePiece.isChoose = false
-      this.isLog && this.logSystem.log(`我方：切换 选中棋子 由${this.choosePiece} --> ${choosePiece}`);
+      this.logEvents.forEach(f => f(`我方：切换 选中棋子 由${this.choosePiece} --> ${choosePiece}`))
       this.choosePiece = choosePiece
       this.choosePiece.isChoose = true
       this.redraw()
@@ -674,30 +580,30 @@ export default class Game {
 
 
     // 如果点击的的棋子是敌方 ，要移动到敌方的棋子位置上
-    this.isLog && this.logSystem.log(`当前：${this.currentSide} ,棋子:${this.choosePiece} 需要移动到：${clickPoint} 这个点上，并且要吃掉 ${choosePiece}`);
+    this.logEvents.forEach(f => f(`当前：${this.currentSide} ,棋子:${this.choosePiece} 需要移动到：${clickPoint} 这个点上，并且要吃掉 ${choosePiece}`))
     const moveFlag = this.choosePiece.move(clickPoint, this.livePieceList)
     if (moveFlag.flag) {
       this.eatPeice(clickPoint)
       return
     }
-    this.audioSystem?.playFail()
-    this.isLog && this.logSystem.fail(moveFlag.message);
+    this.moveFailEvents.forEach(f => f(this.choosePiece as ChessOfPeice, clickPoint, false, moveFlag.message))
   }
 
   moveStr(str: string) {
-    console.log(this.currentSide, str);
+    this.logEvents.forEach(f => f(`当前 ${this.currentSide} 输出：${str}`))
     const res = getPieceInfo(str, this.currentSide, this.livePieceList)
     if (!res) {
-      return console.log("未找到棋子");
+      this.logEvents.forEach(f => f("未找到棋子"))
+      return
     }
     if (this.choosePiece) {
       this.choosePiece.isChoose = false
       this.choosePiece = null
     }
-    console.log(res);
     const posPeice = findPiece(this.livePieceList, res.mp)
     if (posPeice && posPeice.side === this.currentSide) {
-      return console.error("移动的位置有己方棋子")
+      this.logEvents.forEach(f => f("移动的位置有己方棋子"))
+      return
     }
     this.choosePiece = res.choose
     this.choosePiece.isChoose = true
@@ -715,13 +621,68 @@ export default class Game {
       console.log("请选择删除的棋子");
     }
   }
-  setPeicePoint(x: number, y: number) {
-    if (this.choosePiece) {
-      this.choosePiece.x = x
-      this.choosePiece.y = y
-      this.redraw()
+  /**
+   * 监听棋盘点击
+   */
+  listenClick(e: MouseEvent) {
+    const { offsetX: x, offsetY: y } = e
+    // 游戏开始
+    if (this.gameState === "INIT") {
+      this.logEvents.forEach(f => f("请选择红黑方"))
+      return
+    }
+    // 游戏结束
+    if (this.gameState === "OVER") {
+      this.logEvents.forEach(f => f("棋盘结束 等待重开！"))
+      return
+    }
+    // 正在移动
+    if (this.isMoving) {
+      this.logEvents.forEach(f => f("棋子正在移动，无法做任何操作"))
+      return
+    }
+    const clickPoint = this.getGridPosition({ x, y })
+    if (!clickPoint) {
+      return
+    }
+    this.move(clickPoint)
+  }
+  on(e: "move", fn: MoveCallback): void;
+  on(e: "moveFail", fn: MoveFailCallback): void;
+  on(e: "log", fn: GameLogCallback): void;
+  on(e: "over", fn: GameOverCallback): void;
+  on(e: GameEventName, fn: GameEventCallback) {
+    if (typeof fn === "function") {
+      if (e === "log") {
+        this.logEvents.push(fn as GameLogCallback)
+      } else if (e === "move") {
+        this.moveEvents.push(fn as MoveCallback)
+      } else if (e === "moveFail") {
+        this.moveFailEvents.push(fn as MoveFailCallback)
+      } else if (e === "over") {
+        this.overEvents.push(fn as GameOverCallback)
+      }
     } else {
-      console.log("请选择移动的棋子");
+      throw new Error("监听函数值应该为 function 类型")
+    }
+  }
+  removeEvent(e: "move", fn: MoveCallback): void;
+  removeEvent(e: "moveFail", fn: MoveFailCallback): void;
+  removeEvent(e: "log", fn: GameLogCallback): void;
+  removeEvent(e: "over", fn: GameOverCallback): void;
+  removeEvent(e: GameEventName, fn: GameEventCallback) {
+    if (typeof fn === "function") {
+      if (e === "log") {
+        this.logEvents = this.logEvents.filter(f => f !== fn)
+      } else if (e === "move") {
+        this.moveEvents = this.logEvents.filter(f => f !== fn)
+      } else if (e === "moveFail") {
+        this.moveFailEvents = this.logEvents.filter(f => f !== fn)
+      } else if (e === "over") {
+        this.overEvents = this.logEvents.filter(f => f !== fn)
+      }
+    } else {
+      throw new Error("监听函数值应该为 function 类型")
     }
   }
 }

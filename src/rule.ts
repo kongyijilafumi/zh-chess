@@ -34,9 +34,9 @@ export class GameRule {
     const sidesideGeneralPoint = new Point(sideGeneralPiece.x, sideGeneralPiece.y)
     const hasTrouble = enemySidePeiecList.some(item => {
       const mf = item.move(sidesideGeneralPoint, list)
-      if (mf.flag) {
-        console.log(`${item} 可以 直接 攻击 ${sideGeneralPiece}`);
-      }
+      // if (mf.flag) {
+      //   console.log(`${item} 可以 直接 攻击 ${sideGeneralPiece}`);
+      // }
       return mf.flag
     })
     return hasTrouble
@@ -84,7 +84,7 @@ export class GameRule {
         const hasEat = findPiece(pl, p)
         const checkPoint: CheckPoint = hasEat ? { eat: p } : { move: p }
         const hasSolution = !this.checkGeneralInTrouble(enemySide, item, checkPoint, pl)
-        console.log(`${item} 移动到 ${p}点 ${enemySide}方 ${!hasSolution ? '有' : '没有'} 危险！${hasSolution ? "有" : "无"}解法`);
+        // console.log(`${item} 移动到 ${p}点 ${enemySide}方 ${!hasSolution ? '有' : '没有'} 危险！${hasSolution ? "有" : "无"}解法`);
         return hasSolution
       })
     })

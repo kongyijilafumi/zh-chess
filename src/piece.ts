@@ -53,6 +53,9 @@ export class RookPiece extends Piece {
   }
 
   move(p: Point | MovePoint, pieceList: PieceList): MoveFlag {
+    if (p.x < 0 || p.x > 8 || p.y < 0 || p.y > 9) {
+      return { flag: false, message: "移动位置不符合规则" }
+    }
     // 如果在 x,y 轴上移动
     if (this.y === p.y || this.x === p.x) {
       const list = this.getMoveObstaclePieceList(p, pieceList)
@@ -215,6 +218,9 @@ export class CannonPiece extends RookPiece {
     super(info)
   }
   move(p: Point, pieceList: PieceList): MoveFlag {
+    if (p.x < 0 || p.x > 8 || p.y < 0 || p.y > 9) {
+      return { flag: false, message: "移动位置不符合规则" }
+    }
     // 如果在 x, y 轴上移动
     if (this.y === p.y || this.x === p.x) {
       const list = this.getMoveObstaclePieceList(p, pieceList)

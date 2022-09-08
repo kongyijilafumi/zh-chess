@@ -6,11 +6,12 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
-  <script src="./chess.min.js"></script>
+  <script src="../dist/chess.browser.js"></script>
 
   <style>
     #app {
-      height: 100px;
+      height: 375px;
+      width: 375px;
     }
 
     select {
@@ -24,7 +25,7 @@
 </head>
 
 <body>
-  <canvas id="app"></canvas>
+  <canvas id="app" width="375" height="375"></canvas>
   <div>
     选择红黑方：
     <select class="side"> </select>
@@ -54,6 +55,18 @@
     </select>
     <button class="word_1">发送</button>
   </div>
+  <div class="select_6">
+    文字移动3：
+    <select class="first">
+    </select>
+    <select class="second">
+    </select>
+    <select class="third">
+    </select>
+    <select class="fourth">
+    </select>
+    <button class="word_1">发送</button>
+  </div>
   <div class="select_3">
     随意移动模式：
     <select class="first">
@@ -61,27 +74,30 @@
     <button class="word_2">确定</button>
 
   </div>
-  <div class="select_4">
-    设置位置：
-    <select class="first">
-    </select>
-    <select class="second">
-    </select>
-    <button class="word_3">确定</button>
-  </div>
   <div class="select_5">
     删除选中棋子： <button class="del">删除</button>
   </div>
 </body>
 <script>
-  let zhchess = new ZhChess({ id: "app", gameWidth: 375, gameHeight: 375, gamePadding: 20 })
+  const app = document.getElementById("app")
+  const ctx = app.getContext("2d")
+
+  let zhchess = new ZhChess({ ctx, gameWidth: 375, gameHeight: 375, gamePadding: 20, scaleRatio: window.devicePixelRatio })
+  app.addEventListener("click", zhchess.listenClick, false)
+  zhchess.on("log", console.log)
+  zhchess.on("moveFail", console.error)
+  zhchess.on("move", console.log)
+  zhchess.on("over", function (side) {
+    console.log(side + "方，赢了！");
+    zhchess.gameStart(side === "RED" ? "BLACK" : "RED")
+  })
 </script>
 <script>
   var side = [{ lab: "红方", val: "RED" }, { lab: "黑方", val: "BLACK" }]
   document.querySelector(".side").innerHTML = side.map(i => `<option value="${i.val}">${i.lab}</option>`)
   document.querySelector(".side_btn").addEventListener("click", function () {
     const side = this.parentElement.querySelector(".side").value
-    zhchess.setGameSide(side)
+    zhchess.gameStart(side)
   })
 
 
@@ -101,6 +117,11 @@
   document.querySelector(".select_2").querySelector(".third").innerHTML = move.map(i => `<option value="${i}">${i}</option>`)
 
 
+  document.querySelector(".select_6").querySelector(".first").innerHTML = moveStyle.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_6").querySelector(".second").innerHTML = num.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_6").querySelector(".fourth").innerHTML = num.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_6").querySelector(".third").innerHTML = move.map(i => `<option value="${i}">${i}</option>`)
+
   document.querySelectorAll(".word_1").forEach(item => {
     item.addEventListener("click", function () {
       let first = this.parentElement.querySelector(".first").value
@@ -112,19 +133,13 @@
   })
   var setMode = [{ lab: "是", val: 1 }, { lab: "否", val: 0 }]
   document.querySelector(".select_3").querySelector(".first").innerHTML = setMode.map(i => `<option value="${i.val}">${i.lab}</option>`)
-  document.querySelector(".select_4").querySelector(".first").innerHTML = num.map(i => `<option value="${i}">${i}</option>`)
-  document.querySelector(".select_4").querySelector(".second").innerHTML = num.map(i => `<option value="${i}">${i}</option>`)
+
 
   document.querySelector(".word_2").addEventListener("click", function () {
     let first = this.parentElement.querySelector(".first").value
     zhchess.isSetMode = first === "1"
   })
 
-  document.querySelector(".word_3").addEventListener("click", function () {
-    let first = this.parentElement.querySelector(".first").value
-    let second = this.parentElement.querySelector(".second").value
-    zhchess.setPeicePoint(Number(first), Number(second))
-  })
 
   document.querySelector(".del").addEventListener("click", () => {
     zhchess.deletePeice()

@@ -6,17 +6,22 @@ export default [
     input: "./src/index.ts",
     output: [
       { //browser  
-        file: "./dist/chess.min.js",
+        file: "./dist/chess.browser.js",
         name: "ZhChess",
         format: "iife",
-        sourcemap: false
+        sourcemap: true
       },
       {//node  
         file: "./dist/chess.cjs.js",
         name: "ZhChess",
         format: "cjs",
-        sourcemap: false,
+        sourcemap: true,
         exports: "default"
+      }, {
+        file: "./dist/chess.es.js",
+        name: "ZhChess",
+        format: "amd",
+        sourcemap: true,
       }
     ],
     plugins: [
