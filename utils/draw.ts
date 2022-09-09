@@ -1,5 +1,5 @@
-import { ChessOfPeice } from '../src/piece';
-import { Point, SquarePoints, PieceInfo } from '../types';
+import type { ChessOfPeice } from '../src/piece';
+import type { Point, SquarePoints, PieceInfo } from '../types';
 
 
 

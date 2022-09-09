@@ -10,10 +10,6 @@ export const peiceSideMap: PieceSideMap = {
   "RED": "红方",
   "BLACK": "黑方"
 }
-export type PieceType =
-  1 | //能过河
-  2 | // 不能过河
-  3 // 只能在帅 附近活动
 
 export interface PieceInfo {
   x: number,
@@ -52,17 +48,6 @@ export class MovePoint extends Point {
 
 export type MovePointList = Array<MovePoint>
 
-// export interface GameWindowInfo {
-//   startX: number
-//   startY: number
-//   endX: number
-//   endY: number
-//   gridWidth: number
-//   gridHeight: number
-//   radius: number
-//   ww: number
-//   wh: number
-// }
 
 
 export interface MoveSuccess {

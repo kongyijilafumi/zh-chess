@@ -1,10 +1,11 @@
-import { GameState, PieceSide, Point, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint } from './../types/index';
+import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint } from '../types';
+import { Point } from '../types';
 import { GameRule } from './rule';
-import { findPiece, getPieceInfo } from './../utils/index';
+import { findPiece, getPieceInfo } from '../utils';
 import { getPiecesList, } from './data';
 import { getSquarePoints } from '../utils/draw';
-import { ChessOfPeice, PieceList, chessOfPeiceMap } from './piece';
-
+import type { ChessOfPeice, PieceList } from './piece';
+import { chessOfPeiceMap } from "./piece"
 type CTX = CanvasRenderingContext2D
 
 type GameInfo = {
@@ -686,3 +687,6 @@ export default class Game {
     }
   }
 }
+
+export * from "./piece"
+export * from "../types"

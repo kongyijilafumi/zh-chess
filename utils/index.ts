@@ -1,6 +1,7 @@
-import { ChessOfPeiceName } from './../src/piece';
-import { PieceSide, Point } from './../types/index';
-import { chessOfPeiceMap, PieceList } from '../src/piece';
+import type { ChessOfPeiceName, PieceList } from './../src/piece';
+import type { PieceSide, } from '../types';
+import { Point } from '../types';
+import { chessOfPeiceMap } from '../src/piece';
 export const getCtxWidth = () => {
   const deviceWidth = window.screen.availWidth
   const isLargDevice = deviceWidth > 800

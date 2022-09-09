@@ -18,7 +18,7 @@ export default [
         sourcemap: true,
         exports: "default"
       }, {
-        file: "./dist/chess.es.js",
+        file: "./dist/chess.mjs",
         name: "ZhChess",
         format: "amd",
         sourcemap: true,

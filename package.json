@@ -3,8 +3,12 @@
   "version": "1.0.0",
   "description": "A Chinese chess framework that supports browsers and nodejs",
   "main": "./dist/chess.cjs.js",
-  "module": "./dist/chess.es.js",
-  "typings": "./src/index.ts",
+  "module": "./dist/chess.cjs.js",
+  "types": "./src/index.ts",
+  "browser": {
+    "./dist/chess.cjs.js": "./dist/chess.cjs.js",
+    "./dist/chess.mjs": "./dist/chess.mjs"
+  },
   "scripts": {
     "dev": "rollup -c -w",
     "bulid": "rollup -c"

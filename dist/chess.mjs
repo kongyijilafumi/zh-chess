@@ -1547,4 +1547,4 @@ define((function () { 'use strict';
     return Game;
 
 }));
-//# sourceMappingURL=chess.es.js.map
+//# sourceMappingURL=chess.mjs.map
