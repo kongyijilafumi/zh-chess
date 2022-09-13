@@ -318,16 +318,3 @@ function formatChooseNum(str: string): number {
       return 10
   }
 }
-
-function formatMoveStyle(str: string): string {
-  switch (str) {
-    case "进": case "進":
-      return "进"
-    case "平":
-      return "平"
-    case "退": case "后":
-      return "退"
-    default:
-      return ""
-  }
-}
