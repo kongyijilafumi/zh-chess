@@ -1,4 +1,4 @@
-import { PieceInfo, PieceSide, Point, MovePoint, MoveFlag, MovePointList } from './../types/index';
+import { PieceInfo, PieceSide, Point, MovePoint, MoveFlag, MovePointList } from './types';
 const notExistPoint = { x: 10, y: 10 }
 export class Piece implements PieceInfo {
   x: number
@@ -68,8 +68,8 @@ export class RookPiece extends Piece {
     return { flag: false, message: "移动位置不符合规则" }
   }
   getMovePoints(pl: PieceList): MovePointList {
-    const xpoints: MovePointList = Array.from({ length: 9 }, (v, k) => new MovePoint(k, this.y, notExistPoint))
-    const ypoints: MovePointList = Array.from({ length: 10 }, (v, k) => new MovePoint(this.x, k, notExistPoint))
+    const xpoints: MovePointList = Array.from({ length: 9 }, (_v, k) => new MovePoint(k, this.y, notExistPoint))
+    const ypoints: MovePointList = Array.from({ length: 10 }, (_v, k) => new MovePoint(this.x, k, notExistPoint))
     const points = xpoints.concat(ypoints).filter(i => !(this.x === i.x && this.y === i.y))
     if (!pl) {
       return points

@@ -1,6 +1,4 @@
-import { ModalOptionList } from './../types/index';
 import { RookPiece, HorsePiece, ElephantPiece, CannonPiece, KnightPiece, GeneralPiece, SoldierPiece, ChessOfPeice } from './piece';
-
 
 export const getPiecesList = (r: number) => {
   const piecesList: Array<ChessOfPeice> = []
@@ -41,16 +39,3 @@ export const getPiecesList = (r: number) => {
   return piecesList
 }
 
-
-export const gameOverOptions: ModalOptionList = [
-  {
-    lab: "重开",
-    val: "restart"
-  },
-  {
-    lab: "保存对局并且重开",
-    val: "saveToRestart"
-  }
-]
-
-export const gameInitOpions: ModalOptionList = [{ lab: "红方", val: "RED" }, { lab: "黑方", val: "BLACK" }]

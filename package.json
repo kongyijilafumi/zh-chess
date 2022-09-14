@@ -2,13 +2,10 @@
   "name": "zh-chess",
   "version": "1.0.0",
   "description": "A Chinese chess framework that supports browsers and nodejs",
-  "main": "./dist/chess.cjs.js",
-  "module": "./dist/chess.cjs.js",
-  "types": "./src/index.ts",
-  "browser": {
-    "./dist/chess.cjs.js": "./dist/chess.cjs.js",
-    "./dist/chess.mjs": "./dist/chess.mjs"
-  },
+  "main": "./lib/zh-chess.cjs.js",
+  "module": "./lib/zh-chess.es.js",
+  "browser": "./lib/zh-chess.browser.js",
+  "types": "./lib/zh-chess.d.ts",
   "scripts": {
     "dev": "rollup -c -w",
     "bulid": "rollup -c"
@@ -26,8 +23,9 @@
     "@babel/preset-env": "^7.18.10",
     "@rollup/plugin-node-resolve": "^13.3.0",
     "@rollup/plugin-typescript": "^8.4.0",
+    "rollup": "^2.79.0",
+    "rollup-plugin-dts": "^4.2.2",
     "tslib": "^2.4.0",
-    "typescript": "^4.8.2",
-    "rollup": "^2.79.0"
+    "typescript": "^4.8.2"
   }
 }

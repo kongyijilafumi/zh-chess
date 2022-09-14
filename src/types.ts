@@ -1,5 +1,4 @@
-import { ChessOfPeice } from './../src/piece';
-import { ChessOfPeiceName } from '../src/piece';
+import type { ChessOfPeiceName, ChessOfPeice } from './piece';
 
 export type PieceSide = "RED" | "BLACK"
 type PieceSideCN = "红方" | "黑方"

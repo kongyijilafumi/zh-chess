@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
-  <script src="../dist/chess.browser.js"></script>
+  <script src="../lib/zh-chess.browser.js"></script>
 
   <style>
     #app {
@@ -82,7 +82,7 @@
   const app = document.getElementById("app")
   const ctx = app.getContext("2d")
 
-  let zhchess = new ZhChess({ ctx, gameWidth: 375, gameHeight: 375, gamePadding: 20, scaleRatio: window.devicePixelRatio })
+  let zhchess = new zhChess.default({ ctx, gameWidth: 375, gameHeight: 375, gamePadding: 20, scaleRatio: window.devicePixelRatio })
   app.addEventListener("click", zhchess.listenClick, false)
   zhchess.on("log", console.log)
   zhchess.on("moveFail", console.error)

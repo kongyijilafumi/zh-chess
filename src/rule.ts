@@ -1,6 +1,6 @@
 import { findPiece } from './../utils/index';
 import { ChessOfPeice, PieceList, chessOfPeiceMap, GeneralPiece } from './piece';
-import { PieceSide, CheckPoint, PieceInfo, Point } from '../types/index';
+import { PieceSide, CheckPoint, PieceInfo, Point } from './types';
 
 export class GameRule {
   /**

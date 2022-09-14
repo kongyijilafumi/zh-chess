@@ -1,5 +1,5 @@
-import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint } from '../types';
-import { Point } from '../types';
+import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint } from './types';
+import { Point } from './types';
 import { GameRule } from './rule';
 import { findPiece, getPieceInfo } from '../utils';
 import { getPiecesList, } from './data';
@@ -687,6 +687,5 @@ export default class Game {
     }
   }
 }
-
 export * from "./piece"
-export * from "../types"
+export * from "./types"
