@@ -198,10 +198,6 @@ declare class Game {
      */
     moveSpeed: number;
     /**
-     * 将军验证规则
-     */
-    private rule;
-    /**
      * 玩家方
      */
     private gameSide;
@@ -216,11 +212,11 @@ declare class Game {
     /**
      * 游戏进行状态
      */
-    gameState: GameState;
-    moveEvents: Array<MoveCallback>;
-    moveFailEvents: Array<MoveFailCallback>;
-    logEvents: Array<GameLogCallback>;
-    overEvents: Array<GameOverCallback>;
+    private gameState;
+    private moveEvents;
+    private moveFailEvents;
+    private logEvents;
+    private overEvents;
     constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio }: GameInfo);
     /**
      * 设置游戏窗口 棋盘
@@ -312,7 +308,34 @@ declare class Game {
      * @param clickPoint 移动点
      */
     private move;
-    moveStr(str: string): void;
+    moveStr(str: string, side: PieceSide): void;
+    /**
+     * 游戏是否结束
+     */
+    gameOver(): boolean;
+    /**
+     * 根据某方移动棋子判断自己将领是否安全
+     * @param side 移动方
+     * @param pos 移动棋子
+     * @param cp 是去吃棋子还是移动棋子
+     * @param pl 当前棋盘列表
+     * @returns 是否安全
+     */
+    private checkGeneralInTrouble;
+    /**
+     * 检查棋子移动 双方将领在一条直线上 false 不危险 true 危险
+     * @param pl 假设移动后的棋子列表
+     * @param side 当前下棋方
+     * @returns 是否危险
+     */
+    private checkGeneralsFaceToFaceInTrouble;
+    /**
+     * 判断敌方被将军时，是否有解
+     * @param enemySide 敌方
+     * @param pl 当前棋盘列表
+     * @returns  返回是否有解
+     */
+    private checkEnemySideInTroubleHasSolution;
     /**
      * 监听棋盘点击
      */

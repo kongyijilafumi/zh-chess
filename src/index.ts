@@ -1,11 +1,9 @@
 import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint, GamePeiceGridDiffX, GamePeiceGridDiffY } from './types';
-import { Point } from './types';
-import { GameRule } from './rule';
-import { findPiece, getPieceInfo } from '../utils';
+import { Point, PieceInfo } from './types';
+import { findPiece, parseStrToPoint } from '../utils';
 import { getPiecesList, } from './data';
 import { getSquarePoints } from '../utils/draw';
-import type { ChessOfPeice, PieceList } from './piece';
-import { chessOfPeiceMap } from "./piece"
+import { ChessOfPeice, GeneralPiece, PieceList, chessOfPeiceMap } from './piece';
 type CTX = CanvasRenderingContext2D
 
 type GameInfo = {
@@ -86,10 +84,6 @@ export default class Game {
    */
   moveSpeed: number
   /**
-   * 将军验证规则
-   */
-  private rule: GameRule
-  /**
    * 玩家方
    */
   private gameSide!: PieceSide
@@ -104,12 +98,12 @@ export default class Game {
   /**
    * 游戏进行状态
    */
-  gameState!: GameState
+  private gameState!: GameState
 
-  moveEvents: Array<MoveCallback>
-  moveFailEvents: Array<MoveFailCallback>
-  logEvents: Array<GameLogCallback>
-  overEvents: Array<GameOverCallback>
+  private moveEvents: Array<MoveCallback>
+  private moveFailEvents: Array<MoveFailCallback>
+  private logEvents: Array<GameLogCallback>
+  private overEvents: Array<GameOverCallback>
   constructor({ ctx, gameWidth = 800, gameHeight = 800, gamePadding = 20, scaleRatio = 1 }: GameInfo) {
     if (!ctx) {
       throw new Error("请传入画布")
@@ -122,7 +116,6 @@ export default class Game {
     // 设置 缩放 来解决移动端模糊问题
     this.ctx.scale(scaleRatio, scaleRatio)
     this.listenClick = this.listenClick.bind(this)
-    this.rule = new GameRule()
     this.gridPostionList = []
     this.setGridList()
 
@@ -185,7 +178,6 @@ export default class Game {
   private init() {
     this.isMoving = false
     this.currentSide = "RED"
-    this.gameState = "INIT"
     this.choosePiece = null
     this.deadPieceList = []
     this.ctx.clearRect(0, 0, this.width, this.height)
@@ -417,7 +409,7 @@ export default class Game {
       const side = this.currentSide
       const eatPeice = findPiece(this.livePieceList, p)
       const lastChoosePeice = this.choosePiece
-      const hasTrouble = this.rule.checkGeneralInTrouble(side, this.choosePiece, { eat: p }, this.livePieceList)
+      const hasTrouble = this.checkGeneralInTrouble(side, this.choosePiece, { eat: p }, this.livePieceList)
       if (hasTrouble) {
         this.moveFailEvents.forEach(f => f(lastChoosePeice, p, true, "不可以送将！"))
         return
@@ -441,12 +433,12 @@ export default class Game {
     const enemySide: PieceSide = side === "RED" ? "BLACK" : "RED"
     const checkPoint: CheckPoint = isEat ? { eat: p } : { move: p }
     this.movePeice(p, drawList).then(() => {
-      const enemyhasTrouble = this.rule.checkGeneralInTrouble(enemySide, mp, { move: p }, drawList)
+      const enemyhasTrouble = this.checkGeneralInTrouble(enemySide, mp, { move: p }, drawList)
       if (enemyhasTrouble) {
         const movedPeiceList = drawList.filter(i => !(i.x === mp.x && i.y === mp.y))
         const newMp = chessOfPeiceMap[mp.name]({ ...mp, ...p })
         movedPeiceList.push(newMp)
-        const hasSolution = this.rule.checkEnemySideInTroubleHasSolution(enemySide, movedPeiceList)
+        const hasSolution = this.checkEnemySideInTroubleHasSolution(enemySide, movedPeiceList)
         if (!hasSolution) {
           this.gameState = "OVER"
           this.overEvents.forEach(f => f(side))
@@ -525,7 +517,7 @@ export default class Game {
       const moveFlag = this.choosePiece.move(clickPoint, this.livePieceList)
       let mp = this.choosePiece
       if (moveFlag.flag) {
-        const hasTrouble = this.rule.checkGeneralInTrouble(this.currentSide, this.choosePiece, { move: clickPoint }, this.livePieceList)
+        const hasTrouble = this.checkGeneralInTrouble(this.currentSide, this.choosePiece, { move: clickPoint }, this.livePieceList)
         if (hasTrouble) {
           this.moveFailEvents.forEach(f => f(mp, clickPoint, true, "不可以送将！"))
           return
@@ -566,9 +558,13 @@ export default class Game {
     this.moveFailEvents.forEach(f => f(this.choosePiece as ChessOfPeice, clickPoint, false, moveFlag.message))
   }
 
-  moveStr(str: string) {
+  moveStr(str: string, side: PieceSide) {
     this.logEvents.forEach(f => f(`当前 ${this.currentSide} 输出：${str}`))
-    const res = getPieceInfo(str, this.currentSide, this.livePieceList)
+    if (this.currentSide !== side) {
+      this.logEvents.forEach(f => f(`当前为${this.currentSide}方下棋，请等待！`))
+      return
+    }
+    const res = parseStrToPoint(str, this.currentSide, this.livePieceList)
     if (!res) {
       this.logEvents.forEach(f => f("未找到棋子"))
       return
@@ -586,6 +582,96 @@ export default class Game {
     this.choosePiece.isChoose = true
     this.move(res.mp)
   }
+  /**
+   * 游戏是否结束
+   */
+  gameOver() {
+    return this.gameState === "OVER"
+  }
+  /**
+   * 根据某方移动棋子判断自己将领是否安全
+   * @param side 移动方
+   * @param pos 移动棋子
+   * @param cp 是去吃棋子还是移动棋子
+   * @param pl 当前棋盘列表
+   * @returns 是否安全
+   */
+  private checkGeneralInTrouble(side: PieceSide, pos: ChessOfPeice, cp: CheckPoint, pl: PieceList) {
+    const enemySide: PieceSide = side === "BLACK" ? "RED" : "BLACK"
+    let list: PieceList;
+    if ("move" in cp) {
+      const pieceInfo = { ...pos, x: cp.move.x, y: cp.move.y } as PieceInfo
+      const piece = chessOfPeiceMap[pieceInfo.name](pieceInfo)
+      list = pl.filter(i => !(i.x === pos.x && i.y === pos.y))
+      list.push(piece)
+    } else {
+      const pieceInfo = { ...pos, x: cp.eat.x, y: cp.eat.y } as PieceInfo
+      const piece = chessOfPeiceMap[pieceInfo.name](pieceInfo)
+      list = pl.filter(i => !(i.x === cp.eat.x && i.y === cp.eat.y) && !(i.x === pos.x && i.y === pos.y))
+      list.push(piece)
+    }
+    const isFaceToFace = this.checkGeneralsFaceToFaceInTrouble(list)
+    if (isFaceToFace) {
+      return true
+    }
+    const enemySidePeiecList = list.filter(i => i.side === enemySide)
+    const sideGeneralPiece = list.find(i => i.side === side && i instanceof GeneralPiece) as GeneralPiece
+    const sidesideGeneralPoint = new Point(sideGeneralPiece.x, sideGeneralPiece.y)
+    const hasTrouble = enemySidePeiecList.some(item => {
+      const mf = item.move(sidesideGeneralPoint, list)
+      // if (mf.flag) {
+      //   console.log(`${item} 可以 直接 攻击 ${sideGeneralPiece}`);
+      // }
+      return mf.flag
+    })
+    return hasTrouble
+  }
+
+  /**
+   * 检查棋子移动 双方将领在一条直线上 false 不危险 true 危险
+   * @param pl 假设移动后的棋子列表
+   * @param side 当前下棋方
+   * @returns 是否危险
+   */
+  private checkGeneralsFaceToFaceInTrouble(pl: PieceList) {
+    const points = pl.filter(i => i instanceof GeneralPiece).map(i => ({ x: i.x, y: i.y }))
+    const max = points[0].y > points[1].y ? points[0].y : points[1].y
+    const min = points[0].y < points[1].y ? points[0].y : points[1].y
+    // 在同一条直线上
+    if (points[0].x === points[1].x) {
+      const hasPeice = pl.find(i => i.y < max && i.y > min && i.x === points[0].x)
+      // 如果有棋子 说明可以安全移动 
+      if (hasPeice) {
+        return false
+      }
+      return true
+    }
+    return false
+  }
+  /**
+   * 判断敌方被将军时，是否有解
+   * @param enemySide 敌方
+   * @param pl 当前棋盘列表
+   * @returns  返回是否有解
+   */
+  private checkEnemySideInTroubleHasSolution(enemySide: PieceSide, pl: PieceList) {
+    return pl.filter(i => i.side === enemySide).some(item => {
+      const mps = item.getMovePoints(pl)
+      // 是否有解法
+      return mps.some(p => {
+        const isDis = findPiece(pl, p.disPoint)
+        if (isDis) {
+          return false
+        }
+        const hasEat = findPiece(pl, p)
+        const checkPoint: CheckPoint = hasEat ? { eat: p } : { move: p }
+        const hasSolution = !this.checkGeneralInTrouble(enemySide, item, checkPoint, pl)
+        // console.log(`${item} 移动到 ${p}点 ${enemySide}方 ${!hasSolution ? '有' : '没有'} 危险！${hasSolution ? "有" : "无"}解法`);
+        return hasSolution
+      })
+    })
+  }
+
 
   /**
    * 监听棋盘点击
@@ -664,3 +750,7 @@ export default class Game {
 }
 export type { ChessOfPeice, PieceList, ChessOfPeiceName, ChessOfPeiceMap } from "./piece"
 export * from "./types"
+
+// const g = new Game({ ctx: {} as CTX })
+
+// g.

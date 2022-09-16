@@ -2,19 +2,7 @@ import type { ChessOfPeiceName, PieceList } from './../src/piece';
 import type { PieceSide, } from '../src/types';
 import { Point } from '../src/types';
 import { chessOfPeiceMap } from '../src/piece';
-export const getCtxWidth = () => {
-  const deviceWidth = window.screen.availWidth
-  const isLargDevice = deviceWidth > 800
-  return isLargDevice ? 800 : deviceWidth
-}
-
-export const getBorderWidth = () => {
-  return getCtxWidth() === 800 ? 20 : 5
-}
-
-export const getPaddingWidth = () => {
-  return getCtxWidth() === 800 ? 30 : 5
-}
+ 
 /**
 * 根据棋盘列表位置返回棋子 可能该位置没有棋子
 * @param pl 棋盘列表
@@ -24,23 +12,6 @@ export const getPaddingWidth = () => {
 export const findPiece = (pl: PieceList, p: Point) => pl.find(item => item.x === p.x && item.y === p.y)
 
 
-export const getModalWidth = () => {
-  const deviceWidth = getCtxWidth()
-  return deviceWidth === 800 ? 500 : deviceWidth - 30
-}
-
-export const isPc = () => {
-  var UA = window.navigator.userAgent.toLowerCase();
-  return !(
-    UA.indexOf("phone") !== -1 ||
-    UA.indexOf("mobile") !== -1 ||
-    UA.indexOf("android") !== -1 ||
-    UA.indexOf("ipad") !== -1 ||
-    UA.indexOf("ipod") !== -1
-  );
-}
-
-
 const numPos = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 const zhnumPos = ["一", "二", "三", "四", "五", "六", "七", "八", "九"]
 const strPos = ["前", "中", "后"]
@@ -48,10 +19,13 @@ const moveStyles = ["进", "平", "退"]
 const numMergePos = numPos.concat(zhnumPos)
 const numMergePosStr = numMergePos.join("|")
 const PieceNames = Object.keys(chessOfPeiceMap)
-const move_reg_one = new RegExp(`(${strPos.concat(numMergePos).join("|")})(${PieceNames.join("|")})(${moveStyles.join("|")})(${numMergePosStr})$`)
-const move_reg_two = new RegExp(`(${PieceNames.join("|")})(${numMergePosStr})(${moveStyles.join("|")})(${numMergePosStr})$`)
-const move_reg_three = new RegExp(`(${strPos.join("|")})(${numMergePosStr})(${moveStyles.join("|")})(${numMergePosStr})$`)
-export const getPieceInfo = (str: string, side: PieceSide, pl: PieceList) => {
+// 前兵进一
+const parse_reg_1 = new RegExp(`(${strPos.concat(numMergePos).join("|")})(${PieceNames.join("|")})(${moveStyles.join("|")})(${numMergePosStr})$`)
+// 车9进1
+const parse_reg_2 = new RegExp(`(${PieceNames.join("|")})(${numMergePosStr})(${moveStyles.join("|")})(${numMergePosStr})$`)
+// 前6进1
+const parse_reg_3 = new RegExp(`(${strPos.join("|")})(${numMergePosStr})(${moveStyles.join("|")})(${numMergePosStr})$`)
+export const parseStrToPoint = (str: string, side: PieceSide, pl: PieceList) => {
   let strRes;
   const currentSidePieceList = pl.filter(p => p.side === side)
   const isRedSide = side === "RED"
@@ -60,7 +34,7 @@ export const getPieceInfo = (str: string, side: PieceSide, pl: PieceList) => {
   const sideOpposite = isRedSide ? 1 : - 1
   // 前6进1 只有兵才会出现这种情况
   let strRes1;
-  if (move_reg_three.test(str) && (strRes1 = move_reg_three.exec(str))) {
+  if (parse_reg_3.test(str) && (strRes1 = parse_reg_3.exec(str))) {
     const pieceXPos = Math.abs((formatChooseNum(strRes1[2]) - 1) - pieceDiffX);
     const moveStyle = strRes1[3];
     let moveStep = formatChooseNum(strRes1[4]);
@@ -93,8 +67,8 @@ export const getPieceInfo = (str: string, side: PieceSide, pl: PieceList) => {
     }
   }
   //  前车进八  or  一兵进1
-  if (move_reg_one.test(str) && (strRes = move_reg_one.exec(str))) {
-    move_reg_one.lastIndex = 0
+  if (parse_reg_1.test(str) && (strRes = parse_reg_1.exec(str))) {
+    parse_reg_1.lastIndex = 0
     // 获得 棋子名字
     let pieceName = getSidePieceName(strRes[2] as ChessOfPeiceName, side)
     let moveStyle = strRes[3], moveStep = formatChooseNum(strRes[4]);
@@ -212,7 +186,7 @@ export const getPieceInfo = (str: string, side: PieceSide, pl: PieceList) => {
   }
   // 车9进1
   let execRes
-  if (move_reg_two.test(str) && (execRes = move_reg_two.exec(str))) {
+  if (parse_reg_2.test(str) && (execRes = parse_reg_2.exec(str))) {
     let pieceName = getSidePieceName(execRes[1] as ChessOfPeiceName, side)
     const pieceXPos = formatChooseNum(execRes[2]) - 1;
     const moveStyle = execRes[3];
