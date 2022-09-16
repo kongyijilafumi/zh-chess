@@ -58,7 +58,7 @@ export interface MoveFail {
   message: string
 }
 
-export type MoveFlag = MoveSuccess | MoveFail
+export type MoveResult = MoveSuccess | MoveFail
 
 
 type Mp = {
@@ -99,3 +99,6 @@ export type GameOverCallback = (winnerSide: PieceSide) => void
 export type GameEventName = "move" | "moveFail" | "log" | "over"
 
 export type GameEventCallback = MoveCallback | MoveFailCallback | GameLogCallback | GameOverCallback
+
+export type GamePeiceGridDiffX = 8 | 0
+export type GamePeiceGridDiffY = 9 | 0

@@ -1,5 +1,6 @@
-import { PieceInfo, PieceSide, Point, MovePoint, MoveFlag, MovePointList } from './types';
+import { PieceInfo, PieceSide, Point, MovePoint, MoveResult, MovePointList } from './types';
 const notExistPoint = { x: 10, y: 10 }
+
 export class Piece implements PieceInfo {
   x: number
   y: number
@@ -52,7 +53,7 @@ export class RookPiece extends Piece {
     return list
   }
 
-  move(p: Point | MovePoint, pieceList: PieceList): MoveFlag {
+  move(p: Point | MovePoint, pieceList: PieceList): MoveResult {
     if (p.x < 0 || p.x > 8 || p.y < 0 || p.y > 9) {
       return { flag: false, message: "移动位置不符合规则" }
     }
@@ -110,7 +111,7 @@ export class HorsePiece extends Piece {
     }
     return this.filterMovePoints(mps, pl)
   }
-  move(p: Point, pieceList: PieceList): MoveFlag {
+  move(p: Point, pieceList: PieceList): MoveResult {
     const mps = this.getMovePoints(pieceList)
     const mp = mps.find(i => p.x === i.x && p.y === i.y)
     if (!mp) {
@@ -217,7 +218,7 @@ export class CannonPiece extends RookPiece {
   constructor(info: PieceInfo) {
     super(info)
   }
-  move(p: Point, pieceList: PieceList): MoveFlag {
+  move(p: Point, pieceList: PieceList): MoveResult {
     if (p.x < 0 || p.x > 8 || p.y < 0 || p.y > 9) {
       return { flag: false, message: "移动位置不符合规则" }
     }

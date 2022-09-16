@@ -1,4 +1,4 @@
-import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint } from './types';
+import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint, GamePeiceGridDiffX, GamePeiceGridDiffY } from './types';
 import { Point } from './types';
 import { GameRule } from './rule';
 import { findPiece, getPieceInfo } from '../utils';
@@ -96,16 +96,15 @@ export default class Game {
   /**
    * 玩家 x轴 格子距离相差
    */
-  private gridDiffX!: number
+  private gridDiffX!: GamePeiceGridDiffX
   /**
    * 玩家 y轴 格子距离相差
    */
-  private gridDiffY!: number
+  private gridDiffY!: GamePeiceGridDiffY
   /**
    * 游戏进行状态
    */
   gameState!: GameState
-  isSetMode: boolean;
 
   moveEvents: Array<MoveCallback>
   moveFailEvents: Array<MoveFailCallback>
@@ -129,7 +128,6 @@ export default class Game {
 
     this.moveSpeed = 8
     this.ctx = ctx
-    this.isSetMode = false
     this.setGameWindow(gameWidth, gameHeight, gamePadding)
     this.init()
   }
@@ -160,7 +158,7 @@ export default class Game {
   /**
    * 获取所有格子的坐标
    */
-  setGridList() {
+  private setGridList() {
     for (let i = 0; i < 9; i++) {
       for (let j = 0; j < 10; j++) {
         this.gridPostionList.push(new Point(i, j))
@@ -173,7 +171,7 @@ export default class Game {
    * @param p 点击点的 x,y 坐标
    * @returns 返回棋盘的x，y坐标轴
    */
-  getGridPosition(p: Point) {
+  private getGridPosition(p: Point) {
     return this.gridPostionList.find(item => {
       const x1 = Math.abs(item.x - this.gridDiffX) * this.gridWidth + this.startX
       const y1 = Math.abs(item.y - this.gridDiffY) * this.gridHeight + this.startY
@@ -193,7 +191,9 @@ export default class Game {
     this.ctx.clearRect(0, 0, this.width, this.height)
     this.drawChessLine();
   }
-
+  /**
+   * 初始化象棋个数
+   */
   private initPiece() {
     this.livePieceList = getPiecesList(this.radius)
     this.choosePiece = null
@@ -214,15 +214,15 @@ export default class Game {
    * @param piece 单个象棋
    */
   private drawSinglePeice(piece: ChessOfPeice, replaceXY?: boolean) {
-    const { startX, startY, gridWidth, gridHeight } = this
+    const { startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY } = this
     const bgfillStyle = piece.side === "BLACK" ? "#fdec9e" : "#feeca0";
     const textColor = piece.side === "BLACK" ? "#000" : "#c1190c";
     const borderColor = piece.isChoose ? "red" : "#000";
     let x = startX + piece.x * gridWidth;
     let y = startY + piece.y * gridHeight;
     if (replaceXY) {
-      x = startX + Math.abs(piece.x - this.gridDiffX) * gridWidth;
-      y = startY + Math.abs(piece.y - this.gridDiffY) * gridHeight;
+      x = startX + Math.abs(piece.x - gridDiffX) * gridWidth;
+      y = startY + Math.abs(piece.y - gridDiffY) * gridHeight;
     }
     let r = piece.radius, ty = 0;
     this.ctx.fillStyle = bgfillStyle;
@@ -238,7 +238,7 @@ export default class Game {
     if (piece.isChoose) {
       r = r / 0.98
       ty = piece.side === "RED" ? -3 : 3
-      ty = this.gridDiffY > 0 ? ty * -1 : ty
+      ty = gridDiffY > 0 ? ty * -1 : ty
     }
 
     // 象棋背景
@@ -330,8 +330,6 @@ export default class Game {
     }
   }
 
-
-
   /**
    * 动画效果 绘画 棋子移动
    * @param mp 移动点
@@ -341,7 +339,6 @@ export default class Game {
   private activeMove(mp: Point, pl: PieceList, activePoint: Point): Promise<Point> {
     const dx = (activePoint.x - mp.x)
     const dy = (activePoint.y - mp.y)
-    // console.log(this.moveSpeed);
 
     const xstep = dx === 0 ? 0 : dx / this.moveSpeed
     const ystep = dy === 0 ? 0 : dy / this.moveSpeed
@@ -379,7 +376,7 @@ export default class Game {
    * @param drawPeiceList 需要画的棋子列表
    * @param moveCb 移动完的回调函数
    */
-  private movePeiec(p: Point, drawPeiceList: PieceList) {
+  private movePeice(p: Point, drawPeiceList: PieceList) {
     return new Promise<void>((res) => {
       if (this.choosePiece) {
         const { x, y } = this.choosePiece
@@ -443,7 +440,7 @@ export default class Game {
   private moveStart(mp: ChessOfPeice, p: Point, drawList: PieceList, side: PieceSide, isEat?: boolean) {
     const enemySide: PieceSide = side === "RED" ? "BLACK" : "RED"
     const checkPoint: CheckPoint = isEat ? { eat: p } : { move: p }
-    this.movePeiec(p, drawList).then(() => {
+    this.movePeice(p, drawList).then(() => {
       const enemyhasTrouble = this.rule.checkGeneralInTrouble(enemySide, mp, { move: p }, drawList)
       if (enemyhasTrouble) {
         const movedPeiceList = drawList.filter(i => !(i.x === mp.x && i.y === mp.y))
@@ -503,7 +500,7 @@ export default class Game {
    * 移动棋子
    * @param clickPoint 移动点
    */
-  move(clickPoint: Point) {
+  private move(clickPoint: Point) {
     const choosePiece = findPiece(this.livePieceList, clickPoint)
     // 在棋盘上 还没开始选中的点击
     if (!this.choosePiece) {
@@ -513,11 +510,6 @@ export default class Game {
       }
       // 点击到了敌方的棋子
       if (this.currentSide !== choosePiece.side) {
-        if (this.isSetMode) {
-          this.choosePiece = choosePiece
-          this.choosePiece.isChoose = true
-          return this.redraw()
-        }
         return
       }
       this.choosePiece = choosePiece
@@ -530,13 +522,6 @@ export default class Game {
     // 选中之后的点击
     // 没有选中棋子 说明 已选中的棋子要移动过去
     if (!choosePiece) {
-      if (this.isSetMode) {
-        this.choosePiece.x = clickPoint.x
-        this.choosePiece.y = clickPoint.y
-        this.choosePiece.isChoose = false
-        this.choosePiece = null
-        return this.redraw()
-      }
       const moveFlag = this.choosePiece.move(clickPoint, this.livePieceList)
       let mp = this.choosePiece
       if (moveFlag.flag) {
@@ -571,15 +556,6 @@ export default class Game {
 
     }
 
-    if (this.isSetMode) {
-      this.choosePiece.isChoose = false
-      this.choosePiece = choosePiece
-      this.choosePiece.isChoose = true
-      return this.redraw()
-    }
-
-
-
     // 如果点击的的棋子是敌方 ，要移动到敌方的棋子位置上
     this.logEvents.forEach(f => f(`当前：${this.currentSide} ,棋子:${this.choosePiece} 需要移动到：${clickPoint} 这个点上，并且要吃掉 ${choosePiece}`))
     const moveFlag = this.choosePiece.move(clickPoint, this.livePieceList)
@@ -610,18 +586,7 @@ export default class Game {
     this.choosePiece.isChoose = true
     this.move(res.mp)
   }
-  setGameState(state: GameState) {
-    this.gameState = state
-  }
-  deletePeice() {
-    if (this.choosePiece) {
-      this.livePieceList = this.livePieceList.filter(i => i !== this.choosePiece)
-      this.choosePiece = null
-      this.redraw()
-    } else {
-      console.log("请选择删除的棋子");
-    }
-  }
+
   /**
    * 监听棋盘点击
    */
@@ -652,6 +617,11 @@ export default class Game {
   on(e: "moveFail", fn: MoveFailCallback): void;
   on(e: "log", fn: GameLogCallback): void;
   on(e: "over", fn: GameOverCallback): void;
+  /**
+   * 象棋事件监听
+   * @param e 监听事件
+   * @param fn 监听函数
+   */
   on(e: GameEventName, fn: GameEventCallback) {
     if (typeof fn === "function") {
       if (e === "log") {
@@ -671,21 +641,26 @@ export default class Game {
   removeEvent(e: "moveFail", fn: MoveFailCallback): void;
   removeEvent(e: "log", fn: GameLogCallback): void;
   removeEvent(e: "over", fn: GameOverCallback): void;
+  /**
+   * 移除象棋事件监听
+   * @param e 监听事件
+   * @param fn 监听函数
+   */
   removeEvent(e: GameEventName, fn: GameEventCallback) {
     if (typeof fn === "function") {
       if (e === "log") {
         this.logEvents = this.logEvents.filter(f => f !== fn)
       } else if (e === "move") {
-        this.moveEvents = this.logEvents.filter(f => f !== fn)
+        this.moveEvents = this.moveEvents.filter(f => f !== fn)
       } else if (e === "moveFail") {
-        this.moveFailEvents = this.logEvents.filter(f => f !== fn)
+        this.moveFailEvents = this.moveFailEvents.filter(f => f !== fn)
       } else if (e === "over") {
-        this.overEvents = this.logEvents.filter(f => f !== fn)
+        this.overEvents = this.overEvents.filter(f => f !== fn)
       }
     } else {
       throw new Error("监听函数值应该为 function 类型")
     }
   }
 }
-export * from "./piece"
+export type { ChessOfPeice, PieceList, ChessOfPeiceName, ChessOfPeiceMap } from "./piece"
 export * from "./types"

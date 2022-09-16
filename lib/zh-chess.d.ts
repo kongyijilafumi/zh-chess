@@ -12,13 +12,13 @@ declare class Piece implements PieceInfo {
 declare class RookPiece extends Piece {
     constructor(info: PieceInfo);
     getMoveObstaclePieceList(p: Point | MovePoint, pieceList: PieceList): ChessOfPeice[];
-    move(p: Point | MovePoint, pieceList: PieceList): MoveFlag;
+    move(p: Point | MovePoint, pieceList: PieceList): MoveResult;
     getMovePoints(pl: PieceList): MovePointList;
 }
 declare class HorsePiece extends Piece {
     constructor(info: PieceInfo);
     getMovePoints(pl: PieceList): MovePointList;
-    move(p: Point, pieceList: PieceList): MoveFlag;
+    move(p: Point, pieceList: PieceList): MoveResult;
 }
 declare class ElephantPiece extends HorsePiece {
     constructor(info: PieceInfo);
@@ -36,7 +36,7 @@ declare class GeneralPiece extends KnightPiece {
 }
 declare class CannonPiece extends RookPiece {
     constructor(info: PieceInfo);
-    move(p: Point, pieceList: PieceList): MoveFlag;
+    move(p: Point, pieceList: PieceList): MoveResult;
 }
 declare class SoldierPiece extends HorsePiece {
     constructor(info: PieceInfo);
@@ -48,7 +48,6 @@ declare type ChessOfPeiceName = "車" | "馬" | "象" | "仕" | "砲" | "车" | 
 declare type ChessOfPeiceMap = {
     [prop in ChessOfPeiceName]: (info: PieceInfo) => ChessOfPeice;
 };
-declare const chessOfPeiceMap: ChessOfPeiceMap;
 
 declare type PieceSide = "RED" | "BLACK";
 declare type PieceSideCN = "红方" | "黑方";
@@ -88,7 +87,7 @@ interface MoveFail {
     flag: false;
     message: string;
 }
-declare type MoveFlag = MoveSuccess | MoveFail;
+declare type MoveResult = MoveSuccess | MoveFail;
 declare type Mp = {
     move: Point;
 };
@@ -118,6 +117,8 @@ declare type GameLogCallback = (str: any) => void;
 declare type GameOverCallback = (winnerSide: PieceSide) => void;
 declare type GameEventName = "move" | "moveFail" | "log" | "over";
 declare type GameEventCallback = MoveCallback | MoveFailCallback | GameLogCallback | GameOverCallback;
+declare type GamePeiceGridDiffX = 8 | 0;
+declare type GamePeiceGridDiffY = 9 | 0;
 
 declare type CTX = CanvasRenderingContext2D;
 declare type GameInfo = {
@@ -216,7 +217,6 @@ declare class Game {
      * 游戏进行状态
      */
     gameState: GameState;
-    isSetMode: boolean;
     moveEvents: Array<MoveCallback>;
     moveFailEvents: Array<MoveFailCallback>;
     logEvents: Array<GameLogCallback>;
@@ -230,17 +230,20 @@ declare class Game {
     /**
      * 获取所有格子的坐标
      */
-    setGridList(): void;
+    private setGridList;
     /**
      * 根据点击点返回所在棋盘上x,y的位置
      * @param p 点击点的 x,y 坐标
      * @returns 返回棋盘的x，y坐标轴
      */
-    getGridPosition(p: Point): Point | undefined;
+    private getGridPosition;
     /**
      * 初始化象棋
      */
     private init;
+    /**
+     * 初始化象棋个数
+     */
     private initPiece;
     /**
      * 画 棋盘 跟 棋子
@@ -268,7 +271,7 @@ declare class Game {
      * @param drawPeiceList 需要画的棋子列表
      * @param moveCb 移动完的回调函数
      */
-    private movePeiec;
+    private movePeice;
     /**
      * 清除移动完选中的棋子
      */
@@ -308,10 +311,8 @@ declare class Game {
      * 移动棋子
      * @param clickPoint 移动点
      */
-    move(clickPoint: Point): void;
+    private move;
     moveStr(str: string): void;
-    setGameState(state: GameState): void;
-    deletePeice(): void;
     /**
      * 监听棋盘点击
      */
@@ -326,4 +327,4 @@ declare class Game {
     removeEvent(e: "over", fn: GameOverCallback): void;
 }
 
-export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, GameEventCallback, GameEventName, GameLogCallback, GameOverCallback, GameState, GeneralPiece, HorsePiece, KnightPiece, ModalChooseInfo, ModalChooseOption, ModalOption, ModalOptionList, MoveCallback, MoveFail, MoveFailCallback, MoveFlag, MovePoint, MovePointList, MoveSuccess, Piece, PieceFilterFn, PieceInfo, PieceList, PieceSide, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, chessOfPeiceMap, Game as default, peiceSideMap };
+export { CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, GameEventCallback, GameEventName, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, ModalChooseInfo, ModalChooseOption, ModalOption, ModalOptionList, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveSuccess, PieceFilterFn, PieceInfo, PieceList, PieceSide, PieceSideMap, Point, SquarePoints, Game as default, peiceSideMap };

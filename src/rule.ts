@@ -4,13 +4,13 @@ import { PieceSide, CheckPoint, PieceInfo, Point } from './types';
 
 export class GameRule {
   /**
- * 根据某方移动棋子判断自己将领是否安全
- * @param side 移动方
- * @param pos 移动棋子
- * @param cp 是去吃棋子还是移动棋子
- * @param pl 当前棋盘列表
- * @returns 是否安全
- */
+   * 根据某方移动棋子判断自己将领是否安全
+   * @param side 移动方
+   * @param pos 移动棋子
+   * @param cp 是去吃棋子还是移动棋子
+   * @param pl 当前棋盘列表
+   * @returns 是否安全
+   */
   checkGeneralInTrouble(side: PieceSide, pos: ChessOfPeice, cp: CheckPoint, pl: PieceList) {
     const enemySide: PieceSide = side === "BLACK" ? "RED" : "BLACK"
     let list: PieceList;
@@ -43,11 +43,11 @@ export class GameRule {
   }
 
   /**
- * 检查棋子移动 双方将领在一条直线上 false 不危险 true 危险
- * @param pl 假设移动后的棋子列表
- * @param side 当前下棋方
- * @returns 是否危险
- */
+   * 检查棋子移动 双方将领在一条直线上 false 不危险 true 危险
+   * @param pl 假设移动后的棋子列表
+   * @param side 当前下棋方
+   * @returns 是否危险
+   */
   checkGeneralsFaceToFaceInTrouble(pl: PieceList) {
     const points = pl.filter(i => i instanceof GeneralPiece).map(i => ({ x: i.x, y: i.y }))
     const max = points[0].y > points[1].y ? points[0].y : points[1].y
@@ -63,9 +63,6 @@ export class GameRule {
     }
     return false
   }
-
-
-
   /**
    * 判断敌方被将军时，是否有解
    * @param enemySide 敌方
