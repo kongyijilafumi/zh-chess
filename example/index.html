@@ -33,6 +33,8 @@
   </div>
   <div class="select_1">
     文字移动1：
+    <select class="side">
+    </select>
     <select class="first">
     </select>
     <select class="second">
@@ -45,6 +47,8 @@
   </div>
   <div class="select_2">
     文字移动2：
+    <select class="side">
+    </select>
     <select class="first">
     </select>
     <select class="second">
@@ -57,6 +61,8 @@
   </div>
   <div class="select_6">
     文字移动3：
+    <select class="side">
+    </select>
     <select class="first">
     </select>
     <select class="second">
@@ -67,15 +73,29 @@
     </select>
     <button class="word_1">发送</button>
   </div>
+  <div class="select_4">
+    坐标移动：
+    <select class="side">
+    </select>
+    startX:
+    <select class="x1">
+    </select>
+    startY:
+    <select class="y1">
+    </select>
+    endX:
+    <select class="x2">
+    </select>
+    endY:
+    <select class="y2">
+    </select>
+    <button class="word_3">发送</button>
+  </div>
   <div class="select_3">
-    随意移动模式：
+    切换游戏玩家视角：
     <select class="first">
     </select>
     <button class="word_2">确定</button>
-
-  </div>
-  <div class="select_5">
-    删除选中棋子： <button class="del">删除</button>
   </div>
 </body>
 <script>
@@ -83,18 +103,22 @@
   const ctx = app.getContext("2d")
 
   let zhchess = new zhChess.default({ ctx, gameWidth: 375, gameHeight: 375, gamePadding: 20, scaleRatio: window.devicePixelRatio })
-  app.addEventListener("click", zhchess.listenClick, false)
+  app.addEventListener("click", zhchess.listenClickAsync, false)
   zhchess.on("log", console.log)
   zhchess.on("moveFail", console.error)
   zhchess.on("move", console.log)
   zhchess.on("over", function (side) {
     console.log(side + "方，赢了！");
-    zhchess.gameStart(side === "RED" ? "BLACK" : "RED")
+    setTimeout(() => {
+      zhchess.gameStart(side === "RED" ? "BLACK" : "RED")
+    }, 3000);
   })
 </script>
 <script>
   var side = [{ lab: "红方", val: "RED" }, { lab: "黑方", val: "BLACK" }]
-  document.querySelector(".side").innerHTML = side.map(i => `<option value="${i.val}">${i.lab}</option>`)
+  document.querySelectorAll(".side").forEach(item => {
+    item.innerHTML = side.map(i => `<option value="${i.val}">${i.lab}</option>`)
+  })
   document.querySelector(".side_btn").addEventListener("click", function () {
     const side = this.parentElement.querySelector(".side").value
     zhchess.gameStart(side)
@@ -103,6 +127,7 @@
 
   var chessName = ["车", "将", "兵", "炮", "象", "士", "马"]
   var num = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  var point = [0, ...num]
   var move = ["进", "平", "退"]
   var moveStyle = ["前", "中", "后"]
 
@@ -124,26 +149,38 @@
 
   document.querySelectorAll(".word_1").forEach(item => {
     item.addEventListener("click", function () {
+      let side = this.parentElement.querySelector(".side").value
       let first = this.parentElement.querySelector(".first").value
       let second = this.parentElement.querySelector(".second").value
       let third = this.parentElement.querySelector(".third").value
       let fourth = this.parentElement.querySelector(".fourth").value
-      zhchess.moveStr(first + second + third + fourth)
+      zhchess.moveStr(first + second + third + fourth, side)
     })
   })
-  var setMode = [{ lab: "是", val: 1 }, { lab: "否", val: 0 }]
-  document.querySelector(".select_3").querySelector(".first").innerHTML = setMode.map(i => `<option value="${i.val}">${i.lab}</option>`)
 
-
-  document.querySelector(".word_2").addEventListener("click", function () {
-    let first = this.parentElement.querySelector(".first").value
-    zhchess.isSetMode = first === "1"
+  document.querySelector(".select_3").querySelector(".first").innerHTML = side.map(i => `<option value="${i.val}">${i.lab}</option>`)
+  document.querySelectorAll(".word_2").forEach(item => {
+    item.addEventListener("click", function () {
+      let side = this.parentElement.querySelector(".first").value
+      zhchess.changePlaySide(side)
+    })
   })
 
-
-  document.querySelector(".del").addEventListener("click", () => {
-    zhchess.deletePeice()
+  document.querySelector(".select_4").querySelector(".x1").innerHTML = point.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_4").querySelector(".x2").innerHTML = point.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_4").querySelector(".y1").innerHTML = point.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelector(".select_4").querySelector(".y2").innerHTML = point.map(i => `<option value="${i}">${i}</option>`)
+  document.querySelectorAll(".word_3").forEach(item => {
+    item.addEventListener("click", function () {
+      let side = this.parentElement.querySelector(".side").value
+      let x1 = this.parentElement.querySelector(".x1").value
+      let x2 = this.parentElement.querySelector(".x2").value
+      let y1 = this.parentElement.querySelector(".y1").value
+      let y2 = this.parentElement.querySelector(".y2").value
+      zhchess.move({ x: Number(x1), y: Number(y1) }, { x: Number(x2), y: Number(y2) }, side)
+    })
   })
+
 </script>
 
 </html>

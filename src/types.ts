@@ -69,7 +69,7 @@ type Ep = {
 }
 export type CheckPoint = Mp | Ep
 
-export type GameState = "INIT" | "START" | "OVER"
+export type GameState = "INIT" | "START" | "OVER" | "MOVE"
 
 export interface ModalOption {
   lab: string

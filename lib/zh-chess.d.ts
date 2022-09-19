@@ -48,6 +48,7 @@ declare type ChessOfPeiceName = "車" | "馬" | "象" | "仕" | "砲" | "车" | 
 declare type ChessOfPeiceMap = {
     [prop in ChessOfPeiceName]: (info: PieceInfo) => ChessOfPeice;
 };
+declare const chessOfPeiceMap: ChessOfPeiceMap;
 
 declare type PieceSide = "RED" | "BLACK";
 declare type PieceSideCN = "红方" | "黑方";
@@ -95,7 +96,7 @@ declare type Ep = {
     eat: Point;
 };
 declare type CheckPoint = Mp | Ep;
-declare type GameState = "INIT" | "START" | "OVER";
+declare type GameState = "INIT" | "START" | "OVER" | "MOVE";
 interface ModalOption {
     lab: string;
     val: string;
@@ -121,12 +122,14 @@ declare type GamePeiceGridDiffX = 8 | 0;
 declare type GamePeiceGridDiffY = 9 | 0;
 
 declare type CTX = CanvasRenderingContext2D;
+declare type MoveResultAsync = Promise<MoveResult>;
 declare type GameInfo = {
     gameWidth?: number;
     gameHeight?: number;
     gamePadding?: number;
     ctx: CTX;
     scaleRatio?: number;
+    moveSpeed?: number;
 };
 declare class Game {
     /**
@@ -190,17 +193,9 @@ declare class Game {
      */
     private gridPostionList;
     /**
-     * 棋盘是否有棋子在移动
-     */
-    private isMoving;
-    /**
      * 运行速度 大于或等于 1 的数 越大越慢
      */
     moveSpeed: number;
-    /**
-     * 玩家方
-     */
-    private gameSide;
     /**
      * 玩家 x轴 格子距离相差
      */
@@ -217,11 +212,22 @@ declare class Game {
     private moveFailEvents;
     private logEvents;
     private overEvents;
-    constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio }: GameInfo);
+    constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, moveSpeed }: GameInfo);
     /**
      * 设置游戏窗口 棋盘
      */
     private setGameWindow;
+    /**
+     * 根据玩家返回绘画坐标轴的差值
+     * @param side 玩家
+     * @param key 坐标轴
+     * @returns
+     */
+    private getGridDiff;
+    /**
+     * 根据玩家方 设置 x，y轴差值
+     * @param side 玩家方
+     */
     private setGridDiff;
     /**
      * 获取所有格子的坐标
@@ -234,7 +240,7 @@ declare class Game {
      */
     private getGridPosition;
     /**
-     * 初始化象棋
+     * 初始化象棋盘
      */
     private init;
     /**
@@ -255,6 +261,10 @@ declare class Game {
      */
     private drawChessLine;
     /**
+     * 重新绘画当前棋盘
+     */
+    redraw(): void;
+    /**
      * 动画效果 绘画 棋子移动
      * @param mp 移动点
      * @param pl 绘画的棋子列表
@@ -262,53 +272,92 @@ declare class Game {
      */
     private activeMove;
     /**
+     * 当前选中的棋子 根据点来 移动
+     * @param checkPoint 移动点或者是吃
+     */
+    private moveToPeice;
+    /**
      * 把当前选中的棋子 移动到 指定的位置
      * @param p 移动位置
      * @param drawPeiceList 需要画的棋子列表
-     * @param moveCb 移动完的回调函数
      */
-    private movePeice;
+    private movePeiceToPointAsync;
     /**
-     * 清除移动完选中的棋子
-     */
-    private clearMoveChoosePeiece;
-    /**
-     * 更换当前运行玩家
-     */
-    private changeSide;
-    /**
-     * 当前选中的棋子吃掉 指定位置的棋子
-     * @param p 当前选中棋子
-     */
-    private eatPeice;
+    * 当前选中的棋子 根据点来 移动
+    * @param checkPoint 移动点或者是吃
+    */
+    private moveToPeiceAsync;
     /**
      * 开始移动棋子
      * @param mp 移动棋子
-     * @param p 移动位置
+     * @param checkPoint 移动点还是吃棋点
      * @param drawList 绘画棋子列表
      * @param side 当前下棋方
      */
     private moveStart;
+    private moveStartAsync;
     /**
      * 动画移动结束，当前选中的棋子更新 x, y坐标，重新绘画 更换 玩家 和 运动状态
      * @param p 移动点
      */
     private moveEnd;
     /**
-     * 重新绘画当前棋盘
+     * 移动棋子
+     * @param clickPoint 移动点
      */
-    redraw(): void;
+    private pieceMove;
+    /**
+    * 移动棋子
+    * @param p 移动点
+    * @returns 返回promise移动结果
+    */
+    private pieceMoveAsync;
+    /**
+     * 根据坐标点移动位置
+     * @param piecePoint 棋子所在位置
+     * @param movePoint 移动位置
+     * @param side 下棋方
+     */
+    move(piecePoint: Point, movePoint: Point, side: PieceSide): MoveResult;
+    /**
+     * 根据坐标点移动位置
+     * @param piecePoint 棋子所在位置
+     * @param movePoint 移动位置
+     * @param side 下棋方
+     */
+    moveAsync(piecePoint: Point, movePoint: Point, side: PieceSide): MoveResultAsync;
+    /**
+     * 根据移动方的描述文字来进行移动棋子
+     * @param str 文字
+     * @param side 移动方
+     * @returns 移动结果
+     */
+    moveStr(str: string, side: PieceSide): MoveResult;
+    /**
+     * 根据移动方的描述文字来进行移动棋子
+     * @param str 文字
+     * @param side 移动方
+     * @returns 移动结果
+     */
+    moveStrAsync(str: string, side: PieceSide): MoveResultAsync;
     /**
      * 初始化选择玩家方
      * @param side 玩家方
      */
     gameStart(side: PieceSide): void;
     /**
-     * 移动棋子
-     * @param clickPoint 移动点
+    * 清除移动完选中的棋子
+    */
+    private clearMoveChoosePeiece;
+    /**
+     * 更换当前运行玩家
      */
-    private move;
-    moveStr(str: string, side: PieceSide): void;
+    private changeSide;
+    /**
+     * 更换玩家视角
+     * @param side 玩家
+     */
+    changePlaySide(side: PieceSide): void;
     /**
      * 游戏是否结束
      */
@@ -337,9 +386,18 @@ declare class Game {
      */
     private checkEnemySideInTroubleHasSolution;
     /**
+     * 棋子运动前检查游戏状态是否可以运动
+     * @returns 是否可以运动
+     */
+    checkGameState(): boolean;
+    /**
      * 监听棋盘点击
      */
     listenClick(e: MouseEvent): void;
+    /**
+    * 监听棋盘点击
+    */
+    listenClickAsync(e: MouseEvent): void;
     on(e: "move", fn: MoveCallback): void;
     on(e: "moveFail", fn: MoveFailCallback): void;
     on(e: "log", fn: GameLogCallback): void;
@@ -350,4 +408,4 @@ declare class Game {
     removeEvent(e: "over", fn: GameOverCallback): void;
 }
 
-export { CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, GameEventCallback, GameEventName, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, ModalChooseInfo, ModalChooseOption, ModalOption, ModalOptionList, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveSuccess, PieceFilterFn, PieceInfo, PieceList, PieceSide, PieceSideMap, Point, SquarePoints, Game as default, peiceSideMap };
+export { CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, GameEventCallback, GameEventName, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, ModalChooseInfo, ModalChooseOption, ModalOption, ModalOptionList, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveSuccess, PieceFilterFn, PieceInfo, PieceList, PieceSide, PieceSideMap, Point, SquarePoints, chessOfPeiceMap, Game as default, peiceSideMap };

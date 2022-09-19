@@ -2,7 +2,7 @@ import type { ChessOfPeiceName, PieceList } from './../src/piece';
 import type { PieceSide, } from '../src/types';
 import { Point } from '../src/types';
 import { chessOfPeiceMap } from '../src/piece';
- 
+
 /**
 * 根据棋盘列表位置返回棋子 可能该位置没有棋子
 * @param pl 棋盘列表
@@ -15,16 +15,16 @@ export const findPiece = (pl: PieceList, p: Point) => pl.find(item => item.x ===
 const numPos = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 const zhnumPos = ["一", "二", "三", "四", "五", "六", "七", "八", "九"]
 const strPos = ["前", "中", "后"]
-const moveStyles = ["进", "平", "退"]
+const moveStyles = ["进", "平", "退"], moveStyleInput = `(${moveStyles.join("|")})`
 const numMergePos = numPos.concat(zhnumPos)
-const numMergePosStr = numMergePos.join("|")
-const PieceNames = Object.keys(chessOfPeiceMap)
+const numInput = `(${numMergePos.join("|")})`
+const pieceNameInput = `(${Object.keys(chessOfPeiceMap).join("|")})`
 // 前兵进一
-const parse_reg_1 = new RegExp(`(${strPos.concat(numMergePos).join("|")})(${PieceNames.join("|")})(${moveStyles.join("|")})(${numMergePosStr})$`)
+const parse_reg_1 = new RegExp(`(${strPos.concat(numMergePos).join("|")})${pieceNameInput}${moveStyleInput}${numInput}$`)
 // 车9进1
-const parse_reg_2 = new RegExp(`(${PieceNames.join("|")})(${numMergePosStr})(${moveStyles.join("|")})(${numMergePosStr})$`)
+const parse_reg_2 = new RegExp(`${pieceNameInput}${numInput}${moveStyleInput}${numInput}$`)
 // 前6进1
-const parse_reg_3 = new RegExp(`(${strPos.join("|")})(${numMergePosStr})(${moveStyles.join("|")})(${numMergePosStr})$`)
+const parse_reg_3 = new RegExp(`(${strPos.join("|")})${numInput}${moveStyleInput}${numInput}$`)
 export const parseStrToPoint = (str: string, side: PieceSide, pl: PieceList) => {
   let strRes;
   const currentSidePieceList = pl.filter(p => p.side === side)
@@ -195,13 +195,17 @@ export const parseStrToPoint = (str: string, side: PieceSide, pl: PieceList) => 
       moveStep -= 1
     }
     const px = Math.abs(pieceXPos - pieceDiffX)
-    const choose = currentSidePieceList.find(p => p.x === px && p.name === pieceName)
+    const choose = currentSidePieceList.filter(p => p.x === px && p.name === pieceName)
     // 没找到棋子
-    if (!choose) {
+    if (!choose.length) {
       return false
     }
-    const cy = choose.y
-    const cx = choose.x
+    // 当两个或更多棋子在一条直线上
+    if (choose.length >= 2) {
+      return false
+    }
+    const cy = choose[0].y
+    const cx = choose[0].x
     const diffX = Math.abs(cx - pieceDiffX) - moveStep
     const absDiffX = Math.abs(diffX)
     // 前进 后退 x 一致 y取移动相反
@@ -215,7 +219,7 @@ export const parseStrToPoint = (str: string, side: PieceSide, pl: PieceList) => 
           const isRow = absx === 1 ? true : false
           const y = isRow ? cy - (2 * sideOpposite * yOpposite) : cy - (1 * sideOpposite * yOpposite)
           const x = (diffX + 1) < 0 ? (isRow ? cx + (1 * sideOpposite) : cx + (2 * sideOpposite)) : (isRow ? cx - (1 * sideOpposite) : cx - (2 * sideOpposite))
-          return { choose, mp: new Point(x, y) }
+          return { choose: choose[0], mp: new Point(x, y) }
         } else {
           return false
         }
@@ -232,16 +236,16 @@ export const parseStrToPoint = (str: string, side: PieceSide, pl: PieceList) => 
         }
         const x = diffX > 0 ? cx + (mStep * sideOpposite) : cx - (mStep * sideOpposite)
         const y = cy - (mStep * sideOpposite * yOpposite)
-        return { choose, mp: new Point(x, y) }
+        return { choose: choose[0], mp: new Point(x, y) }
       }
       // 车 将 兵 跑
       const y = cy - (moveStep * sideOpposite * yOpposite)
-      return { choose, mp: new Point(cx, y) }
+      return { choose: choose[0], mp: new Point(cx, y) }
     }
     // 平
     if (moveStyle === moveStyles[1]) {
       // 车 将 兵 跑
-      return { choose, mp: new Point(Math.abs(moveStep - pieceDiffX), cy) }
+      return {  choose: choose[0], mp: new Point(Math.abs(moveStep - pieceDiffX), cy) }
     }
   }
   return false
