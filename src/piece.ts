@@ -28,7 +28,9 @@ export class Piece implements PieceInfo {
     })
   }
 }
-// 车
+/**
+ * 象棋：车
+ */
 export class RookPiece extends Piece {
   constructor(info: PieceInfo) {
     super(info)
@@ -80,7 +82,9 @@ export class RookPiece extends Piece {
   }
 }
 
-// 马
+/**
+ * 象棋：马
+ */
 export class HorsePiece extends Piece {
   constructor(info: PieceInfo) {
     super(info)
@@ -130,7 +134,9 @@ export class HorsePiece extends Piece {
   }
 }
 
-// 象
+/**
+ * 象棋：象
+ */
 export class ElephantPiece extends HorsePiece {
   constructor(info: PieceInfo) {
     super(info)
@@ -168,7 +174,9 @@ export class ElephantPiece extends HorsePiece {
   }
 }
 
-// 士
+/**
+ * 象棋：士
+ */
 export class KnightPiece extends ElephantPiece {
   constructor(info: PieceInfo) {
     super(info)
@@ -201,7 +209,9 @@ export class KnightPiece extends ElephantPiece {
   }
 }
 
-// 将领
+/**
+ * 象棋：将领
+ */
 export class GeneralPiece extends KnightPiece {
   constructor(info: PieceInfo) {
     super(info)
@@ -217,7 +227,9 @@ export class GeneralPiece extends KnightPiece {
   }
 }
 
-// 炮
+/**
+ * 象棋：炮
+ */
 export class CannonPiece extends RookPiece {
   constructor(info: PieceInfo) {
     super(info)
@@ -257,8 +269,9 @@ export class CannonPiece extends RookPiece {
   }
 }
 
-// 兵
-
+/**
+ * 象棋：兵
+ */
 export class SoldierPiece extends HorsePiece {
   constructor(info: PieceInfo) {
     super(info)
@@ -278,10 +291,19 @@ export class SoldierPiece extends HorsePiece {
   }
 }
 
+/**
+ * 象棋棋子，包含了车、马、炮、象、士、将、兵
+ */
 export type ChessOfPeice = RookPiece | HorsePiece | ElephantPiece | KnightPiece | GeneralPiece | CannonPiece | SoldierPiece
 
+/**
+ * 象棋棋子列表
+ */
 export type PieceList = Array<ChessOfPeice>
 
+/**
+ * 象棋棋子名字
+ */
 export type ChessOfPeiceName =
   "車" |
   "馬" |
@@ -297,10 +319,20 @@ export type ChessOfPeiceName =
   "兵" |
   "将" |
   "帅"
+
+/**
+ * 象棋棋子Map数据类型
+ * 根据名字返回一个函数
+ * 函数参数需要象棋初始化所需的数据
+ * 返回棋子实例
+ */
 export type ChessOfPeiceMap = {
   [prop in ChessOfPeiceName]: (info: PieceInfo) => ChessOfPeice;
 };
 
+/**
+ * 象棋棋子map表
+ */
 export const chessOfPeiceMap: ChessOfPeiceMap = {
   "仕": (info: PieceInfo) => new KnightPiece(info),
   "兵": (info: PieceInfo) => new SoldierPiece(info),

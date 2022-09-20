@@ -4,20 +4,50 @@ import { findPiece, parseStrToPoint } from '../utils';
 import { getPiecesList, } from './data';
 import { getSquarePoints } from '../utils/draw';
 import { ChessOfPeice, GeneralPiece, PieceList, chessOfPeiceMap } from './piece';
+
 type CTX = CanvasRenderingContext2D
 
-type MoveResultAsync = Promise<MoveResult>
+/**
+ * promise返回的运动结果
+ */
+export type MoveResultAsync = Promise<MoveResult>
 
-type GameInfo = {
+/**
+ * 初始化游戏参数
+ */
+export interface GameInfo {
+  /**
+   * 游戏窗口宽度大小
+   * @defaultValue 800
+   */
   gameWidth?: number
+  /**
+   * 游戏窗口高度大小
+   * @defaultValue 800
+   */
   gameHeight?: number
+  /**
+   * 游戏内边距大小距离棋盘
+   * @defaultValue 20
+   */
   gamePadding?: number
+  /**
+   * 画布
+   */
   ctx: CTX
+  /**
+   * 画布缩放大小
+   * @defaultValue 1
+   */
   scaleRatio?: number
+  /**
+   * 游戏运动速度
+   * @defaultValue 8
+   */
   moveSpeed?: number
 }
 
-export default class Game {
+export default class ZhChess {
   /**
    * 当前走棋方
    */
