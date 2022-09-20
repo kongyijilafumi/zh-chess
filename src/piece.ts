@@ -1,3 +1,4 @@
+import { findPiece } from './../utils/index';
 import { PieceInfo, PieceSide, Point, MovePoint, MoveResult, MovePointList } from './types';
 const notExistPoint = { x: 10, y: 10 }
 
@@ -20,7 +21,7 @@ export class Piece implements PieceInfo {
     return `[${this.side}方]:${this.name}(${this.x},${this.y})`
   }
 
-  filterMovePoints(list: MovePointList, pl: PieceList) {
+  filterMovePoints(list: MovePointList, pl: PieceList): MovePointList {
     return list.filter(i => {
       const pointHasSameSidePeice = pl.find(p => p.x === i.x && p.y === i.y && p.side === this.side)
       return i.x >= 0 && i.x <= 8 && i.y >= 0 && i.y <= 9 && !pointHasSameSidePeice
@@ -110,6 +111,9 @@ export class HorsePiece extends Piece {
 
     }
     return this.filterMovePoints(mps, pl)
+  }
+  filterMovePoints(list: MovePointList, pl: PieceList): MovePointList {
+    return super.filterMovePoints(list, pl).filter(item => !Boolean(findPiece(pl, item.disPoint)))
   }
   move(p: Point, pieceList: PieceList): MoveResult {
     const mps = this.getMovePoints(pieceList)
