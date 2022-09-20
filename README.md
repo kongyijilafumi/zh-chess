@@ -22,11 +22,11 @@ const CTX_WIDTH = 375,
     CTX_HEIGHT = 375
 const canvas = createCanvas(CTX_WIDTH, CTX_HEIGHT)
 const ctx = canvas.getContext('2d')
-const zhChess = require("../lib/zh-chess.cjs").default
+const ZhChess = require("zh-chess").default
 const fs = require('fs')
 const out = fs.createWriteStream('./test.jpg') // 创建文件流
 
-const game = new zhChess({
+const game = new ZhChess({
     ctx,
     gameWidth: CTX_WIDTH,
     gameHeight: CTX_HEIGHT
