@@ -7,7 +7,7 @@ declare class Piece implements PieceInfo {
     isChoose: boolean;
     constructor(pieceInfo: PieceInfo);
     toString(): string;
-    filterMovePoints(list: MovePointList, pl: PieceList): MovePoint[];
+    filterMovePoints(list: MovePointList, pl: PieceList): MovePointList;
 }
 declare class RookPiece extends Piece {
     constructor(info: PieceInfo);
@@ -18,6 +18,7 @@ declare class RookPiece extends Piece {
 declare class HorsePiece extends Piece {
     constructor(info: PieceInfo);
     getMovePoints(pl: PieceList): MovePointList;
+    filterMovePoints(list: MovePointList, pl: PieceList): MovePointList;
     move(p: Point, pieceList: PieceList): MoveResult;
 }
 declare class ElephantPiece extends HorsePiece {
@@ -260,6 +261,10 @@ declare class Game {
      * 画棋盘
      */
     private drawChessLine;
+    /**
+     * 画出选中的棋子可以移动的点位
+     */
+    private drawChoosePieceMovePoint;
     /**
      * 重新绘画当前棋盘
      */

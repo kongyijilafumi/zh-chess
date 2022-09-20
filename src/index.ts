@@ -337,6 +337,23 @@ export default class Game {
     }
   }
   /**
+   * 画出选中的棋子可以移动的点位
+   */
+  private drawChoosePieceMovePoint() {
+    if (this.choosePiece) {
+      const { gridWidth, startX, startY, gridHeight } = this
+      this.ctx.fillStyle = "#25dd2a"
+      this.choosePiece.getMovePoints(this.livePieceList).forEach(p => {
+        let x = startX + p.x * gridWidth;
+        let y = startY + p.y * gridHeight;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, this.radius * .25, 0, 2 * Math.PI);
+        this.ctx.closePath();
+        this.ctx.fill()
+      })
+    }
+  }
+  /**
    * 重新绘画当前棋盘
    */
   redraw() {
@@ -605,6 +622,7 @@ export default class Game {
       this.choosePiece.isChoose = true
       this.logEvents.forEach(f => f(`当前：${this.currentSide} 方 选中了 棋子:${choosePiece}`))
       this.redraw()
+      this.drawChoosePieceMovePoint()
       return Promise.resolve({ flag: true })
     }
 
@@ -635,6 +653,7 @@ export default class Game {
       this.choosePiece = choosePiece
       this.choosePiece.isChoose = true
       this.redraw()
+      this.drawChoosePieceMovePoint()
       return Promise.resolve({ flag: true })
     }
 
@@ -669,6 +688,9 @@ export default class Game {
       this.logEvents.forEach(f => f("未找到棋子"))
       return { flag: false, message: "未找到棋子" }
     }
+    if (this.choosePiece) {
+      this.clearMoveChoosePeiece()
+    }
     posPeice.isChoose = true
     this.choosePiece = posPeice
     return this.pieceMove(formatPoint(movePoint))
@@ -692,6 +714,9 @@ export default class Game {
     if (!posPeice || posPeice.side !== this.currentSide) {
       this.logEvents.forEach(f => f("未找到棋子"))
       return Promise.resolve({ flag: false, message: "未找到棋子" })
+    }
+    if (this.choosePiece) {
+      this.clearMoveChoosePeiece()
     }
     posPeice.isChoose = true
     this.choosePiece = posPeice
