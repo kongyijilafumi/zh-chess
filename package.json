@@ -1,5 +1,5 @@
 {
-  "name": "Zh-chess",
+  "name": "zh-chess",
   "version": "1.0.1",
   "description": "A Chinese chess framework that supports browsers and nodejs",
   "main": "./lib/zh-chess.cjs.js",

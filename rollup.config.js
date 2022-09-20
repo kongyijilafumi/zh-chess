@@ -70,7 +70,9 @@ export default libs.map(item => {
 
 
 function toHump(name) {
-  return name.replace(/\-(\w)/g, function (all, letter) {
+  return name.replace(/^(\w)/, function (a, w) {
+    return w.toUpperCase()
+  }).replace(/\-(\w)/g, function (all, letter) {
     return letter.toUpperCase();
   });
 }
