@@ -711,9 +711,7 @@ export default class ZhChess {
     if (this.currentSide !== side) {
       return { flag: false, message: "请等待对方下棋" }
     }
-    const reverseSide: PieceSide = side === "RED" ? "BLACK" : "RED"
-    const formatPoint = (p: Point) => ({ x: Math.abs(p.x - this.getGridDiff(side, "x")), y: Math.abs(p.y - this.getGridDiff(reverseSide, "y")) })
-    const posPeice = findPiece(this.livePieceList, formatPoint(piecePoint))
+    const posPeice = findPiece(this.livePieceList, piecePoint)
     if (!posPeice || posPeice.side !== this.currentSide) {
       this.logEvents.forEach(f => f("未找到棋子"))
       return { flag: false, message: "未找到棋子" }
@@ -723,7 +721,7 @@ export default class ZhChess {
     }
     posPeice.isChoose = true
     this.choosePiece = posPeice
-    return this.pieceMove(formatPoint(movePoint))
+    return this.pieceMove(movePoint)
   }
   /**
    * 根据坐标点移动位置
@@ -738,9 +736,7 @@ export default class ZhChess {
     if (this.currentSide !== side) {
       return Promise.resolve({ flag: false, message: `当前为${this.currentSide}方下棋，请等待！` })
     }
-    const reverseSide: PieceSide = side === "RED" ? "BLACK" : "RED"
-    const formatPoint = (p: Point) => ({ x: Math.abs(p.x - this.getGridDiff(side, "x")), y: Math.abs(p.y - this.getGridDiff(reverseSide, "y")) })
-    const posPeice = findPiece(this.livePieceList, formatPoint(piecePoint))
+    const posPeice = findPiece(this.livePieceList, piecePoint)
     if (!posPeice || posPeice.side !== this.currentSide) {
       this.logEvents.forEach(f => f("未找到棋子"))
       return Promise.resolve({ flag: false, message: "未找到棋子" })
@@ -750,7 +746,7 @@ export default class ZhChess {
     }
     posPeice.isChoose = true
     this.choosePiece = posPeice
-    return this.pieceMoveAsync(formatPoint(movePoint))
+    return this.pieceMoveAsync(movePoint)
   }
   /**
    * 根据移动方的描述文字来进行移动棋子

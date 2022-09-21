@@ -278,36 +278,35 @@ export default function App() {
 
 #### move(piecePoint: Point, movePoint: Point, side: PieceSide): MoveResult
 
-根据指定的 `红黑方视角` 的坐标点移动到指定的坐标点，无移动动画，返回移动结果，同步方法。
+根据 `红方在下黑方在上的` 视角(也是棋子游戏里的固定坐标`不分红黑方视角`) 来指定坐标点移动到指定的坐标点，无移动动画，返回移动结果，同步方法。
 
 ```bash
-  y
-  ^ 
-9 │   
-8 │   
-7 │   
-6 │ 
-5 │
-4 │
-3 │
-2 │   
-1 │  *---> *                    
-  └────────────────────────>  x
-  0  1  2  3  4  5  6  7  8 
+  0  1  2  3  4  5  6  7  8         0 1  2  3  4  5  6  7  8
+0 車 馬 象 仕  將 仕 象 馬 車       0 　馬 象 仕  將 仕 象 馬 車 
+1                                 1
+2    砲                砲         2 車 砲                砲
+3 卒    卒    卒    卒    卒       3 卒    卒    卒    卒    卒  
+4                            -->  4
+5                            -->  5
+6 兵    兵    兵    兵    兵  -->  6 兵    兵    兵    兵    兵
+7    炮                炮         7    炮                炮
+8                                 8
+9 车 马 相 士 帅  士 相 马 车       9 车 马 相 士 帅  士 相 马 车
+  1  2  3  4  5  6  7  8  9         1  2  3  4  5  6  7  8  9 
 ```
 
-> 以自己视角移动棋子最左下为x，y轴的起始位置，往上y变大，往右x变大。如图所示，坐标点为(1, 1)移动到了(3, 1)位置，代码如下所示。
+> 以 `红方在下黑方在上的`视角移动棋子最左上为x，y轴的起始位置，往下y变大，往右x变大。如图所示，坐标点为(0, 0)移动到了(0, 2)位置，表示`黑`方`車`向前进`两个格子`代码如下所示。
 
 ```js
 const piecePoint = {
-        x: 1,
-        y: 1
+        x: 0,
+        y: 0
     },
     movePoint = {
-        x: 3,
-        y: 1
+        x: 0,
+        y: 2
     }
-game.move(piecePoint, movePoint, "RED") // 返回 { flag:true } 或者 { flag:false, message:"xxx" }
+game.move(piecePoint, movePoint, "BLACK") // 返回 { flag:true } 或者 { flag:false, message:"xxx" }
 ```
 
 #### moveAsync(piecePoint: Point, movePoint: Point, side: PieceSide): Promise `<MoveResult>`
