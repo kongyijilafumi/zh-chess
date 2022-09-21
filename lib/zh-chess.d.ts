@@ -6,133 +6,414 @@ declare class Piece implements PieceInfo {
     side: PieceSide;
     isChoose: boolean;
     constructor(pieceInfo: PieceInfo);
+    /**
+     * 格式化象棋棋子输出字符串信息
+     * @returns 例如返回`[RED方]:车(1,1)`
+     */
     toString(): string;
+    /**
+     * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
+     * @param list 移动点列表
+     * @param pl 棋子列表
+     * @returns 返回这个棋子可以移动点列表
+     */
     filterMovePoints(list: MovePointList, pl: PieceList): MovePointList;
 }
+/**
+ * 象棋：车
+ */
 declare class RookPiece extends Piece {
     constructor(info: PieceInfo);
-    getMoveObstaclePieceList(p: Point | MovePoint, pieceList: PieceList): ChessOfPeice[];
+    /**
+     * 根据车移动的方向得出障碍棋子列表
+     * @param p 坐标点或者移动点
+     * @param pieceList 棋子列表
+     * @returns 返回存在障碍的棋子列表
+     */
+    getMoveObstaclePieceList(p: Point | MovePoint, pieceList: PieceList): PieceList;
+    /**
+     * 根据象棋自己的移动规律以及棋子列表的位置得出是否可以移动到指定的坐标上
+     * @param p 坐标点 或 移动点
+     * @param pieceList 棋盘列表
+     * @returns 返回移动结果
+     */
     move(p: Point | MovePoint, pieceList: PieceList): MoveResult;
+    /**
+     * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+     * @param pl 棋子列表
+     * @returns 返回移动点列表
+     */
     getMovePoints(pl: PieceList): MovePointList;
 }
+/**
+ * 象棋：马
+ */
 declare class HorsePiece extends Piece {
     constructor(info: PieceInfo);
+    /**
+     * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+     * @param pl 棋子列表
+     * @returns 返回移动点列表
+     */
     getMovePoints(pl: PieceList): MovePointList;
+    /**
+     * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
+     * @param list 移动点列表
+     * @param pl 棋子列表
+     * @returns 返回这个棋子可以移动点列表
+     */
     filterMovePoints(list: MovePointList, pl: PieceList): MovePointList;
+    /**
+     * 根据象棋自己的移动规律以及棋子列表的位置得出是否可以移动到指定的坐标上
+     * @param p 坐标点 或 移动点
+     * @param pieceList 棋盘列表
+     * @returns 返回移动结果
+     */
     move(p: Point, pieceList: PieceList): MoveResult;
 }
+/**
+ * 象棋：象
+ */
 declare class ElephantPiece extends HorsePiece {
     constructor(info: PieceInfo);
+    /**
+    * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+    * @param pl 棋子列表
+    * @returns 返回移动点列表
+    */
     getMovePoints(pl: PieceList): MovePointList;
+    /**
+      * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
+      * @param list 移动点列表
+      * @param pl 棋子列表
+      * @returns 返回这个棋子可以移动点列表
+      */
     filterMovePoints(list: MovePointList, pl: PieceList): MovePoint[];
 }
+/**
+ * 象棋：士
+ */
 declare class KnightPiece extends ElephantPiece {
     constructor(info: PieceInfo);
+    /**
+      * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+      * @param pl 棋子列表
+      * @returns 返回移动点列表
+      */
     getMovePoints(pl: PieceList): MovePointList;
+    /**
+      * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
+      * @param list 移动点列表
+      * @param pl 棋子列表
+      * @returns 返回这个棋子可以移动点列表
+      */
     filterMovePoints(list: MovePointList, pl: PieceList): MovePoint[];
 }
+/**
+ * 象棋：将领
+ */
 declare class GeneralPiece extends KnightPiece {
     constructor(info: PieceInfo);
+    /**
+      * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+      * @param pl 棋子列表
+      * @returns 返回移动点列表
+      */
     getMovePoints(pl: PieceList): MovePointList;
 }
+/**
+ * 象棋：炮
+ */
 declare class CannonPiece extends RookPiece {
     constructor(info: PieceInfo);
+    /**
+     * 根据象棋自己的移动规律以及棋子列表的位置得出是否可以移动到指定的坐标上
+     * @param p 坐标点 或 移动点
+     * @param pieceList 棋盘列表
+     * @returns 返回移动结果
+     */
     move(p: Point, pieceList: PieceList): MoveResult;
 }
+/**
+ * 象棋：兵
+ */
 declare class SoldierPiece extends HorsePiece {
     constructor(info: PieceInfo);
+    /**
+      * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+      * @param pl 棋子列表
+      * @returns 返回移动点列表
+      */
     getMovePoints(pl: PieceList): MovePointList;
 }
+/**
+ * 象棋棋子，包含了车、马、炮、象、士、将、兵
+ */
 declare type ChessOfPeice = RookPiece | HorsePiece | ElephantPiece | KnightPiece | GeneralPiece | CannonPiece | SoldierPiece;
+/**
+ * 象棋棋子列表
+ */
 declare type PieceList = Array<ChessOfPeice>;
+/**
+ * 象棋棋子名字
+ * @example "车","車" // 都是棋子 RookPiece 类
+ * @example "马","馬" // 都是棋子 HorsePiece 类
+ * @example "相","象" // 都是棋子 ElephantPiece 类
+ * @example "士","仕" // 都是棋子 KnightPiece 类
+ * @example "帅","将" // 都是棋子 GeneralPiece 类
+ * @example "炮","砲" // 都是棋子 CannonPiece 类
+ * @example "兵","卒" // 都是棋子 SoldierPiece 类
+ */
 declare type ChessOfPeiceName = "車" | "馬" | "象" | "仕" | "砲" | "车" | "马" | "相" | "士" | "炮" | "卒" | "兵" | "将" | "帅";
+/**
+ * 象棋棋子Map数据类型
+ * 根据名字返回一个函数
+ * 函数参数需要象棋初始化所需的数据
+ * 返回棋子实例
+ */
 declare type ChessOfPeiceMap = {
     [prop in ChessOfPeiceName]: (info: PieceInfo) => ChessOfPeice;
 };
+/**
+ * 象棋棋子map表
+ * @example chessOfPeiceMap["车"]({ ... }:PieceInfo) // 返回一个实例棋子 RookPiece
+ * @example chessOfPeiceMap["马"]({ ... }:PieceInfo) // 返回一个实例棋子 HorsePiece
+ * @example chessOfPeiceMap["炮"]({ ... }:PieceInfo) // 返回一个实例棋子 CannonPiece
+ * @example chessOfPeiceMap["相"]({ ... }:PieceInfo) // 返回一个实例棋子 ElephantPiece
+ * @example chessOfPeiceMap["士"]({ ... }:PieceInfo) // 返回一个实例棋子 KnightPiece
+ * @example chessOfPeiceMap["帅"]({ ... }:PieceInfo) // 返回一个实例棋子 GeneralPiece
+ * @example chessOfPeiceMap["兵"]({ ... }:PieceInfo) // 返回一个实例棋子 SoldierPiece
+ */
 declare const chessOfPeiceMap: ChessOfPeiceMap;
 
+/**
+ * 游戏玩家方 固定为 RED | BLACK
+ */
 declare type PieceSide = "RED" | "BLACK";
+/**
+ * 游戏玩家方(中文) 固定为 RED | BLACK
+ */
 declare type PieceSideCN = "红方" | "黑方";
+/**
+ * 玩家Map数据类型
+ */
 declare type PieceSideMap = {
     [prop in PieceSide]: PieceSideCN;
 };
+/**
+ * 玩家Map数据 根据 英文 映射中文名称
+ * @example peiceSideMap["RED"] // 返回 红方
+ * @example peiceSideMap["BLACK"] // 返回 黑方
+ */
 declare const peiceSideMap: PieceSideMap;
+/**
+ * 象棋棋子信息
+ */
 interface PieceInfo {
+    /**
+     * x坐标位置
+     */
     x: number;
+    /**
+     * y坐标位置
+     */
     y: number;
+    /**
+     * 棋子半径
+     */
     radius: number;
+    /**
+     * 棋子名称
+     */
     name: ChessOfPeiceName;
+    /**
+     * 棋子所在的玩家方
+     */
     side: PieceSide;
+    /**
+     * 是否被选中
+     */
     isChoose: boolean;
 }
+/**
+ * 四变形的四个点
+ * 以左上角坐标为起点
+ * 顺时针或逆时针顺序存储的四个坐标点
+ */
 declare type SquarePoints = [Point, Point, Point, Point];
-declare type PieceFilterFn = (p: PieceInfo, index: number) => boolean;
+/**
+ * 坐标点
+ */
 declare class Point {
+    /**
+     * 坐标x
+     */
     x: number;
     y: number;
     constructor(x: number, y: number);
+    /**
+     * 格式化输出坐标点
+     * @returns 例如返回：`(1,1)`
+     */
     toString(): string;
 }
+/**
+ * 象棋移动的坐标点
+ */
 declare class MovePoint extends Point {
+    /**
+     * 阻碍点(坐标)
+     */
     disPoint: Point;
-    constructor(x: number, y: number, p: {
-        x: number;
-        y: number;
-    });
+    constructor(x: number, y: number, p: Point);
+    /**
+     * 格式化输出移动点
+     * @returns 例如返回：`(1,1)` 或者 `(1,1)<阻碍点(2,2)>`
+     */
     toString(): string;
 }
+/**
+ * 棋子移动点列表
+ */
 declare type MovePointList = Array<MovePoint>;
-interface MoveSuccess {
+/**
+ * 移动成功的结果
+ */
+declare type MoveSuccess = {
+    /**
+     * 移动成功
+     */
     flag: true;
-}
-interface MoveFail {
+};
+/**
+ * 移动失败的结果
+ */
+declare type MoveFail = {
+    /**
+     * 移动失败
+     */
     flag: false;
+    /**
+     * 移动失败信息
+     */
     message: string;
-}
+};
+/**
+ * 棋子移动的结果
+ */
 declare type MoveResult = MoveSuccess | MoveFail;
+/**
+ * 象棋运动目标移动点
+ */
 declare type Mp = {
     move: Point;
 };
+/**
+ * 象棋运动目标移动点且需要吃掉目标点上的棋子
+ */
 declare type Ep = {
     eat: Point;
 };
+/**
+ * 象棋运动目标点
+ */
 declare type CheckPoint = Mp | Ep;
+/**
+ * 游戏四种状态
+ * @example "INIT" //游戏初始化状态
+ * @example "START" //游戏已经开始状态
+ * @example "MOVE" //游戏棋子正在运动状态
+ * @example "OVER" //游戏已经结束状态
+ */
 declare type GameState = "INIT" | "START" | "OVER" | "MOVE";
-interface ModalOption {
-    lab: string;
-    val: string;
-}
-interface ModalChooseOption extends ModalOption {
-    x: number;
-    y: number;
-    height: number;
-    width: number;
-}
-declare type ModalOptionList = Array<ModalOption>;
-declare type ModalChooseInfo = {
-    title: string;
-    options: ModalOptionList;
-};
+/**
+ * 监听棋子移动函数
+ * @param peice 运动的象棋
+ * @param cp
+ * if("move" in cp) 成立 说明是 移动点 使用cp.move访问
+ * 否则是 吃掉坐标上点的棋子 使用 cp.eat 访问改坐标点
+ * @param enemyhasTrouble 敌方是否被将军
+ */
 declare type MoveCallback = (peice: ChessOfPeice, cp: CheckPoint, enemyhasTrouble: boolean) => void;
+/**
+ * 监听棋子移动失败函数
+ * @param peice 运动的象棋
+ * @param p 需要移动到的坐标点
+ * @param currentSideDanger 我方移动过去是否被将军
+ * @param msg 失败信息
+ */
 declare type MoveFailCallback = (peice: ChessOfPeice, p: Point, currentSideDanger: boolean, msg: string) => void;
+/**
+ * 监听游戏运行日志
+ * @param str 输出信息
+ */
 declare type GameLogCallback = (str: any) => void;
+/**
+ * 监听游戏结束
+ * @param winnerSide 赢方
+ */
 declare type GameOverCallback = (winnerSide: PieceSide) => void;
+/**
+ * 游戏监听事件名称
+ * @example "move" //游戏棋子移动成功事件名称
+ * @example "moveFail" //游戏棋子移动失败事件名称
+ * @example "log" //游戏日志事件名称
+ * @example "over" //游戏结束事件名称
+ */
 declare type GameEventName = "move" | "moveFail" | "log" | "over";
+/**
+ * 游戏监听函数
+ */
 declare type GameEventCallback = MoveCallback | MoveFailCallback | GameLogCallback | GameOverCallback;
+/**
+ * 游戏象棋玩家格子x轴差值
+ */
 declare type GamePeiceGridDiffX = 8 | 0;
+/**
+ * 游戏象棋玩家格子y轴差值
+ */
 declare type GamePeiceGridDiffY = 9 | 0;
 
 declare type CTX = CanvasRenderingContext2D;
+/**
+ * promise返回的运动结果
+ */
 declare type MoveResultAsync = Promise<MoveResult>;
-declare type GameInfo = {
+/**
+ * 初始化游戏参数
+ */
+interface GameInfo {
+    /**
+     * 游戏窗口宽度大小
+     * @defaultValue 800
+     */
     gameWidth?: number;
+    /**
+     * 游戏窗口高度大小
+     * @defaultValue 800
+     */
     gameHeight?: number;
+    /**
+     * 游戏内边距大小距离棋盘
+     * @defaultValue 20
+     */
     gamePadding?: number;
+    /**
+     * 画布
+     */
     ctx: CTX;
+    /**
+     * 画布缩放大小
+     * @defaultValue 1
+     */
     scaleRatio?: number;
+    /**
+     * 游戏运动速度
+     * @defaultValue 8
+     */
     moveSpeed?: number;
-};
-declare class Game {
+}
+declare class ZhChess {
     /**
      * 当前走棋方
      */
@@ -413,4 +694,4 @@ declare class Game {
     removeEvent(e: "over", fn: GameOverCallback): void;
 }
 
-export { CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, GameEventCallback, GameEventName, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, ModalChooseInfo, ModalChooseOption, ModalOption, ModalOptionList, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveSuccess, PieceFilterFn, PieceInfo, PieceList, PieceSide, PieceSideMap, Point, SquarePoints, chessOfPeiceMap, Game as default, peiceSideMap };
+export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, chessOfPeiceMap, ZhChess as default, peiceSideMap };
