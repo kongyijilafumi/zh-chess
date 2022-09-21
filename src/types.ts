@@ -17,6 +17,8 @@ export type PieceSideMap = {
 
 /**
  * 玩家Map数据 根据 英文 映射中文名称
+ * @example peiceSideMap["RED"] // 返回 红方
+ * @example peiceSideMap["BLACK"] // 返回 黑方
  */
 export const peiceSideMap: PieceSideMap = {
   "RED": "红方",

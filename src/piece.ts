@@ -17,10 +17,19 @@ export class Piece implements PieceInfo {
     this.side = pieceInfo.side
     this.isChoose = pieceInfo.isChoose
   }
+  /**
+   * 格式化象棋棋子输出字符串信息
+   * @returns 例如返回`[RED方]:车(1,1)`
+   */
   toString() {
     return `[${this.side}方]:${this.name}(${this.x},${this.y})`
   }
-
+  /**
+   * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
+   * @param list 移动点列表
+   * @param pl 棋子列表
+   * @returns 返回这个棋子可以移动点列表
+   */
   filterMovePoints(list: MovePointList, pl: PieceList): MovePointList {
     return list.filter(i => {
       const pointHasSameSidePeice = pl.find(p => p.x === i.x && p.y === i.y && p.side === this.side)
@@ -35,8 +44,13 @@ export class RookPiece extends Piece {
   constructor(info: PieceInfo) {
     super(info)
   }
-
-  getMoveObstaclePieceList(p: Point | MovePoint, pieceList: PieceList) {
+  /**
+   * 根据车移动的方向得出障碍棋子列表
+   * @param p 坐标点或者移动点
+   * @param pieceList 棋子列表
+   * @returns 返回存在障碍的棋子列表
+   */
+  getMoveObstaclePieceList(p: Point | MovePoint, pieceList: PieceList): PieceList {
     // x 或者 y 轴
     const diffKey = this.x === p.x ? "y" : "x"
     const key = diffKey === "x" ? "y" : "x"
@@ -55,7 +69,12 @@ export class RookPiece extends Piece {
     })
     return list
   }
-
+  /**
+   * 根据象棋自己的移动规律以及棋子列表的位置得出是否可以移动到指定的坐标上
+   * @param p 坐标点 或 移动点
+   * @param pieceList 棋盘列表
+   * @returns 返回移动结果
+   */
   move(p: Point | MovePoint, pieceList: PieceList): MoveResult {
     if (p.x < 0 || p.x > 8 || p.y < 0 || p.y > 9) {
       return { flag: false, message: "移动位置不符合规则" }
@@ -71,6 +90,11 @@ export class RookPiece extends Piece {
     // console.log("无效移动");
     return { flag: false, message: "移动位置不符合规则" }
   }
+  /**
+   * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+   * @param pl 棋子列表
+   * @returns 返回移动点列表
+   */
   getMovePoints(pl: PieceList): MovePointList {
     const xpoints: MovePointList = Array.from({ length: 9 }, (_v, k) => new MovePoint(k, this.y, notExistPoint))
     const ypoints: MovePointList = Array.from({ length: 10 }, (_v, k) => new MovePoint(this.x, k, notExistPoint))
@@ -89,6 +113,11 @@ export class HorsePiece extends Piece {
   constructor(info: PieceInfo) {
     super(info)
   }
+  /**
+   * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+   * @param pl 棋子列表
+   * @returns 返回移动点列表
+   */
   getMovePoints(pl: PieceList): MovePointList {
     const mps: MovePointList = []
     for (let index = 0; index < 2; index++) {
@@ -116,9 +145,21 @@ export class HorsePiece extends Piece {
     }
     return this.filterMovePoints(mps, pl)
   }
+  /**
+   * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
+   * @param list 移动点列表
+   * @param pl 棋子列表
+   * @returns 返回这个棋子可以移动点列表
+   */
   filterMovePoints(list: MovePointList, pl: PieceList): MovePointList {
     return super.filterMovePoints(list, pl).filter(item => !Boolean(findPiece(pl, item.disPoint)))
   }
+  /**
+   * 根据象棋自己的移动规律以及棋子列表的位置得出是否可以移动到指定的坐标上
+   * @param p 坐标点 或 移动点
+   * @param pieceList 棋盘列表
+   * @returns 返回移动结果
+   */
   move(p: Point, pieceList: PieceList): MoveResult {
     const mps = this.getMovePoints(pieceList)
     const mp = mps.find(i => p.x === i.x && p.y === i.y)
@@ -129,7 +170,6 @@ export class HorsePiece extends Piece {
     if (hasPeice) {
       return { flag: false, message: `${this}走法错误，${hasPeice}卡住了${this.name}的去向` }
     }
-
     return { flag: true }
   }
 }
@@ -141,6 +181,11 @@ export class ElephantPiece extends HorsePiece {
   constructor(info: PieceInfo) {
     super(info)
   }
+  /**
+  * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+  * @param pl 棋子列表
+  * @returns 返回移动点列表
+  */
   getMovePoints(pl: PieceList): MovePointList {
     const mps: MovePointList = []
     for (let index = 0; index < 2; index++) {
@@ -160,6 +205,12 @@ export class ElephantPiece extends HorsePiece {
     }
     return this.filterMovePoints(mps, pl)
   }
+  /**
+    * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
+    * @param list 移动点列表
+    * @param pl 棋子列表
+    * @returns 返回这个棋子可以移动点列表
+    */
   filterMovePoints(list: MovePointList, pl: PieceList) {
     return list.filter(i => {
       const pointHasSameSidePeice = pl.find(p => p.x === i.x && p.y === i.y && p.side === this.side)
@@ -181,6 +232,11 @@ export class KnightPiece extends ElephantPiece {
   constructor(info: PieceInfo) {
     super(info)
   }
+  /**
+    * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+    * @param pl 棋子列表
+    * @returns 返回移动点列表
+    */
   getMovePoints(pl: PieceList): MovePointList {
     const mps: MovePointList = []
     for (let index = 0; index < 2; index++) {
@@ -196,6 +252,12 @@ export class KnightPiece extends ElephantPiece {
     }
     return this.filterMovePoints(mps, pl)
   }
+  /**
+    * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
+    * @param list 移动点列表
+    * @param pl 棋子列表
+    * @returns 返回这个棋子可以移动点列表
+    */
   filterMovePoints(list: MovePointList, pl: PieceList) {
     return list.filter(i => {
       const pointHasSameSidePeice = pl.find(p => p.x === i.x && p.y === i.y && p.side === this.side)
@@ -216,6 +278,11 @@ export class GeneralPiece extends KnightPiece {
   constructor(info: PieceInfo) {
     super(info)
   }
+  /**
+    * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+    * @param pl 棋子列表
+    * @returns 返回移动点列表
+    */
   getMovePoints(pl: PieceList): MovePointList {
     const mps: MovePointList = [
       new MovePoint(this.x - 1, this.y, notExistPoint),
@@ -234,6 +301,12 @@ export class CannonPiece extends RookPiece {
   constructor(info: PieceInfo) {
     super(info)
   }
+  /**
+   * 根据象棋自己的移动规律以及棋子列表的位置得出是否可以移动到指定的坐标上
+   * @param p 坐标点 或 移动点
+   * @param pieceList 棋盘列表
+   * @returns 返回移动结果
+   */
   move(p: Point, pieceList: PieceList): MoveResult {
     if (p.x < 0 || p.x > 8 || p.y < 0 || p.y > 9) {
       return { flag: false, message: "移动位置不符合规则" }
@@ -276,6 +349,11 @@ export class SoldierPiece extends HorsePiece {
   constructor(info: PieceInfo) {
     super(info)
   }
+  /**
+    * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+    * @param pl 棋子列表
+    * @returns 返回移动点列表
+    */
   getMovePoints(pl: PieceList): MovePointList {
     const isCross = this.side === "RED" ? (this.y <= 4) : (this.y >= 5)
     const step = this.side === "RED" ? -1 : +1
@@ -303,6 +381,13 @@ export type PieceList = Array<ChessOfPeice>
 
 /**
  * 象棋棋子名字
+ * @example "车","車" // 都是棋子 RookPiece 类
+ * @example "马","馬" // 都是棋子 HorsePiece 类
+ * @example "相","象" // 都是棋子 ElephantPiece 类
+ * @example "士","仕" // 都是棋子 KnightPiece 类
+ * @example "帅","将" // 都是棋子 GeneralPiece 类
+ * @example "炮","砲" // 都是棋子 CannonPiece 类
+ * @example "兵","卒" // 都是棋子 SoldierPiece 类
  */
 export type ChessOfPeiceName =
   "車" |
@@ -332,6 +417,13 @@ export type ChessOfPeiceMap = {
 
 /**
  * 象棋棋子map表
+ * @example chessOfPeiceMap["车"]({ ... }:PieceInfo) // 返回一个实例棋子 RookPiece
+ * @example chessOfPeiceMap["马"]({ ... }:PieceInfo) // 返回一个实例棋子 HorsePiece
+ * @example chessOfPeiceMap["炮"]({ ... }:PieceInfo) // 返回一个实例棋子 CannonPiece
+ * @example chessOfPeiceMap["相"]({ ... }:PieceInfo) // 返回一个实例棋子 ElephantPiece
+ * @example chessOfPeiceMap["士"]({ ... }:PieceInfo) // 返回一个实例棋子 KnightPiece
+ * @example chessOfPeiceMap["帅"]({ ... }:PieceInfo) // 返回一个实例棋子 GeneralPiece
+ * @example chessOfPeiceMap["兵"]({ ... }:PieceInfo) // 返回一个实例棋子 SoldierPiece
  */
 export const chessOfPeiceMap: ChessOfPeiceMap = {
   "仕": (info: PieceInfo) => new KnightPiece(info),

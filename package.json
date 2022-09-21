@@ -12,8 +12,9 @@
   "scripts": {
     "dev": "rollup -c -w",
     "bulid": "rollup -c",
-    "test:node": "node ./example/node.js",
-    "gen:doc":"npx typedoc src/index.ts"
+    "node:test": "node ./example/node.js",
+    "doc:gen":"typedoc --name zh-chess(中国象棋js框架) --entryPoints src/index.ts --out docs --readme intro.md --htmlLang zh-cn",
+    "dev:doc":"typedoc  --name zh-chess(中国象棋js框架) --entryPoints src/index.ts --out docs --readme intro.md --htmlLang zh-cn --watch"
   },
   "keywords": [
     "zh-chess",

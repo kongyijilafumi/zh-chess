@@ -1043,6 +1043,5 @@ export default class ZhChess {
     }
   }
 }
-export type { ChessOfPeice, PieceList, ChessOfPeiceName, ChessOfPeiceMap } from "./piece"
-export { chessOfPeiceMap } from "./piece"
+export * from "./piece"
 export * from "./types"
