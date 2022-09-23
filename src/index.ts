@@ -374,8 +374,8 @@ export default class ZhChess {
       const { gridWidth, startX, startY, gridHeight } = this
       this.ctx.fillStyle = "#25dd2a"
       this.choosePiece.getMovePoints(this.livePieceList).forEach(p => {
-        let x = startX + p.x * gridWidth;
-        let y = startY + p.y * gridHeight;
+        let x = startX + Math.abs(p.x - this.gridDiffX) * gridWidth;
+        let y = startY + Math.abs(p.y - this.gridDiffY) * gridHeight;
         this.ctx.beginPath();
         this.ctx.arc(x, y, this.radius * .25, 0, 2 * Math.PI);
         this.ctx.closePath();
@@ -846,6 +846,7 @@ export default class ZhChess {
    */
   changePlaySide(side: PieceSide) {
     this.setGridDiff(side)
+    this.clearMoveChoosePeiece()
     this.redraw()
   }
 
