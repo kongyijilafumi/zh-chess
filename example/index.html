@@ -102,7 +102,14 @@
   const app = document.getElementById("app")
   const ctx = app.getContext("2d")
 
-  let zhchess = new ZhChess.default({ ctx, gameWidth: 800, gameHeight: 800, gamePadding: 20, scaleRatio: window.devicePixelRatio })
+  let zhchess = new ZhChess.default({
+    ctx,
+    gameWidth: 500,
+    gameHeight: 500,
+    gamePadding: 20,
+    scaleRatio: window.devicePixelRatio,
+    checkerboardBackground:"#f6af47"
+  })
   app.addEventListener("click", zhchess.listenClickAsync, false)
   zhchess.on("log", console.log)
   zhchess.on("moveFail", console.error)

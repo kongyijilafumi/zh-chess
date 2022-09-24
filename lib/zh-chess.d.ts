@@ -412,6 +412,21 @@ interface GameInfo {
      * @defaultValue 8
      */
     moveSpeed?: number;
+    /**
+     * 棋盘背景色
+     * @defaultValue #faebd7
+     */
+    checkerboardBackground: string;
+    /**
+     * 红棋子背景色
+     * @defaultValue #feeca0
+     */
+    redPeiceBackground: string;
+    /**
+     * 黑棋子背景色
+     * @defaultValue #fdec9e
+     */
+    blackPeiceBackground: string;
 }
 declare class ZhChess {
     /**
@@ -490,11 +505,35 @@ declare class ZhChess {
      * 游戏进行状态
      */
     private gameState;
+    /**
+     * 游戏移动监听事件列表
+     */
     private moveEvents;
+    /**
+     * 游戏移动失败监听事件列表
+     */
     private moveFailEvents;
+    /**
+     * 游戏日志监听事件列表
+     */
     private logEvents;
+    /**
+     * 游戏结束监听事件列表
+     */
     private overEvents;
-    constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, moveSpeed }: GameInfo);
+    /**
+     * 红色棋子背景颜色
+     */
+    private redPeiceBackground;
+    /**
+     * 黑色棋子背景颜色
+     */
+    private blackPeiceBackground;
+    /**
+     * 棋盘背景颜色
+     */
+    private checkerboardBackground;
+    constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, moveSpeed, redPeiceBackground, blackPeiceBackground, checkerboardBackground }: GameInfo);
     /**
      * 设置游戏窗口 棋盘
      */

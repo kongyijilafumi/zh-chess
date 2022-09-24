@@ -45,6 +45,21 @@ export interface GameInfo {
    * @defaultValue 8
    */
   moveSpeed?: number
+  /**
+   * 棋盘背景色
+   * @defaultValue #faebd7
+   */
+  checkerboardBackground: string
+  /**
+   * 红棋子背景色
+   * @defaultValue #feeca0
+   */
+  redPeiceBackground: string
+  /**
+   * 黑棋子背景色
+   * @defaultValue #fdec9e
+   */
+  blackPeiceBackground: string
 }
 
 export default class ZhChess {
@@ -124,12 +139,35 @@ export default class ZhChess {
    * 游戏进行状态
    */
   private gameState!: GameState
-
+  /**
+   * 游戏移动监听事件列表
+   */
   private moveEvents: Array<MoveCallback>
+  /**
+   * 游戏移动失败监听事件列表
+   */
   private moveFailEvents: Array<MoveFailCallback>
+  /**
+   * 游戏日志监听事件列表
+   */
   private logEvents: Array<GameLogCallback>
+  /**
+   * 游戏结束监听事件列表
+   */
   private overEvents: Array<GameOverCallback>
-  constructor({ ctx, gameWidth = 800, gameHeight = 800, gamePadding = 20, scaleRatio = 1, moveSpeed = 8 }: GameInfo) {
+  /**
+   * 红色棋子背景颜色
+   */
+  private redPeiceBackground: string;
+  /**
+   * 黑色棋子背景颜色
+   */
+  private blackPeiceBackground: string;
+  /**
+   * 棋盘背景颜色
+   */
+  private checkerboardBackground: string;
+  constructor({ ctx, gameWidth = 800, gameHeight = 800, gamePadding = 20, scaleRatio = 1, moveSpeed = 8, redPeiceBackground = "#feeca0", blackPeiceBackground = "#fdec9e", checkerboardBackground = "#faebd7" }: GameInfo) {
     if (!ctx) {
       throw new Error("请传入画布")
     }
@@ -138,6 +176,9 @@ export default class ZhChess {
     this.logEvents = []
     this.overEvents = []
     this.ctx = ctx
+    this.redPeiceBackground = redPeiceBackground
+    this.blackPeiceBackground = blackPeiceBackground
+    this.checkerboardBackground = checkerboardBackground
     // 设置 缩放 来解决移动端模糊问题
     this.ctx.scale(scaleRatio, scaleRatio)
     this.listenClick = this.listenClick.bind(this)
@@ -252,7 +293,7 @@ export default class ZhChess {
    */
   private drawSinglePeice(piece: ChessOfPeice, replaceXY?: boolean) {
     const { startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY } = this
-    const bgfillStyle = piece.side === "BLACK" ? "#fdec9e" : "#feeca0";
+    const bgfillStyle = piece.side === "BLACK" ? this.blackPeiceBackground : this.redPeiceBackground;
     const textColor = piece.side === "BLACK" ? "#000" : "#c1190c";
     const borderColor = piece.isChoose ? "red" : "#000";
     let x = startX + piece.x * gridWidth;
@@ -311,7 +352,7 @@ export default class ZhChess {
   private drawChessLine() {
     const { startX, startY, endX, endY, gridWidth, gridHeight } = this
     // 画背景
-    this.ctx.fillStyle = "#faebd7";
+    this.ctx.fillStyle = this.checkerboardBackground;
     this.ctx.fillRect(0, 0, this.width, this.width);
 
     this.ctx.strokeStyle = "#000";
