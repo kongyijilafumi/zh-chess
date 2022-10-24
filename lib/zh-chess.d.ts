@@ -533,6 +533,14 @@ declare class ZhChess {
      * 棋盘背景颜色
      */
     private checkerboardBackground;
+    /**
+     * 赢方
+     */
+    private winner;
+    /**
+     * 当前游戏方
+     */
+    private gameSide;
     constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, moveSpeed, redPeiceBackground, blackPeiceBackground, checkerboardBackground }: GameInfo);
     /**
      * 设置游戏窗口 棋盘
@@ -723,6 +731,16 @@ declare class ZhChess {
     * 监听棋盘点击
     */
     listenClickAsync(e: MouseEvent): void;
+    /**
+     * 获取赢棋方
+     */
+    get winnerSide(): PieceSide | null;
+    private set winnerSide(value);
+    /**
+     * 获取游戏方
+     */
+    get currentGameSide(): PieceSide | null;
+    private set currentGameSide(value);
     on(e: "move", fn: MoveCallback): void;
     on(e: "moveFail", fn: MoveFailCallback): void;
     on(e: "log", fn: GameLogCallback): void;
@@ -733,4 +751,4 @@ declare class ZhChess {
     removeEvent(e: "over", fn: GameOverCallback): void;
 }
 
-export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, chessOfPeiceMap, ZhChess as default, peiceSideMap };
+export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, chessOfPeiceMap, ZhChess as default, peiceSideMap };

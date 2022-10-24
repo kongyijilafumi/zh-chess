@@ -145,13 +145,13 @@ export type MoveResult = MoveSuccess | MoveFail
 /**
  * 象棋运动目标移动点
  */
-type Mp = {
+export type Mp = {
   move: Point
 }
 /**
  * 象棋运动目标移动点且需要吃掉目标点上的棋子
  */
-type Ep = {
+export type Ep = {
   eat: Point
 }
 

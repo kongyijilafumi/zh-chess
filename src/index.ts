@@ -167,6 +167,15 @@ export default class ZhChess {
    * 棋盘背景颜色
    */
   private checkerboardBackground: string;
+  /**
+   * 赢方
+   */
+  private winner: PieceSide | null = null;
+  /**
+   * 当前游戏方
+   */
+  private gameSide: PieceSide | null = null;
+
   constructor({ ctx, gameWidth = 800, gameHeight = 800, gamePadding = 20, scaleRatio = 1, moveSpeed = 8, redPeiceBackground = "#feeca0", blackPeiceBackground = "#fdec9e", checkerboardBackground = "#faebd7" }: GameInfo) {
     if (!ctx) {
       throw new Error("请传入画布")
@@ -564,6 +573,7 @@ export default class ZhChess {
       const hasSolution = this.checkEnemySideInTroubleHasSolution(enemySide, movedPeiceList)
       if (!hasSolution) {
         this.gameState = "OVER"
+        this.winner = side
         this.overEvents.forEach(f => f(side))
       }
     }
@@ -582,8 +592,8 @@ export default class ZhChess {
         const hasSolution = this.checkEnemySideInTroubleHasSolution(enemySide, movedPeiceList)
         if (!hasSolution) {
           this.gameState = "OVER"
+          this.winner = side
           this.overEvents.forEach(f => f(side))
-
         }
       }
       this.moveEvents.forEach(f => f(mp, checkPoint, enemyhasTrouble))
@@ -863,6 +873,8 @@ export default class ZhChess {
     this.init()
     this.setGridDiff(side)
     this.gameState = "START"
+    this.winner = null
+    this.gameSide = side
     this.initPiece()
   }
   /**
@@ -1031,7 +1043,24 @@ export default class ZhChess {
     }
     this.pieceMoveAsync(clickPoint)
   }
-
+  /**
+   * 获取赢棋方
+   */
+  get winnerSide(): PieceSide | null {
+    return this.winner
+  }
+  private set winnerSide(val: any) {
+    console.log(`设置值无效：${val}`);
+  }
+  /**
+   * 获取游戏方
+   */
+  get currentGameSide(): PieceSide | null {
+    return this.gameSide
+  }
+  private set currentGameSide(val: any) {
+    console.log(`设置值无效：${val}`);
+  }
   on(e: "move", fn: MoveCallback): void;
   on(e: "moveFail", fn: MoveFailCallback): void;
   on(e: "log", fn: GameLogCallback): void;
