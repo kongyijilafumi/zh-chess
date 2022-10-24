@@ -49,17 +49,17 @@ export interface GameInfo {
    * 棋盘背景色
    * @defaultValue #faebd7
    */
-  checkerboardBackground: string
+  checkerboardBackground?: string
   /**
    * 红棋子背景色
    * @defaultValue #feeca0
    */
-  redPeiceBackground: string
+  redPeiceBackground?: string
   /**
    * 黑棋子背景色
    * @defaultValue #fdec9e
    */
-  blackPeiceBackground: string
+  blackPeiceBackground?: string
 }
 
 export default class ZhChess {

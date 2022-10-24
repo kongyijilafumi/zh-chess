@@ -1,6 +1,6 @@
 {
   "name": "zh-chess",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A Chinese chess framework that supports browsers and nodejs",
   "main": "./lib/zh-chess.cjs.js",
   "module": "./lib/zh-chess.es.js",
