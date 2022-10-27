@@ -8,6 +8,8 @@
 
 支持typescript[更多象棋知识](https://www.xqbase.com/index.htm)
 
+## [案例网站](https://chess.azhengpersonalblog.top/)
+
 ## 安装使用
 
 ### nodejs
