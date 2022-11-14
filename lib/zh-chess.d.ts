@@ -749,6 +749,11 @@ declare class ZhChess {
     removeEvent(e: "moveFail", fn: MoveFailCallback): void;
     removeEvent(e: "log", fn: GameLogCallback): void;
     removeEvent(e: "over", fn: GameOverCallback): void;
+    /**
+     * 设置当前存活棋子列表
+     * @param pl 当前存活棋子列表
+     */
+    setLivePieceList(pl: PieceList): void;
 }
 
 export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, chessOfPeiceMap, ZhChess as default, peiceSideMap };

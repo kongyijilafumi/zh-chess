@@ -1109,6 +1109,14 @@ export default class ZhChess {
       throw new Error("监听函数值应该为 function 类型")
     }
   }
+  /**
+   * 设置当前存活棋子列表
+   * @param pl 当前存活棋子列表
+   */
+  setLivePieceList(pl: PieceList) {
+    this.livePieceList = pl
+    this.deadPieceList = []
+  }
 }
 export * from "./piece"
 export * from "./types"

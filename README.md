@@ -8,7 +8,6 @@
 
 一款JavaScript语言编写的中国象棋游戏框架，支持nodejs，浏览器，vue，react等前端框架。(支持typescript)[更多象棋知识](https://www.xqbase.com/index.htm)
 
-
 ## [案例网站](https://chess.azhengpersonalblog.top/)
 
 ## 安装使用
@@ -280,7 +279,7 @@ export default function App() {
 
 #### move(piecePoint: Point, movePoint: Point, side: PieceSide): MoveResult
 
-根据 `红方在下黑方在上的` 视角(也是棋子游戏里的固定坐标`不分红黑方视角`) 来指定坐标点移动到指定的坐标点，无移动动画，返回移动结果，同步方法。
+根据 `红方在下黑方在上的` 视角(也是棋子游戏里的固定坐标 `不分红黑方视角` ) 来指定坐标点移动到指定的坐标点，无移动动画，返回移动结果，同步方法。
 
 ```bash
   0  1  2  3  4  5  6  7  8         0 1  2  3  4  5  6  7  8
@@ -297,7 +296,7 @@ export default function App() {
   1  2  3  4  5  6  7  8  9         1  2  3  4  5  6  7  8  9 
 ```
 
-> 以 `红方在下黑方在上的`视角移动棋子最左上为x，y轴的起始位置，往下y变大，往右x变大。如图所示，坐标点为(0, 0)移动到了(0, 2)位置，表示`黑`方`車`向前进`两个格子`代码如下所示。
+> 以 `红方在下黑方在上的` 视角移动棋子最左上为x，y轴的起始位置，往下y变大，往右x变大。如图所示，坐标点为(0, 0)移动到了(0, 2)位置，表示 `黑` 方 `車` 向前进 `两个格子` 代码如下所示。
 
 ```js
 const piecePoint = {
@@ -358,3 +357,7 @@ game.move("车1进1", "RED") // 红方 车1进1 返回 { flag:true } 或者 { fl
 #### removeEvent(e: GameEventName, fn: GameEventCallback):void
 
 移除游戏的监听函数
+
+#### setLivePieceList(pl: PieceList): void
+
+设置当前存活棋子列表
