@@ -265,8 +265,8 @@ export default function App() {
 更换玩家视角
 
 ```js
-  game.gameStart("RED") // 红方视角 红在下 黑在上
-  game.gameStart("BLACK") // 黑方视角 黑在下 红在上
+  game.changePlaySide("RED") // 红方视角 红在下 黑在上
+  game.changePlaySide("BLACK") // 黑方视角 黑在下 红在上
 ```
 
 #### checkGameState(): boolean
