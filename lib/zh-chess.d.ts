@@ -1,7 +1,6 @@
 declare class Piece implements PieceInfo {
     x: number;
     y: number;
-    radius: number;
     name: ChessOfPeiceName;
     side: PieceSide;
     isChoose: boolean;
@@ -23,7 +22,6 @@ declare class Piece implements PieceInfo {
  * 象棋：车
  */
 declare class RookPiece extends Piece {
-    constructor(info: PieceInfo);
     /**
      * 根据车移动的方向得出障碍棋子列表
      * @param p 坐标点或者移动点
@@ -49,7 +47,6 @@ declare class RookPiece extends Piece {
  * 象棋：马
  */
 declare class HorsePiece extends Piece {
-    constructor(info: PieceInfo);
     /**
      * 根据棋子列表的坐标获取当前棋子的可以移动点列表
      * @param pl 棋子列表
@@ -75,7 +72,6 @@ declare class HorsePiece extends Piece {
  * 象棋：象
  */
 declare class ElephantPiece extends HorsePiece {
-    constructor(info: PieceInfo);
     /**
     * 根据棋子列表的坐标获取当前棋子的可以移动点列表
     * @param pl 棋子列表
@@ -94,7 +90,6 @@ declare class ElephantPiece extends HorsePiece {
  * 象棋：士
  */
 declare class KnightPiece extends ElephantPiece {
-    constructor(info: PieceInfo);
     /**
       * 根据棋子列表的坐标获取当前棋子的可以移动点列表
       * @param pl 棋子列表
@@ -113,7 +108,6 @@ declare class KnightPiece extends ElephantPiece {
  * 象棋：将领
  */
 declare class GeneralPiece extends KnightPiece {
-    constructor(info: PieceInfo);
     /**
       * 根据棋子列表的坐标获取当前棋子的可以移动点列表
       * @param pl 棋子列表
@@ -125,7 +119,6 @@ declare class GeneralPiece extends KnightPiece {
  * 象棋：炮
  */
 declare class CannonPiece extends RookPiece {
-    constructor(info: PieceInfo);
     /**
      * 根据象棋自己的移动规律以及棋子列表的位置得出是否可以移动到指定的坐标上
      * @param p 坐标点 或 移动点
@@ -138,7 +131,6 @@ declare class CannonPiece extends RookPiece {
  * 象棋：兵
  */
 declare class SoldierPiece extends HorsePiece {
-    constructor(info: PieceInfo);
     /**
       * 根据棋子列表的坐标获取当前棋子的可以移动点列表
       * @param pl 棋子列表
@@ -164,7 +156,7 @@ declare type PieceList = Array<ChessOfPeice>;
  * @example "炮","砲" // 都是棋子 CannonPiece 类
  * @example "兵","卒" // 都是棋子 SoldierPiece 类
  */
-declare type ChessOfPeiceName = "車" | "馬" | "象" | "仕" | "砲" | "车" | "马" | "相" | "士" | "炮" | "卒" | "兵" | "将" | "帅";
+declare type ChessOfPeiceName = "車" | "车" | "馬" | "马" | "象" | "相" | "仕" | "士" | "砲" | "炮" | "卒" | "兵" | "将" | "帅";
 /**
  * 象棋棋子Map数据类型
  * 根据名字返回一个函数
@@ -218,10 +210,6 @@ interface PieceInfo {
      * y坐标位置
      */
     y: number;
-    /**
-     * 棋子半径
-     */
-    radius: number;
     /**
      * 棋子名称
      */
@@ -541,6 +529,14 @@ declare class ZhChess {
      * 当前游戏方
      */
     private gameSide;
+    /**
+     * 动画方法
+     */
+    private animate;
+    /**
+     * 清除动画方法
+     */
+    private cancelAnimate;
     constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, moveSpeed, redPeiceBackground, blackPeiceBackground, checkerboardBackground }: GameInfo);
     /**
      * 设置游戏窗口 棋盘
@@ -735,12 +731,23 @@ declare class ZhChess {
      * 获取赢棋方
      */
     get winnerSide(): PieceSide | null;
-    private set winnerSide(value);
     /**
      * 获取游戏方
      */
     get currentGameSide(): PieceSide | null;
     private set currentGameSide(value);
+    /**
+     * 获取当前存活的棋子列表
+     */
+    get currentLivePieceList(): PieceList;
+    /**
+     * 获取当前被吃掉的棋子列表
+     */
+    get currentDeadPieceList(): PieceList;
+    /**
+     * 获取当前象棋绘制半径
+     */
+    get currentRadius(): number;
     on(e: "move", fn: MoveCallback): void;
     on(e: "moveFail", fn: MoveFailCallback): void;
     on(e: "log", fn: GameLogCallback): void;

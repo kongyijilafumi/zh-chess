@@ -1,7 +1,7 @@
 {
   "name": "zh-chess",
-  "version": "1.0.8",
-  "description": "A Chinese chess framework that supports browsers and nodejs",
+  "version": "1.0.9",
+  "description": "A Chinese chess framework that supports browsers and nodejs(一款运行在浏览器和nodejs环境的中国象棋框架)",
   "main": "./lib/zh-chess.cjs.js",
   "module": "./lib/zh-chess.es.js",
   "browser": {
@@ -13,8 +13,8 @@
     "dev": "rollup -c -w",
     "bulid": "rollup -c",
     "node:test": "node ./example/node.js",
-    "doc:gen":"typedoc --name zh-chess(中国象棋js框架) --entryPoints src/index.ts --out docs --readme intro.md --htmlLang zh-cn",
-    "dev:doc":"typedoc  --name zh-chess(中国象棋js框架) --entryPoints src/index.ts --out docs --readme intro.md --htmlLang zh-cn --watch"
+    "doc:gen": "typedoc --name zh-chess(中国象棋js框架) --entryPoints src/index.ts --out docs --readme intro.md --htmlLang zh-cn",
+    "dev:doc": "typedoc  --name zh-chess(中国象棋js框架) --entryPoints src/index.ts --out docs --readme intro.md --htmlLang zh-cn --watch"
   },
   "keywords": [
     "zh-chess",
