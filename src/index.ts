@@ -176,6 +176,16 @@ export default class ZhChess {
    */
   private gameSide: PieceSide | null = null;
 
+  /**
+   * 动画方法
+   */
+  private animate: (cb: FrameRequestCallback) => number;
+
+  /**
+   * 清除动画方法
+   */
+  private cancelAnimate: (hander: number) => void;
+
   constructor({ ctx, gameWidth = 800, gameHeight = 800, gamePadding = 20, scaleRatio = 1, moveSpeed = 8, redPeiceBackground = "#feeca0", blackPeiceBackground = "#fdec9e", checkerboardBackground = "#faebd7" }: GameInfo) {
     if (!ctx) {
       throw new Error("请传入画布")
@@ -198,6 +208,30 @@ export default class ZhChess {
     this.moveSpeed = moveSpeed
     this.setGameWindow(gameWidth, gameHeight, gamePadding)
     this.init()
+
+    this.animate = globalThis.requestAnimationFrame ||
+      //@ts-ignore 
+      globalThis.webkitRequestAnimationFrame ||
+      //@ts-ignore 
+      globalThis.mozRequestAnimationFrame ||
+      //@ts-ignore 
+      globalThis.oRequestAnimationFrame ||
+      //@ts-ignore 
+      globalThis.msRequestAnimationFrame ||
+      function (callback) {
+        return globalThis.setTimeout(callback, 1000 / 60);
+      };
+
+    this.cancelAnimate = globalThis.cancelAnimationFrame ||
+      //@ts-ignore
+      globalThis.webkitCancelAnimationFrame ||
+      //@ts-ignore 
+      globalThis.mozCancelAnimationFrame ||
+      //@ts-ignore 
+      globalThis.oCancelAnimationFrame ||
+      //@ts-ignore 
+      globalThis.msCancelAnimationFrame ||
+      globalThis.clearTimeout
   }
 
   /**
@@ -453,7 +487,7 @@ export default class ZhChess {
     const xstep = dx === 0 ? 0 : dx / this.moveSpeed
     const ystep = dy === 0 ? 0 : dy / this.moveSpeed
     // 是否支持 动画 API 
-    if (typeof window.requestAnimationFrame === "function" && typeof window.requestAnimationFrame === "function") {
+    if (typeof this.animate === "function" && typeof this.cancelAnimate === "function") {
       return new Promise((resolve) => {
         let raf: number;
         const cb = () => {
@@ -461,7 +495,7 @@ export default class ZhChess {
           const diffX = Math.abs(mp.x - activePoint.x), diffY = Math.abs(mp.y - activePoint.y)
           // console.log(`diffX:${diffX} diffY:${diffY}\nxstep:${Math.abs(xstep)} ystep:${Math.abs(ystep)}`);
           if (diffX <= Math.abs(xstep) && diffY <= Math.abs(ystep) && this.choosePiece) {
-            window.cancelAnimationFrame(raf)
+            this.cancelAnimate.call(globalThis, raf)
             return resolve(mp)
           }
           this.drawPeice(pl)
@@ -472,7 +506,7 @@ export default class ZhChess {
           this.drawSinglePeice(peice)
           activePoint.x -= xstep
           activePoint.y -= ystep
-          raf = window.requestAnimationFrame(cb)
+          raf = this.animate.call(globalThis, cb)
         }
         cb()
       })
