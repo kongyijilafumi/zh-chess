@@ -528,7 +528,7 @@ export default class ZhChess {
       const hasTrouble = this.checkGeneralInTrouble(side, this.choosePiece, checkPoint, this.livePieceList)
       if (hasTrouble) {
         this.moveFailEvents.forEach(f => f(lastChoosePeice, point, true, "不可以送将！"))
-        return { flag: true }
+        return { flag: false, message: "不可以送将！" }
       }
       if (!isMove) {
         const eatPeice = findPiece(this.livePieceList, point)
