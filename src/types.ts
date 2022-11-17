@@ -38,10 +38,6 @@ export interface PieceInfo {
    */
   y: number,
   /**
-   * 棋子半径
-   */
-  radius: number,
-  /**
    * 棋子名称
    */
   name: ChessOfPeiceName,

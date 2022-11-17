@@ -5,14 +5,12 @@ const notExistPoint = { x: 10, y: 10 }
 export class Piece implements PieceInfo {
   x: number
   y: number
-  radius: number
   name: ChessOfPeiceName
   side: PieceSide
   isChoose: boolean
   constructor(pieceInfo: PieceInfo) {
     this.x = pieceInfo.x
     this.y = pieceInfo.y
-    this.radius = pieceInfo.radius
     this.name = pieceInfo.name
     this.side = pieceInfo.side
     this.isChoose = pieceInfo.isChoose
@@ -41,9 +39,7 @@ export class Piece implements PieceInfo {
  * 象棋：车
  */
 export class RookPiece extends Piece {
-  constructor(info: PieceInfo) {
-    super(info)
-  }
+
   /**
    * 根据车移动的方向得出障碍棋子列表
    * @param p 坐标点或者移动点
@@ -110,9 +106,7 @@ export class RookPiece extends Piece {
  * 象棋：马
  */
 export class HorsePiece extends Piece {
-  constructor(info: PieceInfo) {
-    super(info)
-  }
+
   /**
    * 根据棋子列表的坐标获取当前棋子的可以移动点列表
    * @param pl 棋子列表
@@ -178,9 +172,7 @@ export class HorsePiece extends Piece {
  * 象棋：象
  */
 export class ElephantPiece extends HorsePiece {
-  constructor(info: PieceInfo) {
-    super(info)
-  }
+
   /**
   * 根据棋子列表的坐标获取当前棋子的可以移动点列表
   * @param pl 棋子列表
@@ -229,9 +221,7 @@ export class ElephantPiece extends HorsePiece {
  * 象棋：士
  */
 export class KnightPiece extends ElephantPiece {
-  constructor(info: PieceInfo) {
-    super(info)
-  }
+
   /**
     * 根据棋子列表的坐标获取当前棋子的可以移动点列表
     * @param pl 棋子列表
@@ -275,9 +265,7 @@ export class KnightPiece extends ElephantPiece {
  * 象棋：将领
  */
 export class GeneralPiece extends KnightPiece {
-  constructor(info: PieceInfo) {
-    super(info)
-  }
+
   /**
     * 根据棋子列表的坐标获取当前棋子的可以移动点列表
     * @param pl 棋子列表
@@ -298,9 +286,7 @@ export class GeneralPiece extends KnightPiece {
  * 象棋：炮
  */
 export class CannonPiece extends RookPiece {
-  constructor(info: PieceInfo) {
-    super(info)
-  }
+
   /**
    * 根据象棋自己的移动规律以及棋子列表的位置得出是否可以移动到指定的坐标上
    * @param p 坐标点 或 移动点
@@ -346,9 +332,7 @@ export class CannonPiece extends RookPiece {
  * 象棋：兵
  */
 export class SoldierPiece extends HorsePiece {
-  constructor(info: PieceInfo) {
-    super(info)
-  }
+
   /**
     * 根据棋子列表的坐标获取当前棋子的可以移动点列表
     * @param pl 棋子列表
@@ -391,14 +375,14 @@ export type PieceList = Array<ChessOfPeice>
  */
 export type ChessOfPeiceName =
   "車" |
-  "馬" |
-  "象" |
-  "仕" |
-  "砲" |
   "车" |
+  "馬" |
   "马" |
+  "象" |
   "相" |
+  "仕" |
   "士" |
+  "砲" |
   "炮" |
   "卒" |
   "兵" |

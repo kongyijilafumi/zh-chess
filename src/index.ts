@@ -282,7 +282,7 @@ export default class ZhChess {
    * 初始化象棋个数
    */
   private initPiece() {
-    this.livePieceList = getPiecesList(this.radius)
+    this.livePieceList = getPiecesList()
     this.choosePiece = null
     this.deadPieceList = []
     this.redraw()
@@ -301,7 +301,7 @@ export default class ZhChess {
    * @param piece 单个象棋
    */
   private drawSinglePeice(piece: ChessOfPeice, replaceXY?: boolean) {
-    const { startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY } = this
+    const { startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius } = this
     const bgfillStyle = piece.side === "BLACK" ? this.blackPeiceBackground : this.redPeiceBackground;
     const textColor = piece.side === "BLACK" ? "#000" : "#c1190c";
     const borderColor = piece.isChoose ? "red" : "#000";
@@ -311,7 +311,7 @@ export default class ZhChess {
       x = startX + Math.abs(piece.x - gridDiffX) * gridWidth;
       y = startY + Math.abs(piece.y - gridDiffY) * gridHeight;
     }
-    let r = piece.radius, ty = 0;
+    let r = radius, ty = 0;
     this.ctx.fillStyle = bgfillStyle;
 
     const drawBoder = (x: number, y: number, r: number, startAngle: number, endAngle: number) => {
@@ -352,7 +352,7 @@ export default class ZhChess {
     this.ctx.textAlign = "center";
     this.ctx.textBaseline = "middle";
     this.ctx.fillStyle = textColor;
-    this.ctx.font = piece.radius + "px yahei";
+    this.ctx.font = radius + "px yahei";
     this.ctx.fillText(piece.name, x, y + ty);
   }
   /**
