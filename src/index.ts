@@ -1083,9 +1083,6 @@ export default class ZhChess {
   get winnerSide(): PieceSide | null {
     return this.winner
   }
-  private set winnerSide(val: any) {
-    console.log(`设置值无效：${val}`);
-  }
   /**
    * 获取游戏方
    */
@@ -1094,6 +1091,28 @@ export default class ZhChess {
   }
   private set currentGameSide(val: any) {
     console.log(`设置值无效：${val}`);
+  }
+  /**
+   * 获取当前存活的棋子列表
+   */
+  get currentLivePieceList(): PieceList {
+    return this.livePieceList.map(item => {
+      return chessOfPeiceMap[item.name]({ ...item })
+    })
+  }
+  /**
+   * 获取当前被吃掉的棋子列表
+   */
+  get currentDeadPieceList(): PieceList {
+    return this.deadPieceList.map(item => {
+      return chessOfPeiceMap[item.name]({ ...item })
+    })
+  }
+  /**
+   * 获取当前象棋绘制半径
+   */
+  get currentRadius(): number {
+    return this.radius
   }
   on(e: "move", fn: MoveCallback): void;
   on(e: "moveFail", fn: MoveFailCallback): void;
