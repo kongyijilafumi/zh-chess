@@ -711,10 +711,10 @@ export default class ZhChess {
     const moveFlag = this.choosePiece.move(clickPoint, this.livePieceList)
     if (!moveFlag.flag) {
       this.moveFailEvents.forEach(f => f(this.choosePiece as ChessOfPeice, clickPoint, false, moveFlag.message))
+      return moveFlag
     } else {
-      this.moveToPeice({ eat: clickPoint })
+      return this.moveToPeice({ eat: clickPoint })
     }
-    return moveFlag
   }
   /**
   * 移动棋子
@@ -777,10 +777,10 @@ export default class ZhChess {
     const moveFlag = this.choosePiece.move(p, this.livePieceList)
     if (!moveFlag.flag) {
       this.moveFailEvents.forEach(f => f(this.choosePiece as ChessOfPeice, p, false, moveFlag.message))
+      return Promise.resolve(moveFlag)
     } else {
       return this.moveToPeiceAsync({ eat: p })
     }
-    return Promise.resolve(moveFlag)
   }
 
   /**
