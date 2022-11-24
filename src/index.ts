@@ -599,19 +599,30 @@ export default class ZhChess {
     const enemySide: PieceSide = side === "RED" ? "BLACK" : "RED"
     const p = "move" in checkPoint ? checkPoint.move : checkPoint.eat
     this.moveEnd(p)
-    const enemyhasTrouble = this.checkGeneralInTrouble(enemySide, mp, { move: p }, drawList)
+    let isOver = false
+    const enemyhasTrouble = this.checkGeneralInTrouble(enemySide, mp, checkPoint, drawList)
     if (enemyhasTrouble) {
       const movedPeiceList = drawList.filter(i => !(i.x === mp.x && i.y === mp.y))
       const newMp = chessOfPeiceMap[mp.name]({ ...mp, ...p })
       movedPeiceList.push(newMp)
       const hasSolution = this.checkEnemySideInTroubleHasSolution(enemySide, movedPeiceList)
       if (!hasSolution) {
+        isOver = true
         this.gameState = "OVER"
         this.winner = side
-        this.overEvents.forEach(f => f(side))
+      }
+    } else {
+      const hasMovePoints = this.checkEnemySideHasMovePoints(enemySide)
+      if (!hasMovePoints) {
+        isOver = true
+        this.gameState = "OVER"
+        this.winner = side
       }
     }
-    this.moveEvents.forEach(f => f(mp, checkPoint, enemyhasTrouble))
+    this.moveEvents.forEach(f => f(mp, checkPoint, isOver || enemyhasTrouble))
+    if (isOver) {
+      this.overEvents.forEach(f => f(side))
+    }
     return { flag: true }
   }
   private moveStartAsync(mp: ChessOfPeice, checkPoint: CheckPoint, drawList: PieceList, side: PieceSide) {
@@ -619,18 +630,29 @@ export default class ZhChess {
     const p = "move" in checkPoint ? checkPoint.move : checkPoint.eat
     return this.movePeiceToPointAsync(p, drawList).then(() => {
       const enemyhasTrouble = this.checkGeneralInTrouble(enemySide, mp, { move: p }, drawList)
+      let isOver = false
       if (enemyhasTrouble) {
         const movedPeiceList = drawList.filter(i => !(i.x === mp.x && i.y === mp.y))
         const newMp = chessOfPeiceMap[mp.name]({ ...mp, ...p })
         movedPeiceList.push(newMp)
         const hasSolution = this.checkEnemySideInTroubleHasSolution(enemySide, movedPeiceList)
         if (!hasSolution) {
+          isOver = true
           this.gameState = "OVER"
           this.winner = side
-          this.overEvents.forEach(f => f(side))
+        }
+      } else {
+        const hasMovePoints = this.checkEnemySideHasMovePoints(enemySide)
+        if (!hasMovePoints) {
+          isOver = true
+          this.gameState = "OVER"
+          this.winner = side
         }
       }
-      this.moveEvents.forEach(f => f(mp, checkPoint, enemyhasTrouble))
+      this.moveEvents.forEach(f => f(mp, checkPoint, isOver || enemyhasTrouble))
+      if (isOver) {
+        this.overEvents.forEach(f => f(side))
+      }
       return null
     })
 
@@ -936,7 +958,9 @@ export default class ZhChess {
     this.clearMoveChoosePeiece()
     this.redraw()
   }
-
+  changeCurrentPlaySide(side: PieceSide) {
+    this.currentSide = side
+  }
   /**
    * 游戏是否结束
    */
@@ -1025,6 +1049,35 @@ export default class ZhChess {
         return hasSolution
       })
     })
+  }
+  /**
+   * 判断敌方是否还有下一步走法 无走法就是绝杀
+   * @param enemySide 敌方
+   * @returns {boolean}
+   */
+  private checkEnemySideHasMovePoints(enemySide: PieceSide) {
+    // 当前棋子列表
+    const currentList = this.currentLivePieceList
+    // 敌方棋子列表
+    const enemyList = currentList.filter(p => p.side === enemySide)
+    const hasPeice = enemyList.find(p => {
+      // 获取当前棋子可移动位置列表
+      const mps = p.getMovePoints(currentList)
+      return mps.find(mp => {
+        // 移动点 是否有棋子
+        const checkPoint: CheckPoint = findPiece(currentList, mp) ? { eat: mp } : { move: mp }
+        const hasTrouble = this.checkGeneralInTrouble(enemySide, p, checkPoint, currentList)
+        // 如果 移动存在危险表示 不可以移动此移动点
+        if (hasTrouble) {
+          return false
+        }
+        return true
+      })
+    })
+    if (hasPeice) {
+      return true
+    }
+    return false
   }
   /**
    * 棋子运动前检查游戏状态是否可以运动

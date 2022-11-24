@@ -687,6 +687,7 @@ declare class ZhChess {
      * @param side 玩家
      */
     changePlaySide(side: PieceSide): void;
+    changeCurrentPlaySide(side: PieceSide): void;
     /**
      * 游戏是否结束
      */
@@ -714,6 +715,12 @@ declare class ZhChess {
      * @returns  返回是否有解
      */
     private checkEnemySideInTroubleHasSolution;
+    /**
+     * 判断敌方是否还有下一步走法 无走法就是绝杀
+     * @param enemySide 敌方
+     * @returns {boolean}
+     */
+    private checkEnemySideHasMovePoints;
     /**
      * 棋子运动前检查游戏状态是否可以运动
      * @returns 是否可以运动
