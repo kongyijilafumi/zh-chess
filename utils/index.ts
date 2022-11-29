@@ -1,5 +1,5 @@
-import type { ChessOfPeiceName, PieceList } from './../src/piece';
-import type { PieceSide, } from '../src/types';
+import type { ChessOfPeice, ChessOfPeiceName, PieceList } from './../src/piece';
+import type { MovePoint, ParsePENStrData, PeicePosInfo, PENPeiceNameCode, PieceSide, } from '../src/types';
 import { Point } from '../src/types';
 import { chessOfPeiceMap } from '../src/piece';
 
@@ -9,7 +9,6 @@ import { chessOfPeiceMap } from '../src/piece';
 * @param p 棋盘坐标点
 * @returns 返回当前棋盘坐标点上的棋子
 */
-export const findPiece = (pl: PieceList, p: Point) => pl.find(item => item.x === p.x && item.y === p.y)
 
 
 const numPos = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
@@ -245,7 +244,7 @@ export const parseStrToPoint = (str: string, side: PieceSide, pl: PieceList) => 
     // 平
     if (moveStyle === moveStyles[1]) {
       // 车 将 兵 跑
-      return {  choose: choose[0], mp: new Point(Math.abs(moveStep - pieceDiffX), cy) }
+      return { choose: choose[0], mp: new Point(Math.abs(moveStep - pieceDiffX), cy) }
     }
   }
   return false
@@ -272,6 +271,7 @@ function getSidePieceName(name: ChessOfPeiceName, side: PieceSide): ChessOfPeice
   }
 }
 
+
 function formatChooseNum(str: string): number {
   switch (str) {
     case "1": case "一": case "前":
@@ -296,3 +296,192 @@ function formatChooseNum(str: string): number {
       return 10
   }
 }
+
+export function parse_PEN_PeiceName(penPeiceNameCode: PENPeiceNameCode): ChessOfPeiceName | null {
+  switch (penPeiceNameCode) {
+    case 'K':
+      return "帅"
+    case 'k':
+      return '将'
+    case 'A':
+      return '士'
+    case 'a':
+      return '仕'
+    case 'B':
+      return '相'
+    case 'b':
+      return '象'
+    case 'N':
+      return '马'
+    case 'n':
+      return '馬'
+    case 'R':
+      return '车'
+    case 'r':
+      return '車'
+    case 'C':
+      return '炮'
+    case "c":
+      return '砲'
+    case "P":
+      return '兵'
+    case 'p':
+      return '卒'
+    default:
+      return null
+  }
+}
+function get_PEN_PieceName(str: ChessOfPeiceName): PENPeiceNameCode | null {
+  switch (str) {
+    case '将': case '帅':
+      return 'k'
+    case '仕': case '士':
+      return 'a'
+    case '象': case '相':
+      return 'b'
+    case '馬': case '马':
+      return 'n'
+    case '車': case '车':
+      return 'r'
+    case "砲": case '炮':
+      return 'c'
+    case '卒': case "兵":
+      return 'p'
+    default:
+      return null
+  }
+}
+
+export function parse_PEN_SideName(sideCode: string): PieceSide {
+  switch (sideCode) {
+    case 'b': case 'B':
+      return 'BLACK'
+    default:
+      return 'RED'
+  }
+}
+
+export function gen_PEN_SideCode(side: PieceSide) {
+  switch (side) {
+    case "BLACK":
+      return 'b'
+    case "RED":
+      return 'w'
+    default:
+      return 'w'
+  }
+}
+
+export function parse_PEN_Str(penStr: string): ParsePENStrData {
+  const layoutRegexp = /(.*)\s+(w|b)\s*(-\s*-\s*(\d)+\s*(\d)+)?/
+  const isNumber = (str: string) => /\d/.test(str)
+  const matchRes = penStr.match(layoutRegexp)
+  if (!matchRes) {
+    throw new Error("不符合 PEN 棋盘布局代码格式!");
+  }
+  const peiceLayout = matchRes[1]
+  const side = parse_PEN_SideName(matchRes[2])
+  const notEatRound = matchRes[4]
+  const round = matchRes[5]
+  const peiceCodeList = peiceLayout.split("/")
+  // 中国象棋 有10条横线
+  if (peiceCodeList.length !== 10) {
+    throw new Error("不符合 PEN 棋盘布局代码格式!");
+  }
+  let pl = []
+
+  for (let y = 0; y < peiceCodeList.length; y++) {
+    const pieceCodeStr = peiceCodeList[y];
+    let px = 9;
+    let strLen = pieceCodeStr.length
+    if (strLen > 9) {
+      throw new Error("不符合 PEN 棋盘布局代码格式!");
+    }
+    for (let j = 0; j < strLen; j++, px--) {
+      const str = pieceCodeStr[j] as PENPeiceNameCode;
+      const pieceName = parse_PEN_PeiceName(str)
+      if (pieceName) {
+        const p_side: PieceSide = str.toLocaleLowerCase() === str ? 'BLACK' : 'RED'
+        pl.push({ side: p_side, name: pieceName, x: 9 - (px), y })
+      } else if (isNumber(str)) {
+        px -= Number(str) - 1
+      }
+    }
+  }
+  return {
+    side,
+    notEatRound,
+    round,
+    list: pl
+  }
+}
+
+export function gen_PEN_Str(pl: PieceList, side: PieceSide): string {
+  let PENList = Array.from({ length: 10 }, () => [] as Array<PeicePosInfo>)
+  pl.forEach(p => {
+    const data = p.getCurrentInfo()
+    const index = data.y
+    PENList[index].push(data)
+  })
+  PENList = PENList.map(item => {
+    item = item.sort((a, b) => b.x - a.x)
+    return item
+  })
+  let str = ''
+  for (let y = 0; y < PENList.length; y++) {
+    const peiceList = PENList[y];
+    const len = peiceList.length
+    let x = 8
+    if (len === 0) {
+      str += '9'
+    }
+    for (let j = 0; j < len; j++, x--) {
+      const current = peiceList[j];
+      const isUp = current.side === "RED"
+      const penCode = get_PEN_PieceName(current.name)
+      if (!penCode) {
+        throw new Error(`未找到 ${current.name} 对应的 PEN 代码，请检查棋子名称是否符合正确格式:
+例如： 车 "车","車"...`);
+      }
+      const step = (j > 0 ? (peiceList[j - 1].x - 1) : x) - (current.x)
+      if (step > 0) {
+        str += String(step)
+      }
+      str += isUp ? penCode.toUpperCase() : penCode
+      //  结尾
+      if (j + 1 === len) {
+        const end = current.x
+        if (end > 0) {
+          str += String(end)
+        }
+      }
+    }
+    if (y < PENList.length - 1) {
+      str += "/"
+    }
+  }
+  return str + ' ' + gen_PEN_SideCode(side)
+}
+
+export function gen_PEN_Point_Str(p: Point | MovePoint | ChessOfPeice) {
+  const x = p.x, y = p.y
+  return String.fromCharCode(String(x).charCodeAt(0) + 49) + String(9 - y)
+}
+
+function parse_PEN_Point(word: string) {
+  const x = String.fromCharCode(word.charCodeAt(0) - 49)
+  const y = Number(word.charAt(1))
+  return { x, y }
+}
+
+export function parse_PEN_Point_Str(str: string) {
+  if (str.length !== 4) {
+    return null
+  }
+  const pointPart = str.slice(0, 2), movePart = str.slice(2)
+  return {
+    point: parse_PEN_Point(pointPart),
+    move: parse_PEN_Point(movePart)
+  }
+}
+

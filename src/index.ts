@@ -1,9 +1,11 @@
 import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint, GamePeiceGridDiffX, GamePeiceGridDiffY } from './types';
 import { Point, PieceInfo, MoveResult } from './types';
-import { findPiece, parseStrToPoint } from '../utils';
+import { gen_PEN_Str, parseStrToPoint } from '../utils';
 import { getPiecesList, } from './data';
 import { getSquarePoints } from '../utils/draw';
 import { ChessOfPeice, GeneralPiece, PieceList, chessOfPeiceMap } from './piece';
+
+const findPiece = (pl: PieceList, p: Point) => pl.find(item => item.x === p.x && item.y === p.y)
 
 type CTX = CanvasRenderingContext2D
 
@@ -71,10 +73,6 @@ export default class ZhChess {
    * 当前棋盘上存活的棋子
    */
   private livePieceList!: PieceList
-  /**
-   * 当前被吃掉的棋子
-   */
-  private deadPieceList!: PieceList
   /**
    * 当前选中的棋子
    */
@@ -235,7 +233,7 @@ export default class ZhChess {
   }
 
   /**
-   * 设置游戏窗口 棋盘
+   * 设置游戏窗口 棋盘 棋子大小
    */
   private setGameWindow(w: number, h: number, p: number) {
     const playHeight = h - p * 2;
@@ -307,10 +305,9 @@ export default class ZhChess {
   private init() {
     this.currentSide = "RED"
     this.choosePiece = null
-    this.deadPieceList = []
     this.livePieceList = []
     this.ctx.clearRect(0, 0, this.width, this.height)
-    this.drawChessLine();
+    this.drawChessLine(this.ctx);
   }
   /**
    * 初始化象棋个数
@@ -318,8 +315,46 @@ export default class ZhChess {
   private initPiece() {
     this.livePieceList = getPiecesList()
     this.choosePiece = null
-    this.deadPieceList = []
     this.redraw()
+  }
+
+  updatePromise(p: Point, m: Point) {
+    const dx = (m.x - p.x)
+    const dy = (m.y - p.y)
+    const xstep = dx === 0 ? 0 : dx / this.moveSpeed
+    const ystep = dy === 0 ? 0 : dy / this.moveSpeed
+    return new Promise((resolve) => {
+      let raf: number;
+      const cb = () => {
+        const diffX = Math.abs(m.x - p.x), diffY = Math.abs(m.y - p.y)
+        if (diffX <= Math.abs(xstep) && diffY <= Math.abs(ystep) && this.choosePiece) {
+          this.cancelAnimate.call(globalThis, raf)
+          return resolve(m)
+        }
+        this.livePieceList.find(peice => {
+          if (peice.x === p.x && peice.x === p.y) {
+            peice.x = Math.abs(p.x - this.gridDiffX) - xstep
+            peice.y = Math.abs(p.y - this.gridDiffY) - ystep
+            return true
+          }
+        })
+        this.draw(this.ctx)
+        p.x -= xstep
+        p.y -= ystep
+        raf = this.animate.call(globalThis, cb)
+      }
+      cb()
+    })
+
+  }
+  update() {
+
+  }
+
+  draw(ctx: CTX) {
+    ctx.clearRect(0, 0, this.width, this.height)
+    this.drawChessLine(ctx)
+    this.livePieceList.forEach(p => this.drawSinglePeice(ctx, p, true))
   }
 
   /**
@@ -327,14 +362,14 @@ export default class ZhChess {
    */
   private drawPeice(pieceList: PieceList) {
     this.ctx.clearRect(0, 0, this.width, this.height)
-    this.drawChessLine();
-    pieceList.forEach((p) => this.drawSinglePeice(p, true))
+    this.drawChessLine(this.ctx);
+    pieceList.forEach((p) => this.drawSinglePeice(this.ctx, p, true))
   }
   /**
    * 绘画单个象棋
    * @param piece 单个象棋
    */
-  private drawSinglePeice(piece: ChessOfPeice, replaceXY?: boolean) {
+  private drawSinglePeice(ctx: CTX, piece: ChessOfPeice, replaceXY?: boolean) {
     const { startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius } = this
     const bgfillStyle = piece.side === "BLACK" ? this.blackPeiceBackground : this.redPeiceBackground;
     const textColor = piece.side === "BLACK" ? "#000" : "#c1190c";
@@ -346,13 +381,13 @@ export default class ZhChess {
       y = startY + Math.abs(piece.y - gridDiffY) * gridHeight;
     }
     let r = radius, ty = 0;
-    this.ctx.fillStyle = bgfillStyle;
+    ctx.fillStyle = bgfillStyle;
 
     const drawBoder = (x: number, y: number, r: number, startAngle: number, endAngle: number) => {
-      this.ctx.beginPath();
-      this.ctx.arc(x, y, r, startAngle, endAngle);
-      this.ctx.closePath();
-      this.ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x, y, r, startAngle, endAngle);
+      ctx.closePath();
+      ctx.stroke();
     }
 
     // 选中动画
@@ -363,50 +398,49 @@ export default class ZhChess {
     }
 
     // 象棋背景
-    this.ctx.beginPath();
-    this.ctx.arc(x, y + ty, r, 0, 2 * Math.PI);
+    ctx.beginPath();
+    ctx.arc(x, y + ty, r, 0, 2 * Math.PI);
     // if (piece.isChoose) {
-    this.ctx.shadowOffsetX = 3;
-    this.ctx.shadowOffsetY = 4;
-    this.ctx.shadowColor = '#333';
-    this.ctx.shadowBlur = 5;
+    ctx.shadowOffsetX = 3;
+    ctx.shadowOffsetY = 4;
+    ctx.shadowColor = '#333';
+    ctx.shadowBlur = 5;
     // }
-    this.ctx.fill();
-    this.ctx.closePath();
+    ctx.fill();
+    ctx.closePath();
 
-    this.ctx.shadowBlur = 0
-    this.ctx.shadowOffsetX = 0;
-    this.ctx.shadowOffsetY = 0;
+    ctx.shadowBlur = 0
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
     // 象棋圆圈
-    this.ctx.strokeStyle = borderColor;
+    ctx.strokeStyle = borderColor;
     drawBoder(x, y + ty, r, 0, 2 * Math.PI);
     drawBoder(x, y + ty, r - 3, 0, 2 * Math.PI);
 
     // 字
-    this.ctx.textAlign = "center";
-    this.ctx.textBaseline = "middle";
-    this.ctx.fillStyle = textColor;
-    this.ctx.font = radius + "px yahei";
-    this.ctx.fillText(piece.name, x, y + ty);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = textColor;
+    ctx.font = radius + "px yahei";
+    ctx.fillText(piece.name, x, y + ty);
   }
   /**
    * 画棋盘
    */
-  private drawChessLine() {
+  private drawChessLine(ctx: CTX) {
     const { startX, startY, endX, endY, gridWidth, gridHeight } = this
     // 画背景
-    this.ctx.fillStyle = this.checkerboardBackground;
-    this.ctx.fillRect(0, 0, this.width, this.width);
-
-    this.ctx.strokeStyle = "#000";
+    ctx.fillStyle = this.checkerboardBackground;
+    ctx.fillRect(0, 0, this.width, this.width);
+    ctx.strokeStyle = "#000";
     // 横线
     for (let index = 0; index < 10; index++) {
-      this.ctx.beginPath();
+      ctx.beginPath();
       const y = startY + gridHeight * index;
-      this.ctx.moveTo(startX, y);
-      this.ctx.lineTo(endX, y);
-      this.ctx.closePath();
-      this.ctx.stroke();
+      ctx.moveTo(startX, y);
+      ctx.lineTo(endX, y);
+      ctx.closePath();
+      ctx.stroke();
     }
     // 竖线
     for (let index = 0; index < 9; index++) {
@@ -414,24 +448,24 @@ export default class ZhChess {
       const midY = startY + gridHeight * 4;
       const by = startY + gridHeight * 9;
       if (index === 0 || index === 8) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(x, startY);
-        this.ctx.lineTo(x, by);
-        this.ctx.closePath();
-        this.ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, startY);
+        ctx.lineTo(x, by);
+        ctx.closePath();
+        ctx.stroke();
         continue;
       }
-      this.ctx.beginPath();
-      this.ctx.moveTo(x, startY);
-      this.ctx.lineTo(x, midY);
-      this.ctx.closePath();
-      this.ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, startY);
+      ctx.lineTo(x, midY);
+      ctx.closePath();
+      ctx.stroke();
 
-      this.ctx.beginPath();
-      this.ctx.moveTo(x, midY + gridHeight);
-      this.ctx.lineTo(x, endY);
-      this.ctx.closePath();
-      this.ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, midY + gridHeight);
+      ctx.lineTo(x, endY);
+      ctx.closePath();
+      ctx.stroke();
     }
     // 士的两把叉
     for (let index = 0; index < 2; index++) {
@@ -441,13 +475,62 @@ export default class ZhChess {
         gridWidth * 2,
         gridHeight * 2
       );
-      this.ctx.beginPath();
-      this.ctx.moveTo(points[0].x, points[0].y);
-      this.ctx.lineTo(points[2].x, points[2].y);
-      this.ctx.moveTo(points[1].x, points[1].y);
-      this.ctx.lineTo(points[3].x, points[3].y);
-      this.ctx.closePath();
-      this.ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      ctx.lineTo(points[2].x, points[2].y);
+      ctx.moveTo(points[1].x, points[1].y);
+      ctx.lineTo(points[3].x, points[3].y);
+      ctx.closePath();
+      ctx.stroke();
+    }
+    // 炮位 兵位 坐标的 ∟符号
+    for (let i = 0; i < 9; i += 2) {
+      const width = gridWidth * .15
+      const padding = gridWidth * .1
+      for (let j = 0; j < 2; j++) {
+        let addx = j === 0 ? - padding : +padding
+        let addy = j === 0 ? + padding : - padding
+        let addw = j === 0 ? + width : - width
+        for (let z = 0; z < 2; z++) {
+          // 红 黑
+          let y = z % 2 === 0 ? startY + 3 * gridHeight : startY + 6 * gridHeight
+          // 左右两边
+          for (let w = 0; w < 2; w++) {
+            let x = w % 2 === 0 ? startX + i * gridWidth + addx : startX + i * gridWidth - addx
+            let aw = w % 2 === 0 ? - addw : +addw
+            if (x - startX > 0 && x - (startX + 8 * gridWidth) < 0) {
+              ctx.beginPath();
+              ctx.moveTo(x, y + addy);
+              ctx.lineTo(x + aw, y + addy);
+              ctx.moveTo(x, y + addy);
+              ctx.lineTo(x, y + addy + addw);
+              ctx.stroke();
+            }
+          }
+        }
+      }
+      if (i - 1 === 1 || i - 1 === 7) {
+        for (let j = 0; j < 2; j++) {
+          let addx = j === 0 ? - padding : +padding
+          let addy = j === 0 ? + padding : - padding
+          let addw = j === 0 ? + width : - width
+          let x1 = startX + (i - 1) * gridWidth
+          for (let z = 0; z < 2; z++) {
+            let y = (z % 2 === 0 ? startY + 2 * gridHeight : startY + 7 * gridHeight) + addy
+            for (let w = 0; w < 2; w++) {
+              let x = w % 2 === 0 ? x1 + addx : x1 - addx
+              let aw = w % 2 === 0 ? -addw : +addw
+              ctx.beginPath();
+              ctx.moveTo(x, y);
+              ctx.lineTo(x + aw, y);
+              ctx.moveTo(x, y);
+              ctx.lineTo(x, y + addw);
+              ctx.stroke();
+            }
+          }
+
+        }
+      }
     }
   }
   /**
@@ -503,7 +586,7 @@ export default class ZhChess {
           // peice.isChoose = false
           peice.x = Math.abs(activePoint.x - this.gridDiffX) - xstep
           peice.y = Math.abs(activePoint.y - this.gridDiffY) - ystep
-          this.drawSinglePeice(peice)
+          this.drawSinglePeice(this.ctx, peice)
           activePoint.x -= xstep
           activePoint.y -= ystep
           raf = this.animate.call(globalThis, cb)
@@ -523,7 +606,6 @@ export default class ZhChess {
       const side = this.currentSide
       const isMove = "move" in checkPoint
       const point = isMove ? checkPoint.move : checkPoint.eat
-
       const lastChoosePeice = this.choosePiece
       const hasTrouble = this.checkGeneralInTrouble(side, this.choosePiece, checkPoint, this.livePieceList)
       if (hasTrouble) {
@@ -531,9 +613,7 @@ export default class ZhChess {
         return { flag: false, message: "不可以送将！" }
       }
       if (!isMove) {
-        const eatPeice = findPiece(this.livePieceList, point)
         this.livePieceList = this.livePieceList.filter(i => !(i.x === point.x && i.y === point.y))
-        this.deadPieceList.push(eatPeice as ChessOfPeice)
       }
       this.gameState = "MOVE"
       return this.moveStart(lastChoosePeice, checkPoint, this.livePieceList, side)
@@ -579,9 +659,7 @@ export default class ZhChess {
         return Promise.resolve({ flag: false, message: "不可以送将！" })
       }
       if (!isMove) {
-        const eatPeice = findPiece(this.livePieceList, point)
         this.livePieceList = this.livePieceList.filter(i => !(i.x === point.x && i.y === point.y))
-        this.deadPieceList.push(eatPeice as ChessOfPeice)
       }
       this.gameState = "MOVE"
       return this.moveStartAsync(lastChoosePeice, checkPoint, this.livePieceList, side).then(() => ({ flag: true }))
@@ -619,7 +697,7 @@ export default class ZhChess {
         this.winner = side
       }
     }
-    this.moveEvents.forEach(f => f(mp, checkPoint, isOver || enemyhasTrouble))
+    this.moveEvents.forEach(f => f(mp, checkPoint, isOver || enemyhasTrouble, this.getCurrentPenCode()))
     if (isOver) {
       this.overEvents.forEach(f => f(side))
     }
@@ -649,7 +727,7 @@ export default class ZhChess {
           this.winner = side
         }
       }
-      this.moveEvents.forEach(f => f(mp, checkPoint, isOver || enemyhasTrouble))
+      this.moveEvents.forEach(f => f(mp, checkPoint, isOver || enemyhasTrouble, this.getCurrentPenCode()))
       if (isOver) {
         this.overEvents.forEach(f => f(side))
       }
@@ -1154,18 +1232,13 @@ export default class ZhChess {
     })
   }
   /**
-   * 获取当前被吃掉的棋子列表
-   */
-  get currentDeadPieceList(): PieceList {
-    return this.deadPieceList.map(item => {
-      return chessOfPeiceMap[item.name]({ ...item })
-    })
-  }
-  /**
    * 获取当前象棋绘制半径
    */
   get currentRadius(): number {
     return this.radius
+  }
+  getCurrentPenCode(): string {
+    return gen_PEN_Str(this.livePieceList, this.currentSide)
   }
   on(e: "move", fn: MoveCallback): void;
   on(e: "moveFail", fn: MoveFailCallback): void;
@@ -1221,8 +1294,8 @@ export default class ZhChess {
    */
   setLivePieceList(pl: PieceList) {
     this.livePieceList = pl
-    this.deadPieceList = []
   }
 }
 export * from "./piece"
 export * from "./types"
+export { parse_PEN_Str, gen_PEN_Str, gen_PEN_Point_Str } from "../utils/index"

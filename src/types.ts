@@ -48,7 +48,7 @@ export interface PieceInfo {
   /**
    * 是否被选中
    */
-  isChoose: boolean
+  isChoose?: boolean
 }
 /**
  * 四变形的四个点
@@ -77,6 +77,7 @@ export class Point {
   toString() {
     return `(${this.x},${this.y})`
   }
+
 }
 
 /**
@@ -173,7 +174,7 @@ export type GameState = "INIT" | "START" | "OVER" | "MOVE"
  * 否则是 吃掉坐标上点的棋子 使用 cp.eat 访问改坐标点
  * @param enemyhasTrouble 敌方是否被将军
  */
-export type MoveCallback = (peice: ChessOfPeice, cp: CheckPoint, enemyhasTrouble: boolean) => void
+export type MoveCallback = (peice: ChessOfPeice, cp: CheckPoint, enemyhasTrouble: boolean, penCode: string) => void
 
 /**
  * 监听棋子移动失败函数
@@ -218,3 +219,45 @@ export type GamePeiceGridDiffX = 8 | 0
  * 游戏象棋玩家格子y轴差值
  */
 export type GamePeiceGridDiffY = 9 | 0
+
+/**
+ * 棋子PEN代码 小写表示黑方，大写表示红方
+ * 
+ * 博客介绍
+ * https://www.cnblogs.com/royhoo/p/6424395.html
+ * 
+ * 规则介绍
+ * https://www.xqbase.com/protocol/cchess_move.htm
+ * https://www.xqbase.com/protocol/cchess_fen.htm
+ * 
+ */
+export type PENPeiceNameCode =
+  "K" |//帅
+  "A" | //士
+  "B" | //相
+  "N" | //马
+  "R" | //车
+  "C" | //炮
+  "P" | //兵
+  // 黑棋 小写 
+  "k" | //将
+  "a" | //仕
+  "b" | //象
+  "n" | //馬
+  "r" | //車
+  "c" | //砲
+  "p"  //卒
+
+export type ParsePENStrData = {
+  side: PieceSide
+  notEatRound?: string
+  round?: string
+  list: Array<PeicePosInfo>
+}
+
+export type PeicePosInfo = {
+  side: PieceSide;
+  name: ChessOfPeiceName;
+  x: number;
+  y: number;
+}

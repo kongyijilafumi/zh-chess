@@ -1,7 +1,6 @@
-import { findPiece } from './../utils/index';
-import { PieceInfo, PieceSide, Point, MovePoint, MoveResult, MovePointList } from './types';
+import { PieceInfo, PieceSide, Point, MovePoint, MoveResult, MovePointList, PeicePosInfo } from './types';
 const notExistPoint = { x: 10, y: 10 }
-
+const findPiece = (pl: PieceList, p: Point) => pl.find(item => item.x === p.x && item.y === p.y)
 export class Piece implements PieceInfo {
   x: number
   y: number
@@ -13,7 +12,7 @@ export class Piece implements PieceInfo {
     this.y = pieceInfo.y
     this.name = pieceInfo.name
     this.side = pieceInfo.side
-    this.isChoose = pieceInfo.isChoose
+    this.isChoose = pieceInfo.isChoose || false
   }
   /**
    * 格式化象棋棋子输出字符串信息
@@ -33,6 +32,18 @@ export class Piece implements PieceInfo {
       const pointHasSameSidePeice = pl.find(p => p.x === i.x && p.y === i.y && p.side === this.side)
       return i.x >= 0 && i.x <= 8 && i.y >= 0 && i.y <= 9 && !pointHasSameSidePeice
     })
+  }
+  /**
+   * 返回当前棋子的坐标信息
+   * @returns 包含 name side x y 信息
+   */
+  getCurrentInfo(): PeicePosInfo {
+    return {
+      side: this.side,
+      name: this.name,
+      x: this.x,
+      y: this.y
+    }
   }
 }
 /**
