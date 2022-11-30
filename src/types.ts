@@ -178,12 +178,11 @@ export type MoveCallback = (peice: ChessOfPeice, cp: CheckPoint, enemyhasTrouble
 
 /**
  * 监听棋子移动失败函数
- * @param peice 运动的象棋
- * @param p 需要移动到的坐标点
- * @param currentSideDanger 我方移动过去是否被将军
+ * @param pos 起始点
+ * @param mov 结束点
  * @param msg 失败信息
  */
-export type MoveFailCallback = (peice: ChessOfPeice, p: Point, currentSideDanger: boolean, msg: string) => void
+export type MoveFailCallback = (pos: Point, mov: Point | null, msg: string) => void
 
 /**
  * 监听游戏运行日志
@@ -260,4 +259,13 @@ export type PeicePosInfo = {
   name: ChessOfPeiceName;
   x: number;
   y: number;
+}
+
+export type UpdateResult = {
+  flag: false
+  message: string
+} | {
+  flag: true
+  cb?: () => void
+  move: boolean
 }

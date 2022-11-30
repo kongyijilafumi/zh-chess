@@ -45,6 +45,78 @@ export class Piece implements PieceInfo {
       y: this.y
     }
   }
+  update(p: Point) {
+    this.x = p.x
+    this.y = p.y
+  }
+  draw(ctx: CanvasRenderingContext2D,
+    startX: number, startY: number,
+    gridWidth: number, gridHeight: number,
+    gridDiffX: number, gridDiffY: number,
+    radius: number,
+    textColor: string, bgColor: string) {
+    const borderColor = this.isChoose ? "red" : "#000";
+    let x = startX + Math.abs(this.x - gridDiffX) * gridWidth;
+    let y = startY + Math.abs(this.y - gridDiffY) * gridHeight;
+    let r = radius, ty = 0;
+    ctx.fillStyle = bgColor;
+
+    const drawBoder = (x: number, y: number, r: number, startAngle: number, endAngle: number) => {
+      ctx.beginPath();
+      ctx.arc(x, y, r, startAngle, endAngle);
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    // 选中动画
+    if (this.isChoose) {
+      r = r / 0.98
+      ty = this.side === "RED" ? -.3 * radius : .3 * radius
+      ty = gridDiffY > 0 ? ty * -1 : ty
+    }
+
+    // 象棋背景
+    ctx.beginPath();
+    ctx.arc(x, y + ty, r, 0, 2 * Math.PI);
+    // if (piece.isChoose) {
+    ctx.shadowOffsetX = 3;
+    ctx.shadowOffsetY = 4;
+    ctx.shadowColor = '#333';
+    ctx.shadowBlur = 5;
+    // }
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.shadowBlur = 0
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    // 象棋圆圈
+    ctx.strokeStyle = borderColor;
+    drawBoder(x, y + ty, r, 0, 2 * Math.PI);
+    drawBoder(x, y + ty, r - 3, 0, 2 * Math.PI);
+
+    // 字
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = textColor;
+    ctx.font = radius + "px yahei";
+    ctx.fillText(this.name, x, y + ty);
+  }
+  getMovePoints(_pl: PieceList): MovePointList {
+    return []
+  }
+  drawMovePoints(ctx: CanvasRenderingContext2D, pl: PieceList, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: number, gridDiffY: number, radius: number) {
+    ctx.fillStyle = "#25dd2a"
+    this.getMovePoints(pl).forEach(p => {
+      let x = startX + Math.abs(p.x - gridDiffX) * gridWidth;
+      let y = startY + Math.abs(p.y - gridDiffY) * gridHeight;
+      ctx.beginPath();
+      ctx.arc(x, y, radius * .25, 0, 2 * Math.PI);
+      ctx.closePath();
+      ctx.fill()
+    })
+  }
+
 }
 /**
  * 象棋：车

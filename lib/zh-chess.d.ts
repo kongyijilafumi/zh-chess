@@ -17,6 +17,15 @@ declare class Piece implements PieceInfo {
      * @returns 返回这个棋子可以移动点列表
      */
     filterMovePoints(list: MovePointList, pl: PieceList): MovePointList;
+    /**
+     * 返回当前棋子的坐标信息
+     * @returns 包含 name side x y 信息
+     */
+    getCurrentInfo(): PeicePosInfo;
+    update(p: Point): void;
+    draw(ctx: CanvasRenderingContext2D, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: number, gridDiffY: number, radius: number, textColor: string, bgColor: string): void;
+    getMovePoints(_pl: PieceList): MovePointList;
+    drawMovePoints(ctx: CanvasRenderingContext2D, pl: PieceList, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: number, gridDiffY: number, radius: number): void;
 }
 /**
  * 象棋：车
@@ -141,11 +150,11 @@ declare class SoldierPiece extends HorsePiece {
 /**
  * 象棋棋子，包含了车、马、炮、象、士、将、兵
  */
-declare type ChessOfPeice = RookPiece | HorsePiece | ElephantPiece | KnightPiece | GeneralPiece | CannonPiece | SoldierPiece;
+type ChessOfPeice = RookPiece | HorsePiece | ElephantPiece | KnightPiece | GeneralPiece | CannonPiece | SoldierPiece;
 /**
  * 象棋棋子列表
  */
-declare type PieceList = Array<ChessOfPeice>;
+type PieceList = Array<ChessOfPeice>;
 /**
  * 象棋棋子名字
  * @example "车","車" // 都是棋子 RookPiece 类
@@ -156,14 +165,14 @@ declare type PieceList = Array<ChessOfPeice>;
  * @example "炮","砲" // 都是棋子 CannonPiece 类
  * @example "兵","卒" // 都是棋子 SoldierPiece 类
  */
-declare type ChessOfPeiceName = "車" | "车" | "馬" | "马" | "象" | "相" | "仕" | "士" | "砲" | "炮" | "卒" | "兵" | "将" | "帅";
+type ChessOfPeiceName = "車" | "车" | "馬" | "马" | "象" | "相" | "仕" | "士" | "砲" | "炮" | "卒" | "兵" | "将" | "帅";
 /**
  * 象棋棋子Map数据类型
  * 根据名字返回一个函数
  * 函数参数需要象棋初始化所需的数据
  * 返回棋子实例
  */
-declare type ChessOfPeiceMap = {
+type ChessOfPeiceMap = {
     [prop in ChessOfPeiceName]: (info: PieceInfo) => ChessOfPeice;
 };
 /**
@@ -181,15 +190,15 @@ declare const chessOfPeiceMap: ChessOfPeiceMap;
 /**
  * 游戏玩家方 固定为 RED | BLACK
  */
-declare type PieceSide = "RED" | "BLACK";
+type PieceSide = "RED" | "BLACK";
 /**
  * 游戏玩家方(中文) 固定为 RED | BLACK
  */
-declare type PieceSideCN = "红方" | "黑方";
+type PieceSideCN = "红方" | "黑方";
 /**
  * 玩家Map数据类型
  */
-declare type PieceSideMap = {
+type PieceSideMap = {
     [prop in PieceSide]: PieceSideCN;
 };
 /**
@@ -221,14 +230,14 @@ interface PieceInfo {
     /**
      * 是否被选中
      */
-    isChoose: boolean;
+    isChoose?: boolean;
 }
 /**
  * 四变形的四个点
  * 以左上角坐标为起点
  * 顺时针或逆时针顺序存储的四个坐标点
  */
-declare type SquarePoints = [Point, Point, Point, Point];
+type SquarePoints = [Point, Point, Point, Point];
 /**
  * 坐标点
  */
@@ -263,11 +272,11 @@ declare class MovePoint extends Point {
 /**
  * 棋子移动点列表
  */
-declare type MovePointList = Array<MovePoint>;
+type MovePointList = Array<MovePoint>;
 /**
  * 移动成功的结果
  */
-declare type MoveSuccess = {
+type MoveSuccess = {
     /**
      * 移动成功
      */
@@ -276,7 +285,7 @@ declare type MoveSuccess = {
 /**
  * 移动失败的结果
  */
-declare type MoveFail = {
+type MoveFail = {
     /**
      * 移动失败
      */
@@ -289,23 +298,23 @@ declare type MoveFail = {
 /**
  * 棋子移动的结果
  */
-declare type MoveResult = MoveSuccess | MoveFail;
+type MoveResult = MoveSuccess | MoveFail;
 /**
  * 象棋运动目标移动点
  */
-declare type Mp = {
+type Mp = {
     move: Point;
 };
 /**
  * 象棋运动目标移动点且需要吃掉目标点上的棋子
  */
-declare type Ep = {
+type Ep = {
     eat: Point;
 };
 /**
  * 象棋运动目标点
  */
-declare type CheckPoint = Mp | Ep;
+type CheckPoint = Mp | Ep;
 /**
  * 游戏四种状态
  * @example "INIT" //游戏初始化状态
@@ -313,7 +322,7 @@ declare type CheckPoint = Mp | Ep;
  * @example "MOVE" //游戏棋子正在运动状态
  * @example "OVER" //游戏已经结束状态
  */
-declare type GameState = "INIT" | "START" | "OVER" | "MOVE";
+type GameState = "INIT" | "START" | "OVER" | "MOVE";
 /**
  * 监听棋子移动函数
  * @param peice 运动的象棋
@@ -322,7 +331,7 @@ declare type GameState = "INIT" | "START" | "OVER" | "MOVE";
  * 否则是 吃掉坐标上点的棋子 使用 cp.eat 访问改坐标点
  * @param enemyhasTrouble 敌方是否被将军
  */
-declare type MoveCallback = (peice: ChessOfPeice, cp: CheckPoint, enemyhasTrouble: boolean) => void;
+type MoveCallback = (peice: ChessOfPeice, cp: CheckPoint, enemyhasTrouble: boolean, penCode: string) => void;
 /**
  * 监听棋子移动失败函数
  * @param peice 运动的象棋
@@ -330,17 +339,17 @@ declare type MoveCallback = (peice: ChessOfPeice, cp: CheckPoint, enemyhasTroubl
  * @param currentSideDanger 我方移动过去是否被将军
  * @param msg 失败信息
  */
-declare type MoveFailCallback = (peice: ChessOfPeice, p: Point, currentSideDanger: boolean, msg: string) => void;
+type MoveFailCallback = (peice: ChessOfPeice, p: Point, currentSideDanger: boolean, msg: string) => void;
 /**
  * 监听游戏运行日志
  * @param str 输出信息
  */
-declare type GameLogCallback = (str: any) => void;
+type GameLogCallback = (str: any) => void;
 /**
  * 监听游戏结束
  * @param winnerSide 赢方
  */
-declare type GameOverCallback = (winnerSide: PieceSide) => void;
+type GameOverCallback = (winnerSide: PieceSide) => void;
 /**
  * 游戏监听事件名称
  * @example "move" //游戏棋子移动成功事件名称
@@ -348,25 +357,73 @@ declare type GameOverCallback = (winnerSide: PieceSide) => void;
  * @example "log" //游戏日志事件名称
  * @example "over" //游戏结束事件名称
  */
-declare type GameEventName = "move" | "moveFail" | "log" | "over";
+type GameEventName = "move" | "moveFail" | "log" | "over";
 /**
  * 游戏监听函数
  */
-declare type GameEventCallback = MoveCallback | MoveFailCallback | GameLogCallback | GameOverCallback;
+type GameEventCallback = MoveCallback | MoveFailCallback | GameLogCallback | GameOverCallback;
 /**
  * 游戏象棋玩家格子x轴差值
  */
-declare type GamePeiceGridDiffX = 8 | 0;
+type GamePeiceGridDiffX = 8 | 0;
 /**
  * 游戏象棋玩家格子y轴差值
  */
-declare type GamePeiceGridDiffY = 9 | 0;
+type GamePeiceGridDiffY = 9 | 0;
+/**
+ * 棋子PEN代码 小写表示黑方，大写表示红方
+ *
+ * 博客介绍
+ * https://www.cnblogs.com/royhoo/p/6424395.html
+ *
+ * 规则介绍
+ * https://www.xqbase.com/protocol/cchess_move.htm
+ * https://www.xqbase.com/protocol/cchess_fen.htm
+ *
+ */
+type PENPeiceNameCode = "K" | //帅
+"A" | //士
+"B" | //相
+"N" | //马
+"R" | //车
+"C" | //炮
+"P" | //兵
+"k" | //将
+"a" | //仕
+"b" | //象
+"n" | //馬
+"r" | //車
+"c" | //砲
+"p";
+type ParsePENStrData = {
+    side: PieceSide;
+    notEatRound?: string;
+    round?: string;
+    list: Array<PeicePosInfo>;
+};
+type PeicePosInfo = {
+    side: PieceSide;
+    name: ChessOfPeiceName;
+    x: number;
+    y: number;
+};
+type UpdateResult = {
+    flag: false;
+    message: string;
+} | {
+    flag: true;
+    cb?: () => void;
+};
 
-declare type CTX = CanvasRenderingContext2D;
+declare function parse_PEN_Str(penStr: string): ParsePENStrData;
+declare function gen_PEN_Str(pl: PieceList, side: PieceSide): string;
+declare function gen_PEN_Point_Str(p: Point | MovePoint | ChessOfPeice): string;
+
+type CTX = CanvasRenderingContext2D;
 /**
  * promise返回的运动结果
  */
-declare type MoveResultAsync = Promise<MoveResult>;
+type MoveResultAsync = Promise<MoveResult>;
 /**
  * 初始化游戏参数
  */
@@ -425,10 +482,6 @@ declare class ZhChess {
      * 当前棋盘上存活的棋子
      */
     private livePieceList;
-    /**
-     * 当前被吃掉的棋子
-     */
-    private deadPieceList;
     /**
      * 当前选中的棋子
      */
@@ -539,7 +592,7 @@ declare class ZhChess {
     private cancelAnimate;
     constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, moveSpeed, redPeiceBackground, blackPeiceBackground, checkerboardBackground }: GameInfo);
     /**
-     * 设置游戏窗口 棋盘
+     * 设置游戏窗口 棋盘 棋子大小
      */
     private setGameWindow;
     /**
@@ -572,6 +625,12 @@ declare class ZhChess {
      * 初始化象棋个数
      */
     private initPiece;
+    updateAsync(pos: Point, mov: Point, side: PieceSide): Promise<{
+        flag: false;
+        message: string;
+    }> | undefined;
+    update(pos: Point, mov: Point | null, side: PieceSide): UpdateResult;
+    draw(ctx: CTX): void;
     /**
      * 画 棋盘 跟 棋子
      */
@@ -748,13 +807,10 @@ declare class ZhChess {
      */
     get currentLivePieceList(): PieceList;
     /**
-     * 获取当前被吃掉的棋子列表
-     */
-    get currentDeadPieceList(): PieceList;
-    /**
      * 获取当前象棋绘制半径
      */
     get currentRadius(): number;
+    getCurrentPenCode(): string;
     on(e: "move", fn: MoveCallback): void;
     on(e: "moveFail", fn: MoveFailCallback): void;
     on(e: "log", fn: GameLogCallback): void;
@@ -770,4 +826,4 @@ declare class ZhChess {
     setLivePieceList(pl: PieceList): void;
 }
 
-export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, chessOfPeiceMap, ZhChess as default, peiceSideMap };
+export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateResult, chessOfPeiceMap, ZhChess as default, gen_PEN_Point_Str, gen_PEN_Str, parse_PEN_Str, peiceSideMap };
