@@ -485,3 +485,64 @@ export function parse_PEN_Point_Str(str: string) {
   }
 }
 
+export function diffPenStr(oldStr: string, newStr: string) {
+
+  const { list: oldList } = parse_PEN_Str(oldStr)
+  const { list: newList } = parse_PEN_Str(newStr)
+  const plList = oldList.map(item => chessOfPeiceMap[item.name](item))
+  const delList: PeicePosInfo[] = [];
+  // 被吃了
+  const moveList: { point: Point; move: Point; }[] = []
+
+  oldList.forEach(item => {
+    const findindex = newList.findIndex(p =>
+      p.x === item.x &&
+      item.y === p.y &&
+      item.side === p.side &&
+      p.name === item.name
+    )
+    // 找到 说明 没有移动
+    if (findindex !== -1) {
+      newList.splice(findindex, 1)
+      return
+    }
+    // 没找到说明 移动了
+    const peice = chessOfPeiceMap[item.name](item)
+    const mps = peice.getMovePoints(plList)
+    // 如果 有移动点
+    if (mps.length) {
+      const hasMp = mps.find(mp => {
+        // 这个棋子的移动点 出现在新的棋盘上 说明他移动过去了
+        const findPointIndex = newList.findIndex(_item =>
+          _item.x === mp.x &&
+          _item.y === mp.y &&
+          _item.side === item.side &&
+          _item.name === item.name
+        )
+        const isFind = findPointIndex !== -1
+        console.log(isFind, item, mp);
+
+        // 如果找到了 说明 移动了
+        if (isFind) {
+          moveList.push({
+            point: new Point(item.x, item.y),
+            move: new Point(newList[findPointIndex].x, newList[findPointIndex].y)
+          })
+          newList.splice(findPointIndex, 1)
+        }
+        return isFind
+      })
+      // 如果没有 说明这个棋子已经不存在了 可能是被吃掉了
+      if (!hasMp) {
+        delList.push(item)
+      }
+    } else {
+      delList.push(item)
+    }
+  })
+
+  return {
+    moveList: moveList.map(item => JSON.stringify(item)),
+    delList
+  }
+}

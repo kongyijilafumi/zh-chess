@@ -182,7 +182,7 @@ export type MoveCallback = (peice: ChessOfPeice, cp: CheckPoint, enemyhasTrouble
  * @param mov 结束点
  * @param msg 失败信息
  */
-export type MoveFailCallback = (pos: Point, mov: Point | null, msg: string) => void
+export type MoveFailCallback = (pos: Point | null, mov: Point | null, msg: string) => void
 
 /**
  * 监听游戏运行日志
@@ -197,13 +197,19 @@ export type GameLogCallback = (str: any) => void
 export type GameOverCallback = (winnerSide: PieceSide) => void
 
 /**
+ * 监听游戏报错信息
+ * @param error 报错信息
+ */
+export type GameErrorCallback = (error: any) => void
+/**
  * 游戏监听事件名称
  * @example "move" //游戏棋子移动成功事件名称
  * @example "moveFail" //游戏棋子移动失败事件名称
  * @example "log" //游戏日志事件名称
  * @example "over" //游戏结束事件名称
+ * @example "error" //游戏报错事件名称
  */
-export type GameEventName = "move" | "moveFail" | "log" | "over"
+export type GameEventName = "move" | "moveFail" | "log" | "over" | "error"
 
 /**
  * 游戏监听函数
@@ -261,11 +267,43 @@ export type PeicePosInfo = {
   y: number;
 }
 
-export type UpdateResult = {
+/**
+ * 更新结果
+ */
+export type UpdateResult = UpdateFail | updateSuccess
+/**
+ * 更新失败
+ */
+export type UpdateFail = {
+  /**
+   * 更新失败
+   */
   flag: false
+  /**
+   * 更新失败信息
+   */
   message: string
-} | {
-  flag: true
-  cb?: () => void
-  move: boolean
 }
+
+/**
+ * 更新成功
+ */
+export type updateSuccess = {
+  /**
+  * 更新成功
+  */
+  flag: true
+  /**
+   * 更新后是否需要 移动刷新布局
+   * 
+   * `false` 表示 无回调函数 当前布局暂无移动
+   * 
+   * `true` 表示 有回调函数`cb` 当前布局需要调用回调函数`cb()` 更新布局且游戏状态
+   */
+  move: boolean
+  /**
+   * 更新成功后的回调函数
+   */
+  cb?: () => void
+}
+export type UpdateMoveCallback = (posPeice: ChessOfPeice, newPoint: Point) => void

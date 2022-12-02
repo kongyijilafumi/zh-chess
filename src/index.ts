@@ -1,4 +1,4 @@
-import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint, GamePeiceGridDiffX, GamePeiceGridDiffY, UpdateResult } from './types';
+import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint, GamePeiceGridDiffX, GamePeiceGridDiffY, UpdateResult, UpdateMoveCallback, GameErrorCallback } from './types';
 import { Point, PieceInfo, MoveResult } from './types';
 import { gen_PEN_Str, parseStrToPoint } from '../utils';
 import { getPiecesList, } from './data';
@@ -20,48 +20,53 @@ export type MoveResultAsync = Promise<MoveResult>
 export interface GameInfo {
   /**
    * 游戏窗口宽度大小
-   * @defaultValue 800
+   * @defaultValue `800`
    */
   gameWidth?: number
   /**
    * 游戏窗口高度大小
-   * @defaultValue 800
+   * @defaultValue `800`
    */
   gameHeight?: number
   /**
    * 游戏内边距大小距离棋盘
-   * @defaultValue 20
+   * @defaultValue `20`
    */
   gamePadding?: number
   /**
    * 画布
    */
-  ctx: CTX
+  ctx?: CTX
   /**
    * 画布缩放大小
-   * @defaultValue 1
+   * @defaultValue `1`
    */
   scaleRatio?: number
   /**
-   * 游戏运动速度
-   * @defaultValue 8
+   * 棋子运动速度时长 毫秒单位
+   * @defaultValue `200`
    */
-  moveSpeed?: number
+  duration?: number
   /**
    * 棋盘背景色
-   * @defaultValue #faebd7
+   * @defaultValue `#faebd7`
    */
   checkerboardBackground?: string
   /**
    * 红棋子背景色
-   * @defaultValue #feeca0
+   * @defaultValue `#feeca0`
    */
   redPeiceBackground?: string
   /**
    * 黑棋子背景色
-   * @defaultValue #fdec9e
+   * @defaultValue `#fdec9e`
    */
   blackPeiceBackground?: string
+  /**
+   * 选中是否绘画可移动的点
+   * @defaultValue `false`
+   */
+  drawMovePoint?: boolean
 }
 
 export default class ZhChess {
@@ -116,15 +121,17 @@ export default class ZhChess {
   /**
    * 背景 和 线条 二维操作上下文
    */
-  private ctx: CTX
+  private ctx?: CTX
   /**
    * 存放棋盘格子的所有坐标
    */
   private gridPostionList: Array<Point>
   /**
-   * 运行速度 大于或等于 1 的数 越大越慢
+   * 棋子运动速度时长 毫秒单位
    */
-  moveSpeed: number
+  duration: number
+
+  private drawMovePoint: boolean
   /**
    * 玩家 x轴 格子距离相差
    */
@@ -153,6 +160,10 @@ export default class ZhChess {
    * 游戏结束监听事件列表
    */
   private overEvents: Array<GameOverCallback>
+  /**
+   * 游戏运行报错事件列表
+   */
+  private errorEvents: Array<GameErrorCallback>
   /**
    * 红色棋子背景颜色
    */
@@ -184,52 +195,64 @@ export default class ZhChess {
    */
   private cancelAnimate: (hander: number) => void;
 
-  constructor({ ctx, gameWidth = 800, gameHeight = 800, gamePadding = 20, scaleRatio = 1, moveSpeed = 8, redPeiceBackground = "#feeca0", blackPeiceBackground = "#fdec9e", checkerboardBackground = "#faebd7" }: GameInfo) {
-    if (!ctx) {
-      throw new Error("请传入画布")
-    }
+  constructor({ ctx,
+    gameWidth = 800,
+    gameHeight = 800,
+    gamePadding = 20,
+    scaleRatio = 1,
+    duration = 200,
+    redPeiceBackground = "#feeca0",
+    blackPeiceBackground = "#fdec9e",
+    checkerboardBackground = "#faebd7",
+    drawMovePoint = true
+  }: GameInfo) {
     this.moveEvents = []
     this.moveFailEvents = []
     this.logEvents = []
     this.overEvents = []
+    this.errorEvents = []
     this.ctx = ctx
     this.redPeiceBackground = redPeiceBackground
     this.blackPeiceBackground = blackPeiceBackground
     this.checkerboardBackground = checkerboardBackground
     // 设置 缩放 来解决移动端模糊问题
-    this.ctx.scale(scaleRatio, scaleRatio)
+    this.ctx?.scale(scaleRatio, scaleRatio)
     this.listenClick = this.listenClick.bind(this)
     this.listenClickAsync = this.listenClickAsync.bind(this)
+    this.checkDraw = this.checkDraw.bind(this)
     this.gridPostionList = []
+    this.drawMovePoint = drawMovePoint
     this.setGridList()
     this.gameState = "INIT"
-    this.moveSpeed = moveSpeed
+    this.duration = duration
     this.setGameWindow(gameWidth, gameHeight, gamePadding)
     this.init()
-
-    this.animate = globalThis.requestAnimationFrame ||
-      //@ts-ignore 
-      globalThis.webkitRequestAnimationFrame ||
-      //@ts-ignore 
-      globalThis.mozRequestAnimationFrame ||
-      //@ts-ignore 
-      globalThis.oRequestAnimationFrame ||
-      //@ts-ignore 
-      globalThis.msRequestAnimationFrame ||
-      function (callback) {
-        return globalThis.setTimeout(callback, 1000 / 60);
-      };
-
-    this.cancelAnimate = globalThis.cancelAnimationFrame ||
-      //@ts-ignore
-      globalThis.webkitCancelAnimationFrame ||
-      //@ts-ignore 
-      globalThis.mozCancelAnimationFrame ||
-      //@ts-ignore 
-      globalThis.oCancelAnimationFrame ||
-      //@ts-ignore 
-      globalThis.msCancelAnimationFrame ||
-      globalThis.clearTimeout
+    {
+      this.animate = globalThis.requestAnimationFrame ||
+        //@ts-ignore 
+        globalThis.webkitRequestAnimationFrame ||
+        //@ts-ignore 
+        globalThis.mozRequestAnimationFrame ||
+        //@ts-ignore 
+        globalThis.oRequestAnimationFrame ||
+        //@ts-ignore 
+        globalThis.msRequestAnimationFrame ||
+        function (callback) {
+          return globalThis.setTimeout(callback, 1000 / 60);
+        };
+    }
+    {
+      this.cancelAnimate = globalThis.cancelAnimationFrame ||
+        //@ts-ignore
+        globalThis.webkitCancelAnimationFrame ||
+        //@ts-ignore 
+        globalThis.mozCancelAnimationFrame ||
+        //@ts-ignore 
+        globalThis.oCancelAnimationFrame ||
+        //@ts-ignore 
+        globalThis.msCancelAnimationFrame ||
+        globalThis.clearTimeout
+    }
   }
 
   /**
@@ -306,8 +329,7 @@ export default class ZhChess {
     this.currentSide = "RED"
     this.choosePiece = null
     this.livePieceList = []
-    this.ctx.clearRect(0, 0, this.width, this.height)
-    this.drawChessLine(this.ctx);
+
   }
   /**
    * 初始化象棋个数
@@ -315,28 +337,40 @@ export default class ZhChess {
   private initPiece() {
     this.livePieceList = getPiecesList()
     this.choosePiece = null
-    this.redraw()
+    this.checkDraw()
   }
-
-  updateAsync(pos: Point, mov: Point | null, side: PieceSide, moveCb: () => void) {
-    const updateRes = this.update(pos, mov, side)
-    if (!updateRes.flag || !mov) {
+  /**
+   * 游戏根据坐标点 移动点来进行更新游戏运行数据。这是一个返回一个promise结果，也表示 这个方法是异步的。
+   * @param pos 坐标点
+   * @param mov 移动点
+   * @param side 当前下棋玩家
+   * @param moveCallback 每次棋子数据更新后调用
+   * 
+   * @example 
+   * const game = new ZhChess({...any})
+   * game.updateAsync(pos , mov, side, ()=> game.draw(ctx)) // 每次运动都去绘画一次
+   * 
+   */
+  updateAsync(pos: Point, mov: Point | null, side: PieceSide, moveCallback?: UpdateMoveCallback): Promise<UpdateResult> {
+    const updateRes = this.update(pos, mov, side, false)
+    this.gameState = "MOVE"
+    if (!updateRes.flag || !mov || (updateRes.flag && !updateRes.move)) {
+      this.gameState = "START"
       return Promise.resolve(updateRes)
     }
     let diffx = (pos.x - mov.x), diffy = (pos.y - mov.y), posX = pos.x, posY = pos.y;
-    const xstep = diffx / this.moveSpeed
-    const ystep = diffy / this.moveSpeed
-    this.clearMoveChoosePeiece()
+    const xstep = diffx / (this.duration / (1000 / 60))
+    const ystep = diffy / (this.duration / (1000 / 60))
+    // this.clearMoveChoosePeiece()
     let raf: number, posPeice: ChessOfPeice | undefined
     return new Promise((resovle) => {
       const animateFn = () => {
         if (Math.abs(posX - mov.x) <= Math.abs(xstep) && Math.abs(posY - mov.y) <= Math.abs(ystep)) {
           this.cancelAnimate.call(globalThis, raf)
-          resovle(null)
           if (posPeice) {
             posPeice.update(pos)
           }
-          return { flag: true }
+          return resovle(null)
         }
         const point = new Point(posX, posY)
         posPeice = findPiece(this.livePieceList, point)
@@ -346,17 +380,40 @@ export default class ZhChess {
         if (posPeice) {
           posPeice.isChoose = false
           posPeice.update(newPoint)
+          if (typeof moveCallback === "function") {
+            moveCallback(posPeice, newPoint)
+          }
         }
-        moveCb()
         raf = this.animate.call(globalThis, animateFn)
       }
       animateFn()
-    }).then(() => updateRes)
+    }).catch((err) => {
+      this.errorEvents.forEach(f => f(err))
+      return null
+    }).then(() => {
+      if (updateRes.flag && updateRes.cb) {
+        updateRes.cb()
+        return { flag: true, move: true }
+      }
+      return updateRes
+    })
   }
-  update(pos: Point, mov: Point | null, side: PieceSide): UpdateResult {
-
-    if (!this.checkGameState()) {
-      return { flag: false, message: "当前游戏状态不可以移动棋子" }
+  /**
+   * 游戏根据坐标点 移动点来进行更新游戏运行数据。
+   * @param pos 坐标点
+   * @param mov 移动点
+   * @param side 当前下棋玩家
+   * @param post 是否由程序自己更新游戏状态
+   * @returns
+   * 
+   * 如果 `post` 为 `false`， 请检查返回的结果 `move` 是否为 `true` ，为`true`表示有返回回调函数`cb`，只有调用 `cb()` 游戏状态才会更新
+   * 
+   * 如果 `post` 为 `true`，程序会自己更新游戏状态 只需要判断 是否更新成功即可！
+   */
+  update(pos: Point, mov: Point | null, side: PieceSide, post: boolean): UpdateResult {
+    const checkData = this.checkGameState()
+    if (!checkData.flag) {
+      return checkData
     }
     if (this.currentSide !== side) {
       return { flag: false, message: "请等待对方下棋" }
@@ -402,29 +459,29 @@ export default class ZhChess {
         const hasMovePoints = this.checkEnemySideHasMovePoints(enemySide)
         if (!hasMovePoints) {
           isOver = true
-          this.gameState = "OVER"
           this.winner = side
         }
       }
-      return {
-        flag: true,
-        move: true,
-        cb: () => {
-          const newPeice = chessOfPeiceMap[posPeice.name]({ ...posPeice, ...mov })
-          if (!isMove) {
-            this.livePieceList = this.livePieceList.filter(p => (!(p.x === cp.eat.x && p.y === cp.eat.y)))
-          }
-          posPeice.update(mov)
-          this.moveEvents.forEach(f => f(newPeice, cp, isOver || enemyhasTrouble, this.getCurrentPenCode()))
-          if (isOver) {
-            this.overEvents.forEach(f => f(side))
-          }
-          posPeice.update(mov)
-          this.clearMoveChoosePeiece()
-          this.changeSide()
-          this.gameState = "START"
+      let cb = () => {
+        const newPeice = chessOfPeiceMap[posPeice.name]({ ...posPeice, ...mov })
+        if (!isMove) {
+          this.livePieceList = this.livePieceList.filter(p => (!(p.x === cp.eat.x && p.y === cp.eat.y)))
         }
+        posPeice.update(mov)
+        this.gameState = "START"
+        this.moveEvents.forEach(f => f(newPeice, cp, isOver || enemyhasTrouble, this.getCurrentPenCode()))
+        if (isOver) {
+          this.gameState = "OVER"
+          this.overEvents.forEach(f => f(side))
+        }
+        this.clearMoveChoosePeiece()
+        this.changeSide()
       }
+      if (post) {
+        cb()
+        return { flag: true, move: true }
+      }
+      return { flag: true, cb, move: true }
     }
     // 选中之后的点击
     if (!movPeice) {// 没有选中棋子 说明 已选中的棋子要移动过去
@@ -462,7 +519,10 @@ export default class ZhChess {
       return moveCheck(cp)
     }
   }
-
+  /**
+   * 根据当前棋子状态绘画 棋盘状态 游戏数据 画出布局
+   * @param ctx 画布
+   */
   draw(ctx: CTX) {
     ctx.clearRect(0, 0, this.width, this.height)
     this.drawChessLine(ctx)
@@ -470,80 +530,21 @@ export default class ZhChess {
     this.livePieceList.forEach(item => {
       const textColor = item.side === "BLACK" ? "#000" : "#c1190c",
         bgColor = item.side === "BLACK" ? this.blackPeiceBackground : this.redPeiceBackground;
-      if (item === this.choosePiece) {
-        item.drawMovePoints(ctx, this.livePieceList, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius)
+      if (this.choosePiece === item) {
+        return
       }
       item.draw(ctx, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, textColor, bgColor)
     })
+    if (this.choosePiece) {
+      const textColor = this.choosePiece.side === "BLACK" ? "#000" : "#c1190c",
+        bgColor = this.choosePiece.side === "BLACK" ? this.blackPeiceBackground : this.redPeiceBackground;
+      this.choosePiece.draw(ctx, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, textColor, bgColor)
+      if (this.drawMovePoint && this.gameState !== "MOVE") {
+        this.choosePiece.drawMovePoints(ctx, this.livePieceList, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius)
+      }
+    }
   }
 
-  /**
-   * 画 棋盘 跟 棋子
-   */
-  private drawPeice(pieceList: PieceList) {
-    this.ctx.clearRect(0, 0, this.width, this.height)
-    this.drawChessLine(this.ctx);
-    pieceList.forEach((p) => this.drawSinglePeice(this.ctx, p, true))
-  }
-  /**
-   * 绘画单个象棋
-   * @param piece 单个象棋
-   */
-  private drawSinglePeice(ctx: CTX, piece: ChessOfPeice, replaceXY?: boolean) {
-    const { startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius } = this
-    const bgfillStyle = piece.side === "BLACK" ? this.blackPeiceBackground : this.redPeiceBackground;
-    const textColor = piece.side === "BLACK" ? "#000" : "#c1190c";
-    const borderColor = piece.isChoose ? "red" : "#000";
-    let x = startX + piece.x * gridWidth;
-    let y = startY + piece.y * gridHeight;
-    if (replaceXY) {
-      x = startX + Math.abs(piece.x - gridDiffX) * gridWidth;
-      y = startY + Math.abs(piece.y - gridDiffY) * gridHeight;
-    }
-    let r = radius, ty = 0;
-    ctx.fillStyle = bgfillStyle;
-
-    const drawBoder = (x: number, y: number, r: number, startAngle: number, endAngle: number) => {
-      ctx.beginPath();
-      ctx.arc(x, y, r, startAngle, endAngle);
-      ctx.closePath();
-      ctx.stroke();
-    }
-
-    // 选中动画
-    if (piece.isChoose) {
-      r = r / 0.98
-      ty = piece.side === "RED" ? -3 : 3
-      ty = gridDiffY > 0 ? ty * -1 : ty
-    }
-
-    // 象棋背景
-    ctx.beginPath();
-    ctx.arc(x, y + ty, r, 0, 2 * Math.PI);
-    // if (piece.isChoose) {
-    ctx.shadowOffsetX = 3;
-    ctx.shadowOffsetY = 4;
-    ctx.shadowColor = '#333';
-    ctx.shadowBlur = 5;
-    // }
-    ctx.fill();
-    ctx.closePath();
-
-    ctx.shadowBlur = 0
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
-    // 象棋圆圈
-    ctx.strokeStyle = borderColor;
-    drawBoder(x, y + ty, r, 0, 2 * Math.PI);
-    drawBoder(x, y + ty, r - 3, 0, 2 * Math.PI);
-
-    // 字
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = textColor;
-    ctx.font = radius + "px yahei";
-    ctx.fillText(piece.name, x, y + ty);
-  }
   /**
    * 画棋盘
    */
@@ -652,406 +653,19 @@ export default class ZhChess {
         }
       }
     }
-  }
-  /**
-   * 画出选中的棋子可以移动的点位
-   */
-  private drawChoosePieceMovePoint() {
-    if (this.choosePiece) {
-      const { gridWidth, startX, startY, gridHeight } = this
-      this.ctx.fillStyle = "#25dd2a"
-      this.choosePiece.getMovePoints(this.livePieceList).forEach(p => {
-        let x = startX + Math.abs(p.x - this.gridDiffX) * gridWidth;
-        let y = startY + Math.abs(p.y - this.gridDiffY) * gridHeight;
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, this.radius * .25, 0, 2 * Math.PI);
-        this.ctx.closePath();
-        this.ctx.fill()
-      })
-    }
-  }
-  /**
-   * 重新绘画当前棋盘
-   */
-  redraw() {
-    this.drawPeice(this.livePieceList)
-  }
+    //  楚河 汉界
+    ctx.textBaseline = "middle"
+    ctx.textAlign = "left"
+    ctx.fillStyle = "#000"
+    const fontSize = gridHeight * .7
+    ctx.font = fontSize + 'px serif'
+    ctx.fillText("楚河", startX + gridWidth, startY + gridHeight * 4.5)
 
-  /**
-   * 动画效果 绘画 棋子移动
-   * @param mp 移动点
-   * @param pl 绘画的棋子列表
-   * @param activePoint 当前移动点
-   */
-  private activeMove(mp: Point, pl: PieceList, activePoint: Point): Promise<Point> {
-    const dx = (activePoint.x - mp.x)
-    const dy = (activePoint.y - mp.y)
-
-    const xstep = dx === 0 ? 0 : dx / this.moveSpeed
-    const ystep = dy === 0 ? 0 : dy / this.moveSpeed
-    // 是否支持 动画 API 
-    if (typeof this.animate === "function" && typeof this.cancelAnimate === "function") {
-      return new Promise((resolve) => {
-        let raf: number;
-        const cb = () => {
-          // const mx = mp.x.toFixed(2), ax = activePoint.x.toFixed(2), my = mp.y.toFixed(2), ay = activePoint.y.toFixed(2)
-          const diffX = Math.abs(mp.x - activePoint.x), diffY = Math.abs(mp.y - activePoint.y)
-          // console.log(`diffX:${diffX} diffY:${diffY}\nxstep:${Math.abs(xstep)} ystep:${Math.abs(ystep)}`);
-          if (diffX <= Math.abs(xstep) && diffY <= Math.abs(ystep) && this.choosePiece) {
-            this.cancelAnimate.call(globalThis, raf)
-            return resolve(mp)
-          }
-          this.drawPeice(pl)
-          let peice = { ...this.choosePiece } as ChessOfPeice
-          // peice.isChoose = false
-          peice.x = Math.abs(activePoint.x - this.gridDiffX) - xstep
-          peice.y = Math.abs(activePoint.y - this.gridDiffY) - ystep
-          this.drawSinglePeice(this.ctx, peice)
-          activePoint.x -= xstep
-          activePoint.y -= ystep
-          raf = this.animate.call(globalThis, cb)
-        }
-        cb()
-      })
-    }
-    return Promise.resolve(mp)
-  }
-
-  /**
-   * 当前选中的棋子 根据点来 移动
-   * @param checkPoint 移动点或者是吃
-   */
-  private moveToPeice(checkPoint: CheckPoint): MoveResult {
-    if (this.choosePiece) {
-      const side = this.currentSide
-      const isMove = "move" in checkPoint
-      const point = isMove ? checkPoint.move : checkPoint.eat
-      const lastChoosePeice = this.choosePiece
-      const hasTrouble = this.checkGeneralInTrouble(side, this.choosePiece, checkPoint, this.livePieceList)
-      if (hasTrouble) {
-        this.moveFailEvents.forEach(f => f(lastChoosePeice, point, true, "不可以送将！"))
-        return { flag: false, message: "不可以送将！" }
-      }
-      if (!isMove) {
-        this.livePieceList = this.livePieceList.filter(i => !(i.x === point.x && i.y === point.y))
-      }
-      this.gameState = "MOVE"
-      return this.moveStart(lastChoosePeice, checkPoint, this.livePieceList, side)
-    }
-    return { flag: false, message: "未选中棋子" }
-  }
-  /**
-   * 把当前选中的棋子 移动到 指定的位置
-   * @param p 移动位置
-   * @param drawPeiceList 需要画的棋子列表
-   */
-  private movePeiceToPointAsync(p: Point, drawPeiceList: PieceList) {
-    return new Promise<void>((res) => {
-      if (this.choosePiece) {
-        const { x, y } = this.choosePiece
-        const pl = drawPeiceList.filter(i => !(i.x === x && i.y === y))
-        const ap = new Point(x, y)
-        this.activeMove(p, pl, ap).then((point) => {
-          this.moveEnd(point)
-          res()
-        })
-      } else {
-        res()
-      }
-    })
-  }
-
-
-  /**
-  * 当前选中的棋子 根据点来 移动
-  * @param checkPoint 移动点或者是吃
-  */
-  private moveToPeiceAsync(checkPoint: CheckPoint): MoveResultAsync {
-    if (this.choosePiece) {
-      const side = this.currentSide
-      const isMove = "move" in checkPoint
-      const point = isMove ? checkPoint.move : checkPoint.eat
-
-      const lastChoosePeice = this.choosePiece
-      const hasTrouble = this.checkGeneralInTrouble(side, this.choosePiece, checkPoint, this.livePieceList)
-      if (hasTrouble) {
-        this.moveFailEvents.forEach(f => f(lastChoosePeice, point, true, "不可以送将！"))
-        return Promise.resolve({ flag: false, message: "不可以送将！" })
-      }
-      if (!isMove) {
-        this.livePieceList = this.livePieceList.filter(i => !(i.x === point.x && i.y === point.y))
-      }
-      this.gameState = "MOVE"
-      return this.moveStartAsync(lastChoosePeice, checkPoint, this.livePieceList, side).then(() => ({ flag: true }))
-    }
-    return Promise.resolve({ flag: false, message: "未选择棋子" })
-  }
-  /**
-   * 开始移动棋子
-   * @param mp 移动棋子
-   * @param checkPoint 移动点还是吃棋点
-   * @param drawList 绘画棋子列表
-   * @param side 当前下棋方
-   */
-  private moveStart(mp: ChessOfPeice, checkPoint: CheckPoint, drawList: PieceList, side: PieceSide): MoveResult {
-    const enemySide: PieceSide = side === "RED" ? "BLACK" : "RED"
-    const p = "move" in checkPoint ? checkPoint.move : checkPoint.eat
-    this.moveEnd(p)
-    let isOver = false
-    const enemyhasTrouble = this.checkGeneralInTrouble(enemySide, mp, checkPoint, drawList)
-    if (enemyhasTrouble) {
-      const movedPeiceList = drawList.filter(i => !(i.x === mp.x && i.y === mp.y))
-      const newMp = chessOfPeiceMap[mp.name]({ ...mp, ...p })
-      movedPeiceList.push(newMp)
-      const hasSolution = this.checkEnemySideInTroubleHasSolution(enemySide, movedPeiceList)
-      if (!hasSolution) {
-        isOver = true
-        this.gameState = "OVER"
-        this.winner = side
-      }
-    } else {
-      const hasMovePoints = this.checkEnemySideHasMovePoints(enemySide)
-      if (!hasMovePoints) {
-        isOver = true
-        this.gameState = "OVER"
-        this.winner = side
-      }
-    }
-    this.moveEvents.forEach(f => f(mp, checkPoint, isOver || enemyhasTrouble, this.getCurrentPenCode()))
-    if (isOver) {
-      this.overEvents.forEach(f => f(side))
-    }
-    return { flag: true }
-  }
-  private moveStartAsync(mp: ChessOfPeice, checkPoint: CheckPoint, drawList: PieceList, side: PieceSide) {
-    const enemySide: PieceSide = side === "RED" ? "BLACK" : "RED"
-    const p = "move" in checkPoint ? checkPoint.move : checkPoint.eat
-    return this.movePeiceToPointAsync(p, drawList).then(() => {
-      const enemyhasTrouble = this.checkGeneralInTrouble(enemySide, mp, { move: p }, drawList)
-      let isOver = false
-      if (enemyhasTrouble) {
-        const movedPeiceList = drawList.filter(i => !(i.x === mp.x && i.y === mp.y))
-        const newMp = chessOfPeiceMap[mp.name]({ ...mp, ...p })
-        movedPeiceList.push(newMp)
-        const hasSolution = this.checkEnemySideInTroubleHasSolution(enemySide, movedPeiceList)
-        if (!hasSolution) {
-          isOver = true
-          this.gameState = "OVER"
-          this.winner = side
-        }
-      } else {
-        const hasMovePoints = this.checkEnemySideHasMovePoints(enemySide)
-        if (!hasMovePoints) {
-          isOver = true
-          this.gameState = "OVER"
-          this.winner = side
-        }
-      }
-      this.moveEvents.forEach(f => f(mp, checkPoint, isOver || enemyhasTrouble, this.getCurrentPenCode()))
-      if (isOver) {
-        this.overEvents.forEach(f => f(side))
-      }
-      return null
-    })
-
-  }
-  /**
-   * 动画移动结束，当前选中的棋子更新 x, y坐标，重新绘画 更换 玩家 和 运动状态
-   * @param p 移动点
-   */
-  private moveEnd(p: Point) {
-    this.livePieceList = this.livePieceList.map(i => {
-      if (i.x === this.choosePiece?.x && i.y === this.choosePiece?.y) {
-        const peiceInfo = { ...i, isChoose: false, ...p }
-        return chessOfPeiceMap[i.name](peiceInfo)
-      }
-      return i
-    })
-    this.clearMoveChoosePeiece()
-    this.changeSide()
-    this.redraw()
-    this.gameState = "START"
-  }
-  /**
-   * 移动棋子
-   * @param clickPoint 移动点
-   */
-  private pieceMove(clickPoint: Point): MoveResult {
-    const choosePiece = findPiece(this.livePieceList, clickPoint)
-    // 在棋盘上 还没开始选中的点击
-    if (!this.choosePiece) {
-      // 如果 没点到棋子 
-      if (!choosePiece) {
-        return { flag: false, message: "未找到棋子" }
-      }
-      // 点击到了敌方的棋子
-      if (this.currentSide !== choosePiece.side) {
-        return { flag: false, message: "选中了敌方的棋子" }
-      }
-      this.choosePiece = choosePiece
-      this.choosePiece.isChoose = true
-      this.logEvents.forEach(f => f(`当前：${this.currentSide} 方 选中了 棋子:${choosePiece}`))
-      this.redraw()
-      return { flag: true }
-    }
-
-    // 选中之后的点击
-    if (!choosePiece) {// 没有选中棋子 说明 已选中的棋子要移动过去
-      const moveFlag = this.choosePiece.move(clickPoint, this.livePieceList)
-      let mp = this.choosePiece
-      if (moveFlag.flag) {
-        return this.moveToPeice({ move: clickPoint })
-      }
-      this.moveFailEvents.forEach(f => f(mp, clickPoint, true, moveFlag.message))
-      return moveFlag
-    }
-
-    // 如果点击的棋子是己方
-    if (choosePiece.side === this.currentSide) {
-      if (this.choosePiece === choosePiece) {// 如果是点击选中的棋子 取消选中
-        this.clearMoveChoosePeiece()
-        this.logEvents.forEach(f => f(this.currentSide + "方： 取消选中 " + choosePiece))
-        this.redraw()
-        return { flag: true }
-      }
-
-      {// 切换选中棋子
-        this.choosePiece.isChoose = false
-        this.logEvents.forEach(f => f(`${this.currentSide}方：切换 选中棋子 由${this.choosePiece} --> ${choosePiece}`))
-        this.choosePiece = choosePiece
-        this.choosePiece.isChoose = true
-        this.redraw()
-        return { flag: true }
-      }
-
-    }
-
-    // 如果点击的的棋子是敌方 ，要移动到敌方的棋子位置上
-    this.logEvents.forEach(f => f(`当前：${this.currentSide} ,棋子:${this.choosePiece} 需要移动到：${clickPoint} 这个点上，并且要吃掉 ${choosePiece}`))
-    const moveFlag = this.choosePiece.move(clickPoint, this.livePieceList)
-    if (!moveFlag.flag) {
-      this.moveFailEvents.forEach(f => f(this.choosePiece as ChessOfPeice, clickPoint, false, moveFlag.message))
-      return moveFlag
-    } else {
-      return this.moveToPeice({ eat: clickPoint })
-    }
-  }
-  /**
-  * 移动棋子
-  * @param p 移动点
-  * @returns 返回promise移动结果
-  */
-  private pieceMoveAsync(p: Point): Promise<MoveResult> {
-    const choosePiece = findPiece(this.livePieceList, p)
-    // 在棋盘上 还没开始选中的点击
-    if (!this.choosePiece) {
-      // 如果 没点到棋子 
-      if (!choosePiece) {
-        return Promise.resolve({ flag: false, message: "未找到棋子" })
-      }
-      // 点击到了敌方的棋子
-      if (this.currentSide !== choosePiece.side) {
-        return Promise.resolve({ flag: false, message: "选中了敌方的棋子" })
-      }
-      this.choosePiece = choosePiece
-      this.choosePiece.isChoose = true
-      this.logEvents.forEach(f => f(`当前：${this.currentSide} 方 选中了 棋子:${choosePiece}`))
-      this.redraw()
-      this.drawChoosePieceMovePoint()
-      return Promise.resolve({ flag: true })
-    }
-
-    // 选中之后的点击
-    // 没有选中棋子 说明 已选中的棋子要移动过去
-    if (!choosePiece) {
-      const moveFlag = this.choosePiece.move(p, this.livePieceList)
-      let mp = this.choosePiece
-      if (moveFlag.flag) {
-        return this.moveToPeiceAsync({ move: p })
-      }
-      this.moveFailEvents.forEach(f => f(mp, p, true, moveFlag.message))
-      return Promise.resolve(moveFlag)
-    }
-
-    // 如果点击的棋子是己方
-    if (choosePiece.side === this.currentSide) {
-      // 如果是点击选中的棋子
-      if (this.choosePiece === choosePiece) {// 取消选中
-        this.clearMoveChoosePeiece()
-        this.logEvents.forEach(f => f(this.currentSide + "方： 取消选中 " + choosePiece))
-        this.redraw()
-        return Promise.resolve({ flag: true })
-      }
-      // 切换选中棋子
-      this.choosePiece.isChoose = false
-      this.logEvents.forEach(f => f(`${this.currentSide}方：切换 选中棋子 由${this.choosePiece} --> ${choosePiece}`))
-      this.choosePiece = choosePiece
-      this.choosePiece.isChoose = true
-      this.redraw()
-      this.drawChoosePieceMovePoint()
-      return Promise.resolve({ flag: true })
-    }
-
-    // 如果点击的的棋子是敌方 ，要移动到敌方的棋子位置上
-    this.logEvents.forEach(f => f(`当前：${this.currentSide} ,棋子:${this.choosePiece} 需要移动到：${p} 这个点上，并且要吃掉 ${choosePiece}`))
-    const moveFlag = this.choosePiece.move(p, this.livePieceList)
-    if (!moveFlag.flag) {
-      this.moveFailEvents.forEach(f => f(this.choosePiece as ChessOfPeice, p, false, moveFlag.message))
-      return Promise.resolve(moveFlag)
-    } else {
-      return this.moveToPeiceAsync({ eat: p })
-    }
-  }
-
-  /**
-   * 根据坐标点移动位置
-   * @param piecePoint 棋子所在位置
-   * @param movePoint 移动位置
-   * @param side 下棋方
-   */
-  move(piecePoint: Point, movePoint: Point, side: PieceSide): MoveResult {
-    if (!this.checkGameState()) {
-      return { flag: false, message: "当前游戏状态不可以移动棋子" }
-    }
-    if (this.currentSide !== side) {
-      return { flag: false, message: "请等待对方下棋" }
-    }
-    const posPeice = findPiece(this.livePieceList, piecePoint)
-    if (!posPeice || posPeice.side !== this.currentSide) {
-      this.logEvents.forEach(f => f("未找到棋子"))
-      return { flag: false, message: "未找到棋子" }
-    }
-    if (this.choosePiece) {
-      this.clearMoveChoosePeiece()
-    }
-    posPeice.isChoose = true
-    this.choosePiece = posPeice
-    return this.pieceMove(movePoint)
-  }
-  /**
-   * 根据坐标点移动位置
-   * @param piecePoint 棋子所在位置
-   * @param movePoint 移动位置
-   * @param side 下棋方
-   */
-  moveAsync(piecePoint: Point, movePoint: Point, side: PieceSide): MoveResultAsync {
-    if (!this.checkGameState()) {
-      return Promise.resolve({ flag: false, message: "当前游戏状态不可以移动棋子" })
-    }
-    if (this.currentSide !== side) {
-      return Promise.resolve({ flag: false, message: `当前为${this.currentSide}方下棋，请等待！` })
-    }
-    const posPeice = findPiece(this.livePieceList, piecePoint)
-    if (!posPeice || posPeice.side !== this.currentSide) {
-      this.logEvents.forEach(f => f("未找到棋子"))
-      return Promise.resolve({ flag: false, message: "未找到棋子" })
-    }
-    if (this.choosePiece) {
-      this.clearMoveChoosePeiece()
-    }
-    posPeice.isChoose = true
-    this.choosePiece = posPeice
-    return this.pieceMoveAsync(movePoint)
+    ctx.textAlign = "right"
+    ctx.translate(startX + gridWidth * 7 - fontSize * 2, startY + gridHeight * 4.5)
+    ctx.rotate(Math.PI);
+    ctx.fillText("汉界", 0, 0)
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
   /**
    * 根据移动方的描述文字来进行移动棋子
@@ -1059,7 +673,7 @@ export default class ZhChess {
    * @param side 移动方
    * @returns 移动结果
    */
-  moveStr(str: string, side: PieceSide): MoveResult {
+  moveStr(str: string, side: PieceSide): UpdateResult {
     if (!this.checkGameState()) {
       return { flag: false, message: "当前游戏状态不可以移动棋子" }
     }
@@ -1083,7 +697,7 @@ export default class ZhChess {
     }
     this.choosePiece = res.choose
     this.choosePiece.isChoose = true
-    return this.pieceMove(res.mp)
+    return this.update(res.choose, res.mp, side, true)
   }
   /**
    * 根据移动方的描述文字来进行移动棋子
@@ -1091,7 +705,7 @@ export default class ZhChess {
    * @param side 移动方
    * @returns 移动结果
    */
-  moveStrAsync(str: string, side: PieceSide): MoveResultAsync {
+  moveStrAsync(str: string, side: PieceSide): Promise<UpdateResult> {
     if (!this.checkGameState()) {
       return Promise.resolve({ flag: false, message: "当前游戏状态不可以移动棋子" })
     }
@@ -1108,17 +722,10 @@ export default class ZhChess {
     if (this.choosePiece) {
       this.clearMoveChoosePeiece()
     }
-    const posPeice = findPiece(this.livePieceList, res.mp)
-    if (posPeice && posPeice.side === this.currentSide) {
-      this.logEvents.forEach(f => f("移动的位置有己方棋子"))
-      return Promise.resolve({ flag: false, message: "移动的位置有己方棋子" })
-    }
     this.choosePiece = res.choose
     this.choosePiece.isChoose = true
-    return this.pieceMoveAsync(res.mp)
+    return this.updateAsync(res.choose.getPoint(), res.mp, side)
   }
-
-
   /**
    * 初始化选择玩家方
    * @param side 玩家方
@@ -1154,8 +761,12 @@ export default class ZhChess {
   changePlaySide(side: PieceSide) {
     this.setGridDiff(side)
     this.clearMoveChoosePeiece()
-    this.redraw()
+    this.checkDraw()
   }
+  /**
+   * 更改当前走棋方
+   * @param side 走棋方
+   */
   changeCurrentPlaySide(side: PieceSide) {
     this.currentSide = side
   }
@@ -1281,63 +892,86 @@ export default class ZhChess {
    * 棋子运动前检查游戏状态是否可以运动
    * @returns 是否可以运动
    */
-  checkGameState() {
+  checkGameState(): MoveResult {
     // 游戏开始
+    let data: MoveResult;
     if (this.gameState === "INIT") {
-      this.logEvents.forEach(f => f("请选择红黑方"))
-      return false
+      data = { flag: false, message: "请选择红黑方" }
     }
     // 游戏结束
-    if (this.gameState === "OVER") {
-      this.logEvents.forEach(f => f("棋盘结束 等待重开！"))
-      return false
+    else if (this.gameState === "OVER") {
+      data = { flag: false, message: "棋盘结束 等待重开！" }
     }
     // 正在移动
-    if (this.gameState === "MOVE") {
-      this.logEvents.forEach(f => f("棋子正在移动，无法做任何操作"))
-      return false
+    else if (this.gameState === "MOVE") {
+      data = { flag: false, message: "棋子正在移动，无法做任何操作" }
+    } else {
+      data = { flag: true }
     }
-    return true
+    if (!data.flag) {
+      let msg = data.message
+      this.logEvents.forEach(f => f(msg))
+      this.moveFailEvents.forEach(f => f(null, null, msg))
+    }
+    return data
   }
-
+  private checkDraw() {
+    if (this.ctx) {
+      try {
+        this.draw(this.ctx)
+      } catch (error) {
+        this.errorEvents.forEach(f => f(error))
+      }
+    } else {
+      this.errorEvents.forEach(f => f(new Error("未找到画布，无法更新当前棋盘布局画面！")))
+    }
+  }
   /**
    * 监听棋盘点击
    */
   listenClick(e: MouseEvent) {
     const { offsetX: x, offsetY: y } = e
-    if (!this.checkGameState()) {
+    if (!this.checkGameState().flag) {
       return
     }
     const clickPoint = this.getGridPosition({ x, y })
     if (!clickPoint) {
-      return
-    }
-    this.pieceMove(clickPoint)
-  }
-  /**
-  * 监听棋盘点击
-  */
-  listenClickAsync(e: MouseEvent) {
-    const { offsetX: x, offsetY: y } = e
-    if (!this.checkGameState()) {
-      return
-    }
-    const clickPoint = this.getGridPosition({ x, y })
-    if (!clickPoint) {
+      let msg = '点击的位置未找到棋子'
+      this.logEvents.forEach(f => f(msg))
+      this.moveFailEvents.forEach(f => f(null, null, msg))
       return
     }
     const isChoose = Boolean(this.choosePiece)
     const pos = isChoose ? new Point(this.choosePiece?.x as number, this.choosePiece?.y as number) : clickPoint
     const mov = isChoose ? clickPoint : null
     let side = this.currentSide
-    this.updateAsync(pos, mov, side, () => {
-      this.draw(this.ctx)
-    }).then((data) => {
+    this.update(pos, mov, side, true)
+    this.checkDraw()
+  }
+  /**
+  * 监听棋盘点击
+  */
+  listenClickAsync(e: MouseEvent) {
+    const { offsetX: x, offsetY: y } = e
+    if (!this.checkGameState().flag) {
+      return
+    }
+    const clickPoint = this.getGridPosition({ x, y })
+    if (!clickPoint) {
+      let msg = '点击的位置未找到棋子'
+      this.logEvents.forEach(f => f(msg))
+      this.moveFailEvents.forEach(f => f(null, null, msg))
+      return
+    }
+    const isChoose = Boolean(this.choosePiece)
+    const pos = isChoose ? new Point(this.choosePiece?.x as number, this.choosePiece?.y as number) : clickPoint
+    const mov = isChoose ? clickPoint : null
+    let side = this.currentSide
+
+    this.updateAsync(pos, mov, side, this.checkDraw.bind(this)).then((data) => {
       console.log(data);
-      if (data.flag) {
-        data.cb && data.cb()
-        this.draw(this.ctx)
-      } else {
+      this.checkDraw()
+      if (!data.flag) {
         this.moveFailEvents.forEach(f => f(pos, mov, data.message))
       }
     })
@@ -1380,6 +1014,7 @@ export default class ZhChess {
   on(e: "moveFail", fn: MoveFailCallback): void;
   on(e: "log", fn: GameLogCallback): void;
   on(e: "over", fn: GameOverCallback): void;
+  on(e: "error", fn: GameErrorCallback): void;
   /**
    * 象棋事件监听
    * @param e 监听事件
@@ -1395,6 +1030,8 @@ export default class ZhChess {
         this.moveFailEvents.push(fn as MoveFailCallback)
       } else if (e === "over") {
         this.overEvents.push(fn as GameOverCallback)
+      } else if (e === "error") {
+        this.errorEvents.push(fn as GameErrorCallback)
       }
     } else {
       throw new Error("监听函数值应该为 function 类型")
@@ -1404,6 +1041,7 @@ export default class ZhChess {
   removeEvent(e: "moveFail", fn: MoveFailCallback): void;
   removeEvent(e: "log", fn: GameLogCallback): void;
   removeEvent(e: "over", fn: GameOverCallback): void;
+  removeEvent(e: "error", fn: GameErrorCallback): void;
   /**
    * 移除象棋事件监听
    * @param e 监听事件
@@ -1419,6 +1057,8 @@ export default class ZhChess {
         this.moveFailEvents = this.moveFailEvents.filter(f => f !== fn)
       } else if (e === "over") {
         this.overEvents = this.overEvents.filter(f => f !== fn)
+      } else if (e === "error") {
+        this.errorEvents = this.errorEvents.filter(f => f !== fn)
       }
     } else {
       throw new Error("监听函数值应该为 function 类型")
@@ -1434,4 +1074,4 @@ export default class ZhChess {
 }
 export * from "./piece"
 export * from "./types"
-export { parse_PEN_Str, gen_PEN_Str, gen_PEN_Point_Str } from "../utils/index"
+export { parse_PEN_Str, gen_PEN_Str, gen_PEN_Point_Str, diffPenStr } from "../utils/index"

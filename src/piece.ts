@@ -45,10 +45,15 @@ export class Piece implements PieceInfo {
       y: this.y
     }
   }
+  /**
+   * 更新自己坐标点
+   * @param p 坐标点
+   */
   update(p: Point) {
     this.x = p.x
     this.y = p.y
   }
+
   draw(ctx: CanvasRenderingContext2D,
     startX: number, startY: number,
     gridWidth: number, gridHeight: number,
@@ -102,9 +107,26 @@ export class Piece implements PieceInfo {
     ctx.font = radius + "px yahei";
     ctx.fillText(this.name, x, y + ty);
   }
+  /**
+   * 根据棋子列表判断 当前棋子可移动的点
+   * @param _pl 棋子列表
+   * @returns 
+   */
   getMovePoints(_pl: PieceList): MovePointList {
     return []
   }
+  /**
+   * 画出棋子可移动的点
+   * @param ctx canvas画布
+   * @param pl 当前棋子列表
+   * @param startX x
+   * @param startY y
+   * @param gridWidth 棋盘格子宽度 
+   * @param gridHeight 棋盘格子高度
+   * @param gridDiffX 棋子x轴差值
+   * @param gridDiffY 棋子y轴差值
+   * @param radius 棋子半径
+   */
   drawMovePoints(ctx: CanvasRenderingContext2D, pl: PieceList, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: number, gridDiffY: number, radius: number) {
     ctx.fillStyle = "#25dd2a"
     this.getMovePoints(pl).forEach(p => {
@@ -116,7 +138,9 @@ export class Piece implements PieceInfo {
       ctx.fill()
     })
   }
-
+  getPoint() {
+    return new Point(this.x, this.y)
+  }
 }
 /**
  * 象棋：车
