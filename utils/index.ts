@@ -424,18 +424,17 @@ export function gen_PEN_Str(pl: PieceList, side: PieceSide): string {
     PENList[index].push(data)
   })
   PENList = PENList.map(item => {
-    item = item.sort((a, b) => b.x - a.x)
+    item = item.sort((a, b) => a.x - b.x)
     return item
   })
   let str = ''
   for (let y = 0; y < PENList.length; y++) {
     const peiceList = PENList[y];
     const len = peiceList.length
-    let x = 8
     if (len === 0) {
       str += '9'
     }
-    for (let j = 0; j < len; j++, x--) {
+    for (let j = 0; j < len; j++) {
       const current = peiceList[j];
       const isUp = current.side === "RED"
       const penCode = get_PEN_PieceName(current.name)
@@ -443,14 +442,14 @@ export function gen_PEN_Str(pl: PieceList, side: PieceSide): string {
         throw new Error(`未找到 ${current.name} 对应的 PEN 代码，请检查棋子名称是否符合正确格式:
 例如： 车 "车","車"...`);
       }
-      const step = (j > 0 ? (peiceList[j - 1].x - 1) : x) - (current.x)
+      const step = (current.x) - (j > 0 ? (peiceList[j - 1].x + 1) : 0)
       if (step > 0) {
         str += String(step)
       }
       str += isUp ? penCode.toUpperCase() : penCode
       //  结尾
       if (j + 1 === len) {
-        const end = current.x
+        const end = 8 - current.x
         if (end > 0) {
           str += String(end)
         }

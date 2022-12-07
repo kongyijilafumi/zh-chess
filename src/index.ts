@@ -1,6 +1,6 @@
 import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint, GamePeiceGridDiffX, GamePeiceGridDiffY, UpdateResult, UpdateMoveCallback, GameErrorCallback } from './types';
 import { Point, PieceInfo, MoveResult } from './types';
-import { gen_PEN_Str, parseStrToPoint } from '../utils';
+import { gen_PEN_Str, parseStrToPoint, parse_PEN_Str } from '../utils';
 import { getPiecesList, } from './data';
 import { getSquarePoints } from '../utils/draw';
 import { ChessOfPeice, GeneralPiece, PieceList, chessOfPeiceMap } from './piece';
@@ -194,6 +194,11 @@ export default class ZhChess {
    * 清除动画方法
    */
   private cancelAnimate: (hander: number) => void;
+  /**
+   * 画布缩放大小
+   * @defaultValue `1`
+   */
+  private scaleRatio: number;
 
   constructor({ ctx,
     gameWidth = 800,
@@ -217,6 +222,7 @@ export default class ZhChess {
     this.checkerboardBackground = checkerboardBackground
     // 设置 缩放 来解决移动端模糊问题
     this.ctx?.scale(scaleRatio, scaleRatio)
+    this.scaleRatio = scaleRatio
     this.listenClick = this.listenClick.bind(this)
     this.listenClickAsync = this.listenClickAsync.bind(this)
     this.checkDraw = this.checkDraw.bind(this)
@@ -344,6 +350,7 @@ export default class ZhChess {
    * @param pos 坐标点
    * @param mov 移动点
    * @param side 当前下棋玩家
+   * @param refreshCtx 是否每次运动后更新画布
    * @param moveCallback 每次棋子数据更新后调用
    * 
    * @example 
@@ -351,7 +358,7 @@ export default class ZhChess {
    * game.updateAsync(pos , mov, side, ()=> game.draw(ctx)) // 每次运动都去绘画一次
    * 
    */
-  updateAsync(pos: Point, mov: Point | null, side: PieceSide, moveCallback?: UpdateMoveCallback): Promise<UpdateResult> {
+  updateAsync(pos: Point, mov: Point | null, side: PieceSide, refreshCtx: boolean, moveCallback?: UpdateMoveCallback): Promise<UpdateResult> {
     const updateRes = this.update(pos, mov, side, false)
     this.gameState = "MOVE"
     if (!updateRes.flag || !mov || (updateRes.flag && !updateRes.move)) {
@@ -359,8 +366,8 @@ export default class ZhChess {
       return Promise.resolve(updateRes)
     }
     let diffx = (pos.x - mov.x), diffy = (pos.y - mov.y), posX = pos.x, posY = pos.y;
-    const xstep = diffx / (this.duration / (1000 / 60))
-    const ystep = diffy / (this.duration / (1000 / 60))
+    const xstep = diffx / (this.duration / 16)
+    const ystep = diffy / (this.duration / 16)
     // this.clearMoveChoosePeiece()
     let raf: number, posPeice: ChessOfPeice | undefined
     return new Promise((resovle) => {
@@ -380,6 +387,9 @@ export default class ZhChess {
         if (posPeice) {
           posPeice.isChoose = false
           posPeice.update(newPoint)
+          if (refreshCtx) {
+            this.checkDraw()
+          }
           if (typeof moveCallback === "function") {
             moveCallback(posPeice, newPoint)
           }
@@ -393,6 +403,9 @@ export default class ZhChess {
     }).then(() => {
       if (updateRes.flag && updateRes.cb) {
         updateRes.cb()
+        if (refreshCtx) {
+          this.checkDraw()
+        }
         return { flag: true, move: true }
       }
       return updateRes
@@ -463,13 +476,13 @@ export default class ZhChess {
         }
       }
       let cb = () => {
-        const newPeice = chessOfPeiceMap[posPeice.name]({ ...posPeice, ...mov })
+        const newPeice = chessOfPeiceMap[posPeice.name]({ ...posPeice, ...pos })
         if (!isMove) {
           this.livePieceList = this.livePieceList.filter(p => (!(p.x === cp.eat.x && p.y === cp.eat.y)))
         }
         posPeice.update(mov)
         this.gameState = "START"
-        this.moveEvents.forEach(f => f(newPeice, cp, isOver || enemyhasTrouble, this.getCurrentPenCode()))
+        this.moveEvents.forEach(f => f(newPeice, cp, isOver || enemyhasTrouble, this.getCurrentPenCode(enemySide)))
         if (isOver) {
           this.gameState = "OVER"
           this.overEvents.forEach(f => f(side))
@@ -549,7 +562,7 @@ export default class ZhChess {
    * 画棋盘
    */
   private drawChessLine(ctx: CTX) {
-    const { startX, startY, endX, endY, gridWidth, gridHeight } = this
+    const { startX, startY, endX, endY, gridWidth, gridHeight, scaleRatio } = this
     // 画背景
     ctx.fillStyle = this.checkerboardBackground;
     ctx.fillRect(0, 0, this.width, this.width);
@@ -665,7 +678,7 @@ export default class ZhChess {
     ctx.translate(startX + gridWidth * 7 - fontSize * 2, startY + gridHeight * 4.5)
     ctx.rotate(Math.PI);
     ctx.fillText("汉界", 0, 0)
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.setTransform(scaleRatio, 0, 0, scaleRatio, 0, 0);
   }
   /**
    * 根据移动方的描述文字来进行移动棋子
@@ -703,9 +716,10 @@ export default class ZhChess {
    * 根据移动方的描述文字来进行移动棋子
    * @param str 文字
    * @param side 移动方
+   * @param refreshCtx 是否每次移动都更新画布
    * @returns 移动结果
    */
-  moveStrAsync(str: string, side: PieceSide): Promise<UpdateResult> {
+  moveStrAsync(str: string, side: PieceSide, refreshCtx: boolean): Promise<UpdateResult> {
     if (!this.checkGameState()) {
       return Promise.resolve({ flag: false, message: "当前游戏状态不可以移动棋子" })
     }
@@ -724,7 +738,7 @@ export default class ZhChess {
     }
     this.choosePiece = res.choose
     this.choosePiece.isChoose = true
-    return this.updateAsync(res.choose.getPoint(), res.mp, side)
+    return this.updateAsync(res.choose.getPoint(), res.mp, side, refreshCtx)
   }
   /**
    * 初始化选择玩家方
@@ -915,7 +929,10 @@ export default class ZhChess {
     }
     return data
   }
-  private checkDraw() {
+  /**
+   * 检查是否有画布 有会更新画布 否则不更新 报出错误
+   */
+  checkDraw() {
     if (this.ctx) {
       try {
         this.draw(this.ctx)
@@ -968,15 +985,12 @@ export default class ZhChess {
     const mov = isChoose ? clickPoint : null
     let side = this.currentSide
 
-    this.updateAsync(pos, mov, side, this.checkDraw.bind(this)).then((data) => {
-      console.log(data);
+    this.updateAsync(pos, mov, side, true).then((data) => {
       this.checkDraw()
       if (!data.flag) {
         this.moveFailEvents.forEach(f => f(pos, mov, data.message))
       }
     })
-
-    // this.pieceMoveAsync(clickPoint)
   }
   /**
    * 获取赢棋方
@@ -1007,9 +1021,10 @@ export default class ZhChess {
   get currentRadius(): number {
     return this.radius
   }
-  getCurrentPenCode(): string {
-    return gen_PEN_Str(this.livePieceList, this.currentSide)
+  getCurrentPenCode(side: PieceSide): string {
+    return gen_PEN_Str(this.livePieceList, side)
   }
+
   on(e: "move", fn: MoveCallback): void;
   on(e: "moveFail", fn: MoveFailCallback): void;
   on(e: "log", fn: GameLogCallback): void;
@@ -1070,6 +1085,15 @@ export default class ZhChess {
    */
   setLivePieceList(pl: PieceList) {
     this.livePieceList = pl
+  }
+  /**
+   * 根据pen代码格式来设置当前棋盘
+   * @param penCode 
+   */
+  setPenCodeList(penCode: string) {
+    const data = parse_PEN_Str(penCode)
+    this.livePieceList = data.list.map(p => chessOfPeiceMap[p.name](p))
+    this.currentSide = data.side
   }
 }
 export * from "./piece"

@@ -1,11 +1,11 @@
 import type { ChessOfPeiceName, ChessOfPeice } from './piece';
 
 /**
- * 游戏玩家方 固定为 RED | BLACK
+ * 游戏玩家方 固定为 `RED` | `BLACK`
  */
 export type PieceSide = "RED" | "BLACK"
 /**
- * 游戏玩家方(中文) 固定为 RED | BLACK
+ * 游戏玩家方(中文) 固定为 `红方` | `黑方`
  */
 export type PieceSideCN = "红方" | "黑方"
 /**
@@ -174,7 +174,7 @@ export type GameState = "INIT" | "START" | "OVER" | "MOVE"
  * 否则是 吃掉坐标上点的棋子 使用 cp.eat 访问改坐标点
  * @param enemyhasTrouble 敌方是否被将军
  */
-export type MoveCallback = (peice: ChessOfPeice, cp: CheckPoint, enemyhasTrouble: boolean, penCode: string) => void
+export type MoveCallback = (pos: ChessOfPeice, cp: CheckPoint, enemyhasTrouble: boolean, penCode: string) => void
 
 /**
  * 监听棋子移动失败函数
