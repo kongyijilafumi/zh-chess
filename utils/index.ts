@@ -491,7 +491,7 @@ export function diffPenStr(oldStr: string, newStr: string) {
   const plList = oldList.map(item => chessOfPeiceMap[item.name](item))
   const delList: PeicePosInfo[] = [];
   // 被吃了
-  const moveList: { point: Point; move: Point; }[] = []
+  const moveList: { point: Point; move: Point; side: PieceSide }[] = []
 
   oldList.forEach(item => {
     const findindex = newList.findIndex(p =>
@@ -523,7 +523,8 @@ export function diffPenStr(oldStr: string, newStr: string) {
         if (isFind) {
           moveList.push({
             point: new Point(item.x, item.y),
-            move: new Point(newList[findPointIndex].x, newList[findPointIndex].y)
+            move: new Point(newList[findPointIndex].x, newList[findPointIndex].y),
+            side: item.side
           })
           newList.splice(findPointIndex, 1)
         }
