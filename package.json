@@ -1,6 +1,6 @@
 {
   "name": "zh-chess",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "A Chinese chess framework that supports browsers and nodejs(一款运行在浏览器和nodejs环境的中国象棋框架)",
   "main": "./lib/zh-chess.cjs.js",
   "module": "./lib/zh-chess.es.js",

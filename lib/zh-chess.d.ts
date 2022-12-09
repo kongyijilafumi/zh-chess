@@ -481,6 +481,7 @@ declare function diffPenStr(oldStr: string, newStr: string): {
     moveList: {
         point: Point;
         move: Point;
+        side: PieceSide;
     }[];
     delList: PeicePosInfo[];
 };
