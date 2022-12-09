@@ -4,6 +4,7 @@
 [![GitHub fork](https://img.shields.io/github/forks/kongyijilafumi/zh-chess?label=GitHub%20fork)](https://github.com/kongyijilafumi/zh-chess/network/members)
 [![Gitee star](https://gitee.com/kong_yiji_and_lavmi/zh-chess/badge/star.svg?theme=dark)](https://gitee.com/kong_yiji_and_lavmi/zh-chess/stargazers)
 [![Gitee fork](https://gitee.com/kong_yiji_and_lavmi/zh-chess/badge/fork.svg?theme=dark)](https://gitee.com/kong_yiji_and_lavmi/zh-chess/members)
+
 ![MIT开源协议](https://img.shields.io/github/license/kongyijilafumi/zh-chess)
 
 一款JavaScript语言编写的中国象棋游戏框架，支持nodejs，浏览器，vue，react等前端框架。(支持typescript)[更多象棋知识](https://www.xqbase.com/index.htm)
@@ -35,12 +36,13 @@ const fs = require('fs')
 const out = fs.createWriteStream('./test.jpg') // 创建文件流
 
 const game = new ZhChess({
-    ctx,
+    ctx, // ctx 属性可传 可不传 只要 游戏不需要更新画面 光靠 游戏逻辑来运行完全可以足够
     gameWidth: CTX_WIDTH,
     gameHeight: CTX_HEIGHT
 })
 game.gameStart("RED") // 开始游戏
 game.moveStr("炮2平5", "RED") // 移动棋子
+game.draw(ctx) // 更新画布 需要传入画布
 const stream = canvas.createJPEGStream()
 stream.pipe(out) // 写入文件
 out.on('finish', () => console.log('The JPEG file was created.'))
@@ -116,7 +118,7 @@ your project>npm i zh-chess -D #or cnpm i zh-chess
                 ctx,
                 gameHeight: 375,
                 gameWidth: 375,
-                moveSpeed: 12,
+                duration: 200, // 默认200 ms单位 值棋子运动时长
             });
             this.game.gameStart("RED"); // 以红方开始游戏
             canvas.addEventListener("click", this.game.listenClickAsync, false);
@@ -202,33 +204,96 @@ export default function App() {
 
 ### ZhChess 游戏类
 
-#### constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, moveSpeed }); 
+#### constructor(obj: GameInfo); 
 
-* ctx：画布
-* gameWidth：`number` 游戏窗口宽度 `默认：800`
-* gameHeight：`number` 游戏窗口高度 `默认：800`
-* gamePadding：`number` 棋盘的内边距 `默认：20`
-* scaleRatio：`number` 画布缩放比例 `默认：1`(用于移动端，解决画布模糊问题)
-* moveSpeed：`number` 移动速度 `默认8` (越大越慢，>=1)
+ `GameInfo Properties`
 
-#### moveSpeed: number
+* blackPeiceBackground?: string 黑棋子背景色 默认：`#fdec9e`
+* checkerboardBackground?: string 棋盘背景色  默认：`#faebd7`
+* ctx?: CanvasRenderingContext2D 画布 
 
-运行速度 大于或等于 1 的数 越大越慢
+> 如果不需要游戏显示出来，可以不需要 `画布`
 
-#### gameStart(side: PieceSide): void
+* drawMovePoint?: boolean 选中是否绘画可移动的点 默认： `true`
+* duration?: number 棋子运动速度时长 毫秒单位 默认：`200`
+* gameHeight?: number 游戏窗口高度大小 默认：`800`
+* gamePadding?: number 游戏内边距大小距离棋盘 默认:`20`
+* gameWidth?: number 游戏窗口宽度大小 默认：`800`
+* movePointColor?: string 绘画可移动点的颜色 默认：`#25dd2a`
+* redPeiceBackground?: string 红棋子背景色 默认：`#feeca0`
+* scaleRatio?: number 画布缩放大小 默认：`1` (用于移动端，解决画布模糊问题)
+
+#### Properties
+
+##### duration: number
+
+#### Accessors
+
+棋子运动速度时长 毫秒单位
+
+##### get currentGameSide(): null | PieceSide
+
+获取游戏方
+
+##### get currentLivePieceList(): PieceList
+
+获取当前存活的棋子列表
+
+##### get currentRadius(): number
+
+获取当前象棋绘制半径
+
+##### get winnerSide(): null | PieceSide
+
+获取赢棋方
+
+##### gameStart(side: PieceSide): void
 
 选择玩家方并且初始化游戏，side只能是 `RED` | `BLACK` .
 
 ```js
   const game = new ZhChess({
-      ctx,
       gameHeight: 375,
       gameWidth: 375
   })
   game.gameStart("RED")
 ```
 
-#### listenClick(e: MouseEvent): void
+#### Methods
+
+##### changeCurrentPlaySide(side: PieceSide): void
+
+更改当前走棋方
+
+##### changePlaySide(side: PieceSide): void
+
+更换玩家视角
+
+##### checkDraw(): void
+
+检查是否有画布 有会根据当前棋子位置状态去更新画布 否则不更新 报出错误
+
+##### checkGameState(): MoveResult
+
+棋子运动前检查游戏状态是否可以运动
+
+##### draw(ctx: CanvasRenderingContext2D): void
+
+根据当前棋子状态绘画 棋盘状态 游戏数据 画出布局
+
+##### gameOver(): boolean
+
+游戏是否结束
+
+##### gameStart(side: PieceSide): void
+
+初始化选择玩家方 初始化棋盘
+
+##### getCurrentPenCode(side: PieceSide): string
+
+获取当前棋盘的 `PEN` 格式位置代码
+
+##### listenClick(e: MouseEvent): void
 
 用于dom的点击事件，此方法棋子运动无动画，且为同步执行函数。
 
@@ -244,9 +309,9 @@ export default function App() {
     app.addEventListener("click", game.listenClick, false)
 ```
 
-#### listenClickAsync(e: MouseEvent): void
+##### listenClickAsync(e: MouseEvent): void
 
-用于dom的点击事件，此方法执行棋子运动有动画(根据 `moveSpeed` 大小来决定运动时长)，且为异步执行函数。
+用于dom的点击事件，此方法执行棋子运动有动画(根据 `duration` 来决定运动时长)，且为异步执行函数。
 
 ```js
     const app = document.getElementById("canvas")
@@ -254,67 +319,14 @@ export default function App() {
     const game = new ZhChess.default({
         ctx,
         gameWidth: 375,
-        gameHeight: 375
+        gameHeight: 375,
+        duration: 500 // 棋子运动时长 500ms
     })
     // 绑定点击事件
     app.addEventListener("click", game.listenClickAsync, false)
 ```
 
-#### changePlaySide(side: PieceSide): void
-
-更换玩家视角
-
-```js
-  game.changePlaySide("RED") // 红方视角 红在下 黑在上
-  game.changePlaySide("BLACK") // 黑方视角 黑在下 红在上
-```
-
-#### checkGameState(): boolean
-
-棋子运动前检查游戏状态是否可以运动
-
-#### gameOver(): boolean
-
-游戏是否结束
-
-#### move(piecePoint: Point, movePoint: Point, side: PieceSide): MoveResult
-
-根据 `红方在下黑方在上的` 视角(也是棋子游戏里的固定坐标 `不分红黑方视角` ) 来指定坐标点移动到指定的坐标点，无移动动画，返回移动结果，同步方法。
-
-```bash
-  0  1  2  3  4  5  6  7  8         0 1  2  3  4  5  6  7  8
-0 車 馬 象 仕  將 仕 象 馬 車       0 　馬 象 仕  將 仕 象 馬 車 
-1                                 1
-2    砲                砲         2 車 砲                砲
-3 卒    卒    卒    卒    卒       3 卒    卒    卒    卒    卒  
-4                            -->  4
-5                            -->  5
-6 兵    兵    兵    兵    兵  -->  6 兵    兵    兵    兵    兵
-7    炮                炮         7    炮                炮
-8                                 8
-9 车 马 相 士 帅  士 相 马 车       9 车 马 相 士 帅  士 相 马 车
-  1  2  3  4  5  6  7  8  9         1  2  3  4  5  6  7  8  9 
-```
-
-> 以 `红方在下黑方在上的` 视角移动棋子最左上为x，y轴的起始位置，往下y变大，往右x变大。如图所示，坐标点为(0, 0)移动到了(0, 2)位置，表示 `黑` 方 `車` 向前进 `两个格子` 代码如下所示。
-
-```js
-const piecePoint = {
-        x: 0,
-        y: 0
-    },
-    movePoint = {
-        x: 0,
-        y: 2
-    }
-game.move(piecePoint, movePoint, "BLACK") // 返回 { flag:true } 或者 { flag:false, message:"xxx" }
-```
-
-#### moveAsync(piecePoint: Point, movePoint: Point, side: PieceSide): Promise `<MoveResult>`
-
-跟move方法作用一样，不过是异步的，有动画效果。
-
-####  moveStr(str: string, side: PieceSide): MoveResult
+##### moveStr(str: string, side: PieceSide): UpdateResult
 
 通过文字的形式根据 `红黑方视角` 来移动象棋。无移动动画，同步方法，返回移动结果。
 
@@ -335,14 +347,17 @@ game.move(piecePoint, movePoint, "BLACK") // 返回 { flag:true } 或者 { flag:
 > 已红方或黑方自己视角，靠近对方底线为进，靠近己方底线为退，横着走为平。例如：车1进1是指自己左边的车往前走一步。
 
 ```js
-game.move("车1进1", "RED") // 红方 车1进1 返回 { flag:true } 或者 { flag:false, message:"xxx" } 
+game.moveStr("车1进1", "RED") // 红方 车1进1 返回 { flag:true } 或者 { flag:false, message:"xxx" } 
 ```
 
-####  moveStrAsync(str: string, side: PieceSide): Promise `<MoveResult>`
+ 
+ 
 
-跟moveStr方法作用一样，不过是异步的，有动画效果。
+#####  moveStrAsync(str: string, side: PieceSide, refreshCtx: boolean): Promise `<` UpdateResult `>`
 
-#### on(e: GameEventName, fn: GameEventCallback):void
+跟moveStr方法作用一样，不过是异步的，有动画效果。 `refreshCtx` 表示 是否每次移动都更新画布。
+
+##### on(e: GameEventName, fn: GameEventCallback):void
 
 游戏监听事件
 
@@ -354,10 +369,36 @@ game.move("车1进1", "RED") // 红方 车1进1 返回 { flag:true } 或者 { fl
 
 * e为`over`时，fn函数的参数有`(winnerSide: PieceSide)`
 
-#### removeEvent(e: GameEventName, fn: GameEventCallback):void
+* e为`error`时，fn函数的参数有`(error: any)`
+
+##### removeEvent(e: GameEventName, fn: GameEventCallback):void
 
 移除游戏的监听函数
 
-#### setLivePieceList(pl: PieceList): void
+##### setLivePieceList(pl: PieceList): void
 
 设置当前存活棋子列表
+
+##### setPenCodeList(penCode: string): void
+
+根据pen代码格式来设置当前棋盘
+
+> 建议参考 文章 博客 https://www.xqbase.com/protocol/cchess_fen.htm
+
+##### update(pos: Point, mov: null | Point, side: PieceSide, post: boolean): UpdateResult
+
+游戏根据坐标点 移动点来进行更新游戏运行数据。 `post` ：是否由程序自己更新游戏状态。
+
+> 返回的结果: 如果 post 为 false， 请检查返回的结果 move 是否为 true ，为true表示有返回回调函数cb，只有调用 cb() 游戏状态才会更新。如果 post 为 true，程序会自己更新游戏状态 只需要判断 是否更新成功即可！
+
+##### updateAsync(pos: Point, mov: null | Point, side: PieceSide, refreshCtx: boolean, moveCallback?: UpdateMoveCallback): Promise `<` UpdateResult `>`
+
+游戏根据坐标点 移动点来进行更新游戏运行数据。这是一个返回一个promise结果，也表示 这个方法是异步的。
+
+```js
+const ctx = document.getElementById("canvas").getContext("2d")
+const game = new ZhChess({})
+game.gameStart("RED")
+game.updateAsync(pos, mov, side, true, (posPeice, newPoint) => console.log(posPeice, newPoint)) // 每次运动都去绘画一次
+game.updateAsync(pos, mov, side, false, (posPeice, newPoint) => game.draw(ctx)) // 每次运动 自己去调用游戏绘画
+```

@@ -116,7 +116,6 @@ your project>npm i zh-chess -D #or cnpm i zh-chess
                 ctx,
                 gameHeight: 375,
                 gameWidth: 375,
-                moveSpeed: 12,
             });
             this.game.gameStart("RED"); // 以红方开始游戏
             canvas.addEventListener("click", this.game.listenClickAsync, false);
