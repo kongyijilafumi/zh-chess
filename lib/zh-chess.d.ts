@@ -22,10 +22,32 @@ declare class Piece implements PieceInfo {
      * @returns 包含 name side x y 信息
      */
     getCurrentInfo(): PeicePosInfo;
+    /**
+     * 更新自己坐标点
+     * @param p 坐标点
+     */
     update(p: Point): void;
     draw(ctx: CanvasRenderingContext2D, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: number, gridDiffY: number, radius: number, textColor: string, bgColor: string): void;
+    /**
+     * 根据棋子列表判断 当前棋子可移动的点
+     * @param _pl 棋子列表
+     * @returns
+     */
     getMovePoints(_pl: PieceList): MovePointList;
+    /**
+     * 画出棋子可移动的点
+     * @param ctx canvas画布
+     * @param pl 当前棋子列表
+     * @param startX x
+     * @param startY y
+     * @param gridWidth 棋盘格子宽度
+     * @param gridHeight 棋盘格子高度
+     * @param gridDiffX 棋子x轴差值
+     * @param gridDiffY 棋子y轴差值
+     * @param radius 棋子半径
+     */
     drawMovePoints(ctx: CanvasRenderingContext2D, pl: PieceList, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: number, gridDiffY: number, radius: number): void;
+    getPoint(): Point;
 }
 /**
  * 象棋：车
@@ -188,11 +210,11 @@ type ChessOfPeiceMap = {
 declare const chessOfPeiceMap: ChessOfPeiceMap;
 
 /**
- * 游戏玩家方 固定为 RED | BLACK
+ * 游戏玩家方 固定为 `RED` | `BLACK`
  */
 type PieceSide = "RED" | "BLACK";
 /**
- * 游戏玩家方(中文) 固定为 RED | BLACK
+ * 游戏玩家方(中文) 固定为 `红方` | `黑方`
  */
 type PieceSideCN = "红方" | "黑方";
 /**
@@ -331,15 +353,14 @@ type GameState = "INIT" | "START" | "OVER" | "MOVE";
  * 否则是 吃掉坐标上点的棋子 使用 cp.eat 访问改坐标点
  * @param enemyhasTrouble 敌方是否被将军
  */
-type MoveCallback = (peice: ChessOfPeice, cp: CheckPoint, enemyhasTrouble: boolean, penCode: string) => void;
+type MoveCallback = (pos: ChessOfPeice, cp: CheckPoint, enemyhasTrouble: boolean, penCode: string) => void;
 /**
  * 监听棋子移动失败函数
- * @param peice 运动的象棋
- * @param p 需要移动到的坐标点
- * @param currentSideDanger 我方移动过去是否被将军
+ * @param pos 起始点
+ * @param mov 结束点
  * @param msg 失败信息
  */
-type MoveFailCallback = (peice: ChessOfPeice, p: Point, currentSideDanger: boolean, msg: string) => void;
+type MoveFailCallback = (pos: Point | null, mov: Point | null, msg: string) => void;
 /**
  * 监听游戏运行日志
  * @param str 输出信息
@@ -351,13 +372,19 @@ type GameLogCallback = (str: any) => void;
  */
 type GameOverCallback = (winnerSide: PieceSide) => void;
 /**
+ * 监听游戏报错信息
+ * @param error 报错信息
+ */
+type GameErrorCallback = (error: any) => void;
+/**
  * 游戏监听事件名称
  * @example "move" //游戏棋子移动成功事件名称
  * @example "moveFail" //游戏棋子移动失败事件名称
  * @example "log" //游戏日志事件名称
  * @example "over" //游戏结束事件名称
+ * @example "error" //游戏报错事件名称
  */
-type GameEventName = "move" | "moveFail" | "log" | "over";
+type GameEventName = "move" | "moveFail" | "log" | "over" | "error";
 /**
  * 游戏监听函数
  */
@@ -407,17 +434,53 @@ type PeicePosInfo = {
     x: number;
     y: number;
 };
-type UpdateResult = {
+/**
+ * 更新结果
+ */
+type UpdateResult = UpdateFail | updateSuccess;
+/**
+ * 更新失败
+ */
+type UpdateFail = {
+    /**
+     * 更新失败
+     */
     flag: false;
+    /**
+     * 更新失败信息
+     */
     message: string;
-} | {
+};
+/**
+ * 更新成功
+ */
+type updateSuccess = {
+    /**
+    * 更新成功
+    */
     flag: true;
+    /**
+     * 更新后是否需要 移动刷新布局
+     *
+     * `false` 表示 无回调函数 当前布局暂无移动
+     *
+     * `true` 表示 有回调函数`cb` 当前布局需要调用回调函数`cb()` 更新布局且游戏状态
+     */
+    move: boolean;
+    /**
+     * 更新成功后的回调函数
+     */
     cb?: () => void;
 };
+type UpdateMoveCallback = (posPeice: ChessOfPeice, newPoint: Point) => void;
 
 declare function parse_PEN_Str(penStr: string): ParsePENStrData;
 declare function gen_PEN_Str(pl: PieceList, side: PieceSide): string;
 declare function gen_PEN_Point_Str(p: Point | MovePoint | ChessOfPeice): string;
+declare function diffPenStr(oldStr: string, newStr: string): {
+    moveList: string[];
+    delList: PeicePosInfo[];
+};
 
 type CTX = CanvasRenderingContext2D;
 /**
@@ -430,48 +493,53 @@ type MoveResultAsync = Promise<MoveResult>;
 interface GameInfo {
     /**
      * 游戏窗口宽度大小
-     * @defaultValue 800
+     * @defaultValue `800`
      */
     gameWidth?: number;
     /**
      * 游戏窗口高度大小
-     * @defaultValue 800
+     * @defaultValue `800`
      */
     gameHeight?: number;
     /**
      * 游戏内边距大小距离棋盘
-     * @defaultValue 20
+     * @defaultValue `20`
      */
     gamePadding?: number;
     /**
      * 画布
      */
-    ctx: CTX;
+    ctx?: CTX;
     /**
      * 画布缩放大小
-     * @defaultValue 1
+     * @defaultValue `1`
      */
     scaleRatio?: number;
     /**
-     * 游戏运动速度
-     * @defaultValue 8
+     * 棋子运动速度时长 毫秒单位
+     * @defaultValue `200`
      */
-    moveSpeed?: number;
+    duration?: number;
     /**
      * 棋盘背景色
-     * @defaultValue #faebd7
+     * @defaultValue `#faebd7`
      */
     checkerboardBackground?: string;
     /**
      * 红棋子背景色
-     * @defaultValue #feeca0
+     * @defaultValue `#feeca0`
      */
     redPeiceBackground?: string;
     /**
      * 黑棋子背景色
-     * @defaultValue #fdec9e
+     * @defaultValue `#fdec9e`
      */
     blackPeiceBackground?: string;
+    /**
+     * 选中是否绘画可移动的点
+     * @defaultValue `false`
+     */
+    drawMovePoint?: boolean;
 }
 declare class ZhChess {
     /**
@@ -525,15 +593,16 @@ declare class ZhChess {
     /**
      * 背景 和 线条 二维操作上下文
      */
-    private ctx;
+    private ctx?;
     /**
      * 存放棋盘格子的所有坐标
      */
     private gridPostionList;
     /**
-     * 运行速度 大于或等于 1 的数 越大越慢
+     * 棋子运动速度时长 毫秒单位
      */
-    moveSpeed: number;
+    duration: number;
+    private drawMovePoint;
     /**
      * 玩家 x轴 格子距离相差
      */
@@ -563,6 +632,10 @@ declare class ZhChess {
      */
     private overEvents;
     /**
+     * 游戏运行报错事件列表
+     */
+    private errorEvents;
+    /**
      * 红色棋子背景颜色
      */
     private redPeiceBackground;
@@ -590,7 +663,12 @@ declare class ZhChess {
      * 清除动画方法
      */
     private cancelAnimate;
-    constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, moveSpeed, redPeiceBackground, blackPeiceBackground, checkerboardBackground }: GameInfo);
+    /**
+     * 画布缩放大小
+     * @defaultValue `1`
+     */
+    private scaleRatio;
+    constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, duration, redPeiceBackground, blackPeiceBackground, checkerboardBackground, drawMovePoint }: GameInfo);
     /**
      * 设置游戏窗口 棋盘 棋子大小
      */
@@ -625,109 +703,57 @@ declare class ZhChess {
      * 初始化象棋个数
      */
     private initPiece;
-    updateAsync(pos: Point, mov: Point, side: PieceSide): Promise<{
-        flag: false;
-        message: string;
-    }> | undefined;
-    update(pos: Point, mov: Point | null, side: PieceSide): UpdateResult;
+    /**
+     * 游戏根据坐标点 移动点来进行更新游戏运行数据。这是一个返回一个promise结果，也表示 这个方法是异步的。
+     * @param pos 坐标点
+     * @param mov 移动点
+     * @param side 当前下棋玩家
+     * @param refreshCtx 是否每次运动后更新画布
+     * @param moveCallback 每次棋子数据更新后调用
+     *
+     * @example
+     * const game = new ZhChess({...any})
+     * game.updateAsync(pos , mov, side, ()=> game.draw(ctx)) // 每次运动都去绘画一次
+     *
+     */
+    updateAsync(pos: Point, mov: Point | null, side: PieceSide, refreshCtx: boolean, moveCallback?: UpdateMoveCallback): Promise<UpdateResult>;
+    /**
+     * 游戏根据坐标点 移动点来进行更新游戏运行数据。
+     * @param pos 坐标点
+     * @param mov 移动点
+     * @param side 当前下棋玩家
+     * @param post 是否由程序自己更新游戏状态
+     * @returns
+     *
+     * 如果 `post` 为 `false`， 请检查返回的结果 `move` 是否为 `true` ，为`true`表示有返回回调函数`cb`，只有调用 `cb()` 游戏状态才会更新
+     *
+     * 如果 `post` 为 `true`，程序会自己更新游戏状态 只需要判断 是否更新成功即可！
+     */
+    update(pos: Point, mov: Point | null, side: PieceSide, post: boolean): UpdateResult;
+    /**
+     * 根据当前棋子状态绘画 棋盘状态 游戏数据 画出布局
+     * @param ctx 画布
+     */
     draw(ctx: CTX): void;
-    /**
-     * 画 棋盘 跟 棋子
-     */
-    private drawPeice;
-    /**
-     * 绘画单个象棋
-     * @param piece 单个象棋
-     */
-    private drawSinglePeice;
     /**
      * 画棋盘
      */
     private drawChessLine;
     /**
-     * 画出选中的棋子可以移动的点位
-     */
-    private drawChoosePieceMovePoint;
-    /**
-     * 重新绘画当前棋盘
-     */
-    redraw(): void;
-    /**
-     * 动画效果 绘画 棋子移动
-     * @param mp 移动点
-     * @param pl 绘画的棋子列表
-     * @param activePoint 当前移动点
-     */
-    private activeMove;
-    /**
-     * 当前选中的棋子 根据点来 移动
-     * @param checkPoint 移动点或者是吃
-     */
-    private moveToPeice;
-    /**
-     * 把当前选中的棋子 移动到 指定的位置
-     * @param p 移动位置
-     * @param drawPeiceList 需要画的棋子列表
-     */
-    private movePeiceToPointAsync;
-    /**
-    * 当前选中的棋子 根据点来 移动
-    * @param checkPoint 移动点或者是吃
-    */
-    private moveToPeiceAsync;
-    /**
-     * 开始移动棋子
-     * @param mp 移动棋子
-     * @param checkPoint 移动点还是吃棋点
-     * @param drawList 绘画棋子列表
-     * @param side 当前下棋方
-     */
-    private moveStart;
-    private moveStartAsync;
-    /**
-     * 动画移动结束，当前选中的棋子更新 x, y坐标，重新绘画 更换 玩家 和 运动状态
-     * @param p 移动点
-     */
-    private moveEnd;
-    /**
-     * 移动棋子
-     * @param clickPoint 移动点
-     */
-    private pieceMove;
-    /**
-    * 移动棋子
-    * @param p 移动点
-    * @returns 返回promise移动结果
-    */
-    private pieceMoveAsync;
-    /**
-     * 根据坐标点移动位置
-     * @param piecePoint 棋子所在位置
-     * @param movePoint 移动位置
-     * @param side 下棋方
-     */
-    move(piecePoint: Point, movePoint: Point, side: PieceSide): MoveResult;
-    /**
-     * 根据坐标点移动位置
-     * @param piecePoint 棋子所在位置
-     * @param movePoint 移动位置
-     * @param side 下棋方
-     */
-    moveAsync(piecePoint: Point, movePoint: Point, side: PieceSide): MoveResultAsync;
-    /**
      * 根据移动方的描述文字来进行移动棋子
      * @param str 文字
      * @param side 移动方
      * @returns 移动结果
      */
-    moveStr(str: string, side: PieceSide): MoveResult;
+    moveStr(str: string, side: PieceSide): UpdateResult;
     /**
      * 根据移动方的描述文字来进行移动棋子
      * @param str 文字
      * @param side 移动方
+     * @param refreshCtx 是否每次移动都更新画布
      * @returns 移动结果
      */
-    moveStrAsync(str: string, side: PieceSide): MoveResultAsync;
+    moveStrAsync(str: string, side: PieceSide, refreshCtx: boolean): Promise<UpdateResult>;
     /**
      * 初始化选择玩家方
      * @param side 玩家方
@@ -746,6 +772,10 @@ declare class ZhChess {
      * @param side 玩家
      */
     changePlaySide(side: PieceSide): void;
+    /**
+     * 更改当前走棋方
+     * @param side 走棋方
+     */
     changeCurrentPlaySide(side: PieceSide): void;
     /**
      * 游戏是否结束
@@ -784,7 +814,11 @@ declare class ZhChess {
      * 棋子运动前检查游戏状态是否可以运动
      * @returns 是否可以运动
      */
-    checkGameState(): boolean;
+    checkGameState(): MoveResult;
+    /**
+     * 检查是否有画布 有会更新画布 否则不更新 报出错误
+     */
+    checkDraw(): void;
     /**
      * 监听棋盘点击
      */
@@ -810,20 +844,27 @@ declare class ZhChess {
      * 获取当前象棋绘制半径
      */
     get currentRadius(): number;
-    getCurrentPenCode(): string;
+    getCurrentPenCode(side: PieceSide): string;
     on(e: "move", fn: MoveCallback): void;
     on(e: "moveFail", fn: MoveFailCallback): void;
     on(e: "log", fn: GameLogCallback): void;
     on(e: "over", fn: GameOverCallback): void;
+    on(e: "error", fn: GameErrorCallback): void;
     removeEvent(e: "move", fn: MoveCallback): void;
     removeEvent(e: "moveFail", fn: MoveFailCallback): void;
     removeEvent(e: "log", fn: GameLogCallback): void;
     removeEvent(e: "over", fn: GameOverCallback): void;
+    removeEvent(e: "error", fn: GameErrorCallback): void;
     /**
      * 设置当前存活棋子列表
      * @param pl 当前存活棋子列表
      */
     setLivePieceList(pl: PieceList): void;
+    /**
+     * 根据pen代码格式来设置当前棋盘
+     * @param penCode
+     */
+    setPenCodeList(penCode: string): void;
 }
 
-export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateResult, chessOfPeiceMap, ZhChess as default, gen_PEN_Point_Str, gen_PEN_Str, parse_PEN_Str, peiceSideMap };
+export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameErrorCallback, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateFail, UpdateMoveCallback, UpdateResult, chessOfPeiceMap, ZhChess as default, diffPenStr, gen_PEN_Point_Str, gen_PEN_Str, parse_PEN_Str, peiceSideMap, updateSuccess };
