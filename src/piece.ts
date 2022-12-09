@@ -127,8 +127,8 @@ export class Piece implements PieceInfo {
    * @param gridDiffY 棋子y轴差值
    * @param radius 棋子半径
    */
-  drawMovePoints(ctx: CanvasRenderingContext2D, pl: PieceList, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: number, gridDiffY: number, radius: number) {
-    ctx.fillStyle = "#25dd2a"
+  drawMovePoints(ctx: CanvasRenderingContext2D, pl: PieceList, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: number, gridDiffY: number, radius: number, moveColor: string) {
+    ctx.fillStyle = moveColor
     this.getMovePoints(pl).forEach(p => {
       let x = startX + Math.abs(p.x - gridDiffX) * gridWidth;
       let y = startY + Math.abs(p.y - gridDiffY) * gridHeight;

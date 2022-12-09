@@ -1,7 +1,6 @@
 import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint, GamePeiceGridDiffX, GamePeiceGridDiffY, UpdateResult, UpdateMoveCallback, GameErrorCallback } from './types';
 import { Point, PieceInfo, MoveResult } from './types';
 import { gen_PEN_Str, parseStrToPoint, parse_PEN_Str } from '../utils';
-import { getPiecesList, } from './data';
 import { getSquarePoints } from '../utils/draw';
 import { ChessOfPeice, GeneralPiece, PieceList, chessOfPeiceMap } from './piece';
 
@@ -62,6 +61,11 @@ export interface GameInfo {
    * @defaultValue `#fdec9e`
    */
   blackPeiceBackground?: string
+  /**
+   * 可移动点 颜色
+   * @defaultValue `#25dd2a`
+   */
+  movePointColor?: string
   /**
    * 选中是否绘画可移动的点
    * @defaultValue `false`
@@ -200,7 +204,10 @@ export default class ZhChess {
    */
   private scaleRatio: number;
 
-  constructor({ ctx,
+  private movePointColor: string;
+
+  constructor({
+    ctx,
     gameWidth = 800,
     gameHeight = 800,
     gamePadding = 20,
@@ -209,6 +216,7 @@ export default class ZhChess {
     redPeiceBackground = "#feeca0",
     blackPeiceBackground = "#fdec9e",
     checkerboardBackground = "#faebd7",
+    movePointColor = "#25dd2a",
     drawMovePoint = true
   }: GameInfo) {
     this.moveEvents = []
@@ -220,6 +228,7 @@ export default class ZhChess {
     this.redPeiceBackground = redPeiceBackground
     this.blackPeiceBackground = blackPeiceBackground
     this.checkerboardBackground = checkerboardBackground
+    this.movePointColor = movePointColor
     // 设置 缩放 来解决移动端模糊问题
     this.ctx?.scale(scaleRatio, scaleRatio)
     this.scaleRatio = scaleRatio
@@ -341,7 +350,7 @@ export default class ZhChess {
    * 初始化象棋个数
    */
   private initPiece() {
-    this.livePieceList = getPiecesList()
+    this.setPenCodeList("rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w")
     this.choosePiece = null
     this.checkDraw()
   }
@@ -458,18 +467,18 @@ export default class ZhChess {
       const enemySide: PieceSide = side === "RED" ? "BLACK" : "RED"
       let isOver = false
       const enemyhasTrouble = this.checkGeneralInTrouble(enemySide, posPeice, cp, this.livePieceList)
+      const movedPeiceList = isMove ? this.livePieceList.filter(i => !(i.x === posPeice.x && i.y === posPeice.y)) :
+        this.livePieceList.filter(i => !((i.x === posPeice.x && i.y === posPeice.y) || (i.x === cp.eat.x && i.y === cp.eat.y)))
+      const newMp = chessOfPeiceMap[posPeice.name]({ ...posPeice, ...mov })
+      movedPeiceList.push(newMp)
       if (enemyhasTrouble) {
-        const movedPeiceList = this.livePieceList.filter(i => !(i.x === posPeice.x && i.y === posPeice.y))
-        const newMp = chessOfPeiceMap[posPeice.name]({ ...posPeice, ...mov })
-        movedPeiceList.push(newMp)
         const hasSolution = this.checkEnemySideInTroubleHasSolution(enemySide, movedPeiceList)
         if (!hasSolution) {
           isOver = true
-          this.gameState = "OVER"
           this.winner = side
         }
       } else {
-        const hasMovePoints = this.checkEnemySideHasMovePoints(enemySide)
+        const hasMovePoints = this.checkEnemySideHasMovePoints(enemySide, movedPeiceList)
         if (!hasMovePoints) {
           isOver = true
           this.winner = side
@@ -482,9 +491,11 @@ export default class ZhChess {
         }
         posPeice.update(mov)
         this.gameState = "START"
-        this.moveEvents.forEach(f => f(newPeice, cp, isOver || enemyhasTrouble, this.getCurrentPenCode(enemySide)))
         if (isOver) {
           this.gameState = "OVER"
+        }
+        this.moveEvents.forEach(f => f(newPeice, cp, isOver || enemyhasTrouble, this.getCurrentPenCode(enemySide)))
+        if (isOver) {
           this.overEvents.forEach(f => f(side))
         }
         this.clearMoveChoosePeiece()
@@ -553,7 +564,7 @@ export default class ZhChess {
         bgColor = this.choosePiece.side === "BLACK" ? this.blackPeiceBackground : this.redPeiceBackground;
       this.choosePiece.draw(ctx, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, textColor, bgColor)
       if (this.drawMovePoint && this.gameState !== "MOVE") {
-        this.choosePiece.drawMovePoints(ctx, this.livePieceList, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius)
+        this.choosePiece.drawMovePoints(ctx, this.livePieceList, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, this.movePointColor)
       }
     }
   }
@@ -802,12 +813,12 @@ export default class ZhChess {
     const enemySide: PieceSide = side === "BLACK" ? "RED" : "BLACK"
     let list: PieceList;
     if ("move" in cp) {
-      const pieceInfo = { ...pos, x: cp.move.x, y: cp.move.y } as PieceInfo
+      const pieceInfo = { ...pos, ...cp.move } as PieceInfo
       const piece = chessOfPeiceMap[pieceInfo.name](pieceInfo)
       list = pl.filter(i => !(i.x === pos.x && i.y === pos.y))
       list.push(piece)
     } else {
-      const pieceInfo = { ...pos, x: cp.eat.x, y: cp.eat.y } as PieceInfo
+      const pieceInfo = { ...pos, ...cp.eat } as PieceInfo
       const piece = chessOfPeiceMap[pieceInfo.name](pieceInfo)
       list = pl.filter(i => !(i.x === cp.eat.x && i.y === cp.eat.y) && !(i.x === pos.x && i.y === pos.y))
       list.push(piece)
@@ -878,9 +889,9 @@ export default class ZhChess {
    * @param enemySide 敌方
    * @returns {boolean}
    */
-  private checkEnemySideHasMovePoints(enemySide: PieceSide) {
+  private checkEnemySideHasMovePoints(enemySide: PieceSide, pl: PieceList) {
     // 当前棋子列表
-    const currentList = this.currentLivePieceList
+    const currentList = pl
     // 敌方棋子列表
     const enemyList = currentList.filter(p => p.side === enemySide)
     const hasPeice = enemyList.find(p => {
@@ -1089,6 +1100,9 @@ export default class ZhChess {
   /**
    * 根据pen代码格式来设置当前棋盘
    * @param penCode 
+   * 
+   * 建议参考 文章 博客
+   * 1. https://www.xqbase.com/protocol/cchess_fen.htm
    */
   setPenCodeList(penCode: string) {
     const data = parse_PEN_Str(penCode)
