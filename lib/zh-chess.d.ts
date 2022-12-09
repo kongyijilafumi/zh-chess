@@ -46,7 +46,7 @@ declare class Piece implements PieceInfo {
      * @param gridDiffY 棋子y轴差值
      * @param radius 棋子半径
      */
-    drawMovePoints(ctx: CanvasRenderingContext2D, pl: PieceList, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: number, gridDiffY: number, radius: number): void;
+    drawMovePoints(ctx: CanvasRenderingContext2D, pl: PieceList, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: number, gridDiffY: number, radius: number, moveColor: string): void;
     getPoint(): Point;
 }
 /**
@@ -478,9 +478,13 @@ declare function parse_PEN_Str(penStr: string): ParsePENStrData;
 declare function gen_PEN_Str(pl: PieceList, side: PieceSide): string;
 declare function gen_PEN_Point_Str(p: Point | MovePoint | ChessOfPeice): string;
 declare function diffPenStr(oldStr: string, newStr: string): {
-    moveList: string[];
+    moveList: {
+        point: Point;
+        move: Point;
+    }[];
     delList: PeicePosInfo[];
 };
+declare const initBoardPen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w";
 
 type CTX = CanvasRenderingContext2D;
 /**
@@ -535,6 +539,11 @@ interface GameInfo {
      * @defaultValue `#fdec9e`
      */
     blackPeiceBackground?: string;
+    /**
+     * 可移动点 颜色
+     * @defaultValue `#25dd2a`
+     */
+    movePointColor?: string;
     /**
      * 选中是否绘画可移动的点
      * @defaultValue `false`
@@ -668,7 +677,8 @@ declare class ZhChess {
      * @defaultValue `1`
      */
     private scaleRatio;
-    constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, duration, redPeiceBackground, blackPeiceBackground, checkerboardBackground, drawMovePoint }: GameInfo);
+    private movePointColor;
+    constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, duration, redPeiceBackground, blackPeiceBackground, checkerboardBackground, movePointColor, drawMovePoint }: GameInfo);
     /**
      * 设置游戏窗口 棋盘 棋子大小
      */
@@ -863,8 +873,11 @@ declare class ZhChess {
     /**
      * 根据pen代码格式来设置当前棋盘
      * @param penCode
+     *
+     * 建议参考 文章 博客
+     * 1. https://www.xqbase.com/protocol/cchess_fen.htm
      */
     setPenCodeList(penCode: string): void;
 }
 
-export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameErrorCallback, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateFail, UpdateMoveCallback, UpdateResult, chessOfPeiceMap, ZhChess as default, diffPenStr, gen_PEN_Point_Str, gen_PEN_Str, parse_PEN_Str, peiceSideMap, updateSuccess };
+export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameErrorCallback, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateFail, UpdateMoveCallback, UpdateResult, chessOfPeiceMap, ZhChess as default, diffPenStr, gen_PEN_Point_Str, gen_PEN_Str, initBoardPen, parse_PEN_Str, peiceSideMap, updateSuccess };
