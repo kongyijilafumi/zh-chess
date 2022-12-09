@@ -1,6 +1,6 @@
 import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint, GamePeiceGridDiffX, GamePeiceGridDiffY, UpdateResult, UpdateMoveCallback, GameErrorCallback } from './types';
 import { Point, PieceInfo, MoveResult } from './types';
-import { gen_PEN_Str, parseStrToPoint, parse_PEN_Str } from '../utils';
+import { gen_PEN_Str, initBoardPen, parseStrToPoint, parse_PEN_Str } from '../utils';
 import { getSquarePoints } from '../utils/draw';
 import { ChessOfPeice, GeneralPiece, PieceList, chessOfPeiceMap } from './piece';
 
@@ -350,7 +350,7 @@ export default class ZhChess {
    * 初始化象棋个数
    */
   private initPiece() {
-    this.setPenCodeList("rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w")
+    this.setPenCodeList(initBoardPen)
     this.choosePiece = null
     this.checkDraw()
   }
@@ -760,8 +760,8 @@ export default class ZhChess {
     this.setGridDiff(side)
     this.gameState = "START"
     this.winner = null
-    this.gameSide = side
     this.initPiece()
+    this.gameSide = side
   }
   /**
   * 清除移动完选中的棋子
@@ -1112,4 +1112,4 @@ export default class ZhChess {
 }
 export * from "./piece"
 export * from "./types"
-export { parse_PEN_Str, gen_PEN_Str, gen_PEN_Point_Str, diffPenStr } from "../utils/index"
+export { parse_PEN_Str, gen_PEN_Str, gen_PEN_Point_Str, diffPenStr, initBoardPen } from "../utils/index"

@@ -519,8 +519,6 @@ export function diffPenStr(oldStr: string, newStr: string) {
           _item.name === item.name
         )
         const isFind = findPointIndex !== -1
-        console.log(isFind, item, mp);
-
         // 如果找到了 说明 移动了
         if (isFind) {
           moveList.push({
@@ -541,7 +539,9 @@ export function diffPenStr(oldStr: string, newStr: string) {
   })
 
   return {
-    moveList: moveList.map(item => JSON.stringify(item)),
+    moveList,
     delList
   }
 }
+
+export const initBoardPen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w"
