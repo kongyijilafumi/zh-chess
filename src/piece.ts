@@ -1,4 +1,4 @@
-import { PieceInfo, PieceSide, Point, MovePoint, MoveResult, MovePointList, PeicePosInfo } from './types';
+import { PieceInfo, PieceSide, Point, MovePoint, MoveResult, MovePointList, PeicePosInfo, GamePeiceGridDiffX, GamePeiceGridDiffY } from './types';
 const notExistPoint = { x: 10, y: 10 }
 const findPiece = (pl: PieceList, p: Point) => pl.find(item => item.x === p.x && item.y === p.y)
 export class Piece implements PieceInfo {
@@ -53,11 +53,23 @@ export class Piece implements PieceInfo {
     this.x = p.x
     this.y = p.y
   }
-
+  /**
+   * 
+   * @param ctx 画布
+   * @param startX 画布x轴起始位置
+   * @param startY 画布y轴起始位置
+   * @param gridWidth 棋盘格子宽带
+   * @param gridHeight 棋盘格子高带
+   * @param gridDiffX 游戏象棋玩家格子x轴差值 用于区分红黑棋
+   * @param gridDiffY 游戏象棋玩家格子y轴差值 用于区分红黑棋
+   * @param radius 象棋园半径
+   * @param textColor 象棋字体颜色
+   * @param bgColor 象棋背景颜色
+   */
   draw(ctx: CanvasRenderingContext2D,
     startX: number, startY: number,
     gridWidth: number, gridHeight: number,
-    gridDiffX: number, gridDiffY: number,
+    gridDiffX: GamePeiceGridDiffX, gridDiffY: GamePeiceGridDiffY,
     radius: number,
     textColor: string, bgColor: string) {
     const borderColor = this.isChoose ? "red" : "#000";
