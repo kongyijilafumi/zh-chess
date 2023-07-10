@@ -3,7 +3,7 @@ import { Point, PieceInfo, MoveResult } from './types';
 import { gen_PEN_Str, initBoardPen, parseStrToPoint, parse_PEN_Str } from '../utils';
 import { getSquarePoints } from '../utils/draw';
 import { ChessOfPeice, GeneralPiece, PieceList, chessOfPeiceMap } from './piece';
-
+import "core-js/proposals/global-this"
 const findPiece = (pl: PieceList, p: Point) => pl.find(item => item.x === p.x && item.y === p.y)
 
 type CTX = CanvasRenderingContext2D

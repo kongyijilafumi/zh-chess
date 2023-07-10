@@ -2,7 +2,7 @@ import nodeResolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
 import dts from 'rollup-plugin-dts';
 import { terser } from "rollup-plugin-terser";
-import polyfill from "rollup-plugin-polyfill"
+import commonjs from "@rollup/plugin-commonjs";
 import pkg from './package.json';
 import { resolve } from "path"
 const outDir = resolve(".", "lib")
@@ -15,7 +15,6 @@ const libs = [
     exports: 'named',
     plugins: [
       typescript({ sourceMap: false, target: "es5" }),
-      polyfill(["core-js/proposals/global-this"])
     ]
   },
   {// 浏览器压缩版
@@ -26,7 +25,6 @@ const libs = [
     plugins: [
       typescript({ sourceMap: false, target: "es5" }),
       terser(),
-      polyfill(["core-js/proposals/global-this"])
     ]
   },
   {// nodejs
@@ -35,7 +33,6 @@ const libs = [
     exports: 'named',
     plugins: [
       typescript({ sourceMap: false, }),
-      polyfill(["core-js/proposals/global-this"])
     ]
   },
   {// esm
@@ -43,7 +40,6 @@ const libs = [
     format: "esm",
     plugins: [
       typescript({ sourceMap: false, }),
-      polyfill(["core-js/proposals/global-this"])
     ]
   },
   {// .d.ts
@@ -66,8 +62,9 @@ export default libs.map(item => {
     },
     plugins: [
       nodeResolve(),
+      commonjs(),
       ...item.plugins
-    ]
+    ],
   }
 })
 
