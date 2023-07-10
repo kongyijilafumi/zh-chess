@@ -27,7 +27,20 @@ declare class Piece implements PieceInfo {
      * @param p 坐标点
      */
     update(p: Point): void;
-    draw(ctx: CanvasRenderingContext2D, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: number, gridDiffY: number, radius: number, textColor: string, bgColor: string): void;
+    /**
+     *
+     * @param ctx 画布
+     * @param startX 画布x轴起始位置
+     * @param startY 画布y轴起始位置
+     * @param gridWidth 棋盘格子宽带
+     * @param gridHeight 棋盘格子高带
+     * @param gridDiffX 游戏象棋玩家格子x轴差值 用于区分红黑棋
+     * @param gridDiffY 游戏象棋玩家格子y轴差值 用于区分红黑棋
+     * @param radius 象棋园半径
+     * @param textColor 象棋字体颜色
+     * @param bgColor 象棋背景颜色
+     */
+    draw(ctx: CanvasRenderingContext2D, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: GamePeiceGridDiffX, gridDiffY: GamePeiceGridDiffY, radius: number, textColor: string, bgColor: string): void;
     /**
      * 根据棋子列表判断 当前棋子可移动的点
      * @param _pl 棋子列表
