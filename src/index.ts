@@ -206,6 +206,11 @@ export default class ZhChess {
 
   private movePointColor: string;
 
+  /**
+   * 上次移动点：棋盘上移动棋子移动前的位置坐标点
+   */
+  private lastMovePoint: Point | undefined;
+
   constructor({
     ctx,
     gameWidth = 800,
@@ -490,6 +495,7 @@ export default class ZhChess {
           this.livePieceList = this.livePieceList.filter(p => (!(p.x === cp.eat.x && p.y === cp.eat.y)))
         }
         posPeice.update(mov)
+        this.lastMovePoint = new Point(pos.x, pos.y)
         this.gameState = "START"
         if (isOver) {
           this.gameState = "OVER"
@@ -762,6 +768,7 @@ export default class ZhChess {
     this.winner = null
     this.initPiece()
     this.gameSide = side
+    this.lastMovePoint = undefined
   }
   /**
   * 清除移动完选中的棋子
@@ -947,6 +954,7 @@ export default class ZhChess {
     if (this.ctx) {
       try {
         this.draw(this.ctx)
+        this.drawLastMovePoint(this.ctx)
       } catch (error) {
         this.errorEvents.forEach(f => f(error))
       }
@@ -1015,7 +1023,7 @@ export default class ZhChess {
   get currentGameSide(): PieceSide | null {
     return this.gameSide
   }
-  private set currentGameSide(val: any) {
+  set currentGameSide(val: any) {
     console.log(`设置值无效：${val}`);
   }
   /**
@@ -1108,6 +1116,24 @@ export default class ZhChess {
     const data = parse_PEN_Str(penCode)
     this.livePieceList = data.list.map(p => chessOfPeiceMap[p.name](p))
     this.currentSide = data.side
+  }
+  /**
+   * 绘画上次移动点，可自行重写该函数
+   * @param ctx canvas 2d 渲染上下文
+   */
+  drawLastMovePoint(ctx: CTX) {
+    if (!this.choosePiece && this.lastMovePoint && ctx) {
+      let x = this.startX + Math.abs(this.lastMovePoint.x - this.gridDiffX) * this.gridWidth;
+      let y = this.startY + Math.abs(this.lastMovePoint.y - this.gridDiffY) * this.gridHeight;
+      ctx.beginPath()
+      ctx.arc(x, y, this.radius * .35, 0, 2 * Math.PI);
+      const gradient = ctx.createRadialGradient(x, y, this.radius * .05, x, y, this.radius * .8);
+      gradient.addColorStop(0, this.movePointColor)
+      gradient.addColorStop(1, "rgba(255,255,255,0)")
+      ctx.closePath();
+      ctx.fillStyle = gradient;
+      ctx.fill()
+    }
   }
 }
 export * from "./piece"

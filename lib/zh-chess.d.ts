@@ -692,6 +692,10 @@ declare class ZhChess {
      */
     private scaleRatio;
     private movePointColor;
+    /**
+     * 上次移动点：棋盘上移动棋子移动前的位置坐标点
+     */
+    private lastMovePoint;
     constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, duration, redPeiceBackground, blackPeiceBackground, checkerboardBackground, movePointColor, drawMovePoint }: GameInfo);
     /**
      * 设置游戏窗口 棋盘 棋子大小
@@ -859,7 +863,7 @@ declare class ZhChess {
      * 获取游戏方
      */
     get currentGameSide(): PieceSide | null;
-    private set currentGameSide(value);
+    set currentGameSide(val: any);
     /**
      * 获取当前存活的棋子列表
      */
@@ -892,6 +896,10 @@ declare class ZhChess {
      * 1. https://www.xqbase.com/protocol/cchess_fen.htm
      */
     setPenCodeList(penCode: string): void;
+    /**
+     * 绘画上次移动点
+     */
+    drawLastMovePoint(ctx: CTX): void;
 }
 
 export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameErrorCallback, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateFail, UpdateMoveCallback, UpdateResult, chessOfPeiceMap, ZhChess as default, diffPenStr, gen_PEN_Point_Str, gen_PEN_Str, initBoardPen, parse_PEN_Str, peiceSideMap, updateSuccess };
