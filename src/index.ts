@@ -1126,7 +1126,7 @@ export default class ZhChess {
       let x = this.startX + Math.abs(this.lastMovePoint.x - this.gridDiffX) * this.gridWidth;
       let y = this.startY + Math.abs(this.lastMovePoint.y - this.gridDiffY) * this.gridHeight;
       ctx.beginPath()
-      ctx.arc(x, y, this.radius * .35, 0, 2 * Math.PI);
+      ctx.arc(x, y, this.radius * .8, 0, 2 * Math.PI);
       const gradient = ctx.createRadialGradient(x, y, this.radius * .05, x, y, this.radius * .8);
       gradient.addColorStop(0, this.movePointColor)
       gradient.addColorStop(1, "rgba(255,255,255,0)")

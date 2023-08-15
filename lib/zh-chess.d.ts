@@ -897,7 +897,8 @@ declare class ZhChess {
      */
     setPenCodeList(penCode: string): void;
     /**
-     * 绘画上次移动点
+     * 绘画上次移动点，可自行重写该函数
+     * @param ctx canvas 2d 渲染上下文
      */
     drawLastMovePoint(ctx: CTX): void;
 }
