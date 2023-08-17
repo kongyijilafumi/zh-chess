@@ -402,7 +402,7 @@ export function parse_PEN_Str(penStr: string): ParsePENStrData {
       const pieceName = parse_PEN_PeiceName(str)
       if (pieceName) {
         const p_side: PieceSide = str.toLocaleLowerCase() === str ? 'BLACK' : 'RED'
-        pl.push({ side: p_side, name: pieceName, x: 9 - (px), y })
+        pl.push({ side: p_side, name: pieceName, x: 9 - (px), y, isLastMove: false })
       } else if (isNumber(str)) {
         px -= Number(str) - 1
       }

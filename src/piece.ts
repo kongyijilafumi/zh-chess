@@ -7,12 +7,14 @@ export class Piece implements PieceInfo {
   name: ChessOfPeiceName
   side: PieceSide
   isChoose: boolean
+  isLastMove: boolean
   constructor(pieceInfo: PieceInfo) {
     this.x = pieceInfo.x
     this.y = pieceInfo.y
     this.name = pieceInfo.name
     this.side = pieceInfo.side
     this.isChoose = pieceInfo.isChoose || false
+    this.isLastMove = pieceInfo.isLastMove
   }
   /**
    * 格式化象棋棋子输出字符串信息
@@ -42,7 +44,8 @@ export class Piece implements PieceInfo {
       side: this.side,
       name: this.name,
       x: this.x,
-      y: this.y
+      y: this.y,
+      isLastMove: this.isLastMove
     }
   }
   /**
@@ -86,10 +89,10 @@ export class Piece implements PieceInfo {
     }
 
     // 选中动画
-    if (this.isChoose) {
-      r = r / 0.98
-      ty = this.side === "RED" ? -.3 * radius : .3 * radius
-      ty = gridDiffY > 0 ? ty * -1 : ty
+    if (this.isChoose || this.isLastMove) {
+      r = r / 0.9
+      // ty = this.side === "RED" ? -.3 * radius : .3 * radius
+      // ty = gridDiffY > 0 ? ty * -1 : ty
     }
 
     // 象棋背景

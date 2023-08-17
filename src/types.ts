@@ -49,6 +49,10 @@ export interface PieceInfo {
    * 是否被选中
    */
   isChoose?: boolean
+  /**
+   * 是否上一个移动棋子
+   */
+  isLastMove: boolean
 }
 /**
  * 四变形的四个点
@@ -265,6 +269,7 @@ export type PeicePosInfo = {
   name: ChessOfPeiceName;
   x: number;
   y: number;
+  isLastMove: boolean
 }
 
 /**

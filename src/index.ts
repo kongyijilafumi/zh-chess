@@ -211,6 +211,11 @@ export default class ZhChess {
    */
   private lastMovePoint: Point | undefined;
 
+  /**
+   * 上次移动象棋：棋盘上的上一次移动棋子
+   */
+  private lastMovePiece: ChessOfPeice | undefined;
+
   constructor({
     ctx,
     gameWidth = 800,
@@ -290,7 +295,7 @@ export default class ZhChess {
     this.startY = (h - playHeight + this.gridHeight) / 2;
     this.endX = this.startX + this.gridWidth * 8;
     this.endY = this.startY + this.gridHeight * 9;
-    this.radius = this.gridHeight * 0.45;
+    this.radius = this.gridHeight * 0.4;
     this.width = w
     this.height = h
   }
@@ -455,6 +460,7 @@ export default class ZhChess {
     }
     this.clearMoveChoosePeiece()
     posPeice.isChoose = true
+    this.setLastMovePeiceStatus(false)
     this.choosePiece = posPeice
     // 如果没有需要移动的话 就直接 渲染返回
     if (!mov) {
@@ -494,7 +500,10 @@ export default class ZhChess {
         if (!isMove) {
           this.livePieceList = this.livePieceList.filter(p => (!(p.x === cp.eat.x && p.y === cp.eat.y)))
         }
+        this.setLastMovePeiceStatus(false)
         posPeice.update(mov)
+        this.lastMovePiece = posPeice
+        this.setLastMovePeiceStatus(true)
         this.lastMovePoint = new Point(pos.x, pos.y)
         this.gameState = "START"
         if (isOver) {
@@ -526,6 +535,7 @@ export default class ZhChess {
     if (movPeice.side === side) {
       if (pos.x === mov.x && pos.y === mov.y) {// 如果是点击选中的棋子 取消选中
         this.clearMoveChoosePeiece()
+        this.setLastMovePeiceStatus(true)
         this.logEvents.forEach(f => f(side + "方： 取消选中 " + movPeice))
         return { flag: true, move: false }
       }
@@ -556,21 +566,28 @@ export default class ZhChess {
   draw(ctx: CTX) {
     ctx.clearRect(0, 0, this.width, this.height)
     this.drawChessLine(ctx)
-    const { startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius } = this
+    const { startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, movePointColor } = this
     this.livePieceList.forEach(item => {
       const textColor = item.side === "BLACK" ? "#000" : "#c1190c",
         bgColor = item.side === "BLACK" ? this.blackPeiceBackground : this.redPeiceBackground;
-      if (this.choosePiece === item) {
-        return
+      if (this.choosePiece === item || this.lastMovePiece === item) {
+        return true
       }
       item.draw(ctx, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, textColor, bgColor)
     })
+
+    if (this.lastMovePiece) {
+      const textColor = this.lastMovePiece.side === "BLACK" ? "#000" : "#c1190c",
+        bgColor = this.lastMovePiece.side === "BLACK" ? this.blackPeiceBackground : this.redPeiceBackground;
+      this.lastMovePiece.draw(ctx, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, textColor, bgColor)
+    }
+
     if (this.choosePiece) {
       const textColor = this.choosePiece.side === "BLACK" ? "#000" : "#c1190c",
         bgColor = this.choosePiece.side === "BLACK" ? this.blackPeiceBackground : this.redPeiceBackground;
       this.choosePiece.draw(ctx, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, textColor, bgColor)
       if (this.drawMovePoint && this.gameState !== "MOVE") {
-        this.choosePiece.drawMovePoints(ctx, this.livePieceList, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, this.movePointColor)
+        this.choosePiece.drawMovePoints(ctx, this.livePieceList, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, movePointColor)
       }
     }
   }
@@ -1133,6 +1150,14 @@ export default class ZhChess {
       ctx.closePath();
       ctx.fillStyle = gradient;
       ctx.fill()
+    }
+  }
+  /**
+   * 
+   */
+  private setLastMovePeiceStatus(status: boolean) {
+    if (this.lastMovePiece) {
+      this.lastMovePiece.isLastMove = status
     }
   }
 }
