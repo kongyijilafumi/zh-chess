@@ -4,6 +4,7 @@ declare class Piece implements PieceInfo {
     name: ChessOfPeiceName;
     side: PieceSide;
     isChoose: boolean;
+    isLastMove: boolean;
     constructor(pieceInfo: PieceInfo);
     /**
      * 格式化象棋棋子输出字符串信息
@@ -266,6 +267,10 @@ interface PieceInfo {
      * 是否被选中
      */
     isChoose?: boolean;
+    /**
+     * 是否上一个移动棋子
+     */
+    isLastMove: boolean;
 }
 /**
  * 四变形的四个点
@@ -446,6 +451,7 @@ type PeicePosInfo = {
     name: ChessOfPeiceName;
     x: number;
     y: number;
+    isLastMove: boolean;
 };
 /**
  * 更新结果
@@ -696,6 +702,10 @@ declare class ZhChess {
      * 上次移动点：棋盘上移动棋子移动前的位置坐标点
      */
     private lastMovePoint;
+    /**
+     * 上次移动象棋：棋盘上的上一次移动棋子
+     */
+    private lastMovePiece;
     constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, duration, redPeiceBackground, blackPeiceBackground, checkerboardBackground, movePointColor, drawMovePoint }: GameInfo);
     /**
      * 设置游戏窗口 棋盘 棋子大小
@@ -901,6 +911,10 @@ declare class ZhChess {
      * @param ctx canvas 2d 渲染上下文
      */
     drawLastMovePoint(ctx: CTX): void;
+    /**
+     *
+     */
+    private setLastMovePeiceStatus;
 }
 
 export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameErrorCallback, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateFail, UpdateMoveCallback, UpdateResult, chessOfPeiceMap, ZhChess as default, diffPenStr, gen_PEN_Point_Str, gen_PEN_Str, initBoardPen, parse_PEN_Str, peiceSideMap, updateSuccess };

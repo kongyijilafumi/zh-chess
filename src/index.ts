@@ -783,9 +783,10 @@ export default class ZhChess {
     this.setGridDiff(side)
     this.gameState = "START"
     this.winner = null
-    this.initPiece()
-    this.gameSide = side
     this.lastMovePoint = undefined
+    this.lastMovePiece = undefined
+    this.gameSide = side
+    this.initPiece()
   }
   /**
   * 清除移动完选中的棋子
