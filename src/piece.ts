@@ -431,15 +431,14 @@ export class CannonPiece extends RookPiece {
       if (list.length === 1 && (list[0].x === p.x && list[0].y === p.y)) {
         return { flag: false, message: "无法击中敌方棋子(缺少炮架)，移动无效" }
       }
+      const hasPeice = pieceList.find(i => i.x === p.x && i.y === p.y)
       if (list.length === 1) {
-        const hasPeice = pieceList.find(i => i.x === p.x && i.y === p.y)
         if (hasPeice) {
           return { flag: true }
         }
         return { flag: false, message: "无法击中敌方棋子，移动无效" }
       }
       // 无炮架  且 目标位置有敌方棋子
-      const hasPeice = pieceList.find(i => i.x === p.x && i.y === p.y)
       if (list.length === 0 && hasPeice) {
         return { flag: false, message: "无法击中敌方棋子(缺少炮架)，移动无效" }
       }

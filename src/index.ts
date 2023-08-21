@@ -1132,6 +1132,10 @@ export default class ZhChess {
    */
   setPenCodeList(penCode: string) {
     const data = parse_PEN_Str(penCode)
+    this.setLastMovePeiceStatus(false)
+    this.clearMoveChoosePeiece()
+    this.lastMovePiece = undefined
+    this.lastMovePoint = undefined
     this.livePieceList = data.list.map(p => chessOfPeiceMap[p.name](p))
     this.currentSide = data.side
   }
