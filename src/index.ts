@@ -77,144 +77,144 @@ export default class ZhChess {
   /**
    * 当前走棋方
    */
-  private currentSide!: PieceSide
+  protected currentSide!: PieceSide
   /**
    * 当前棋盘上存活的棋子
    */
-  private livePieceList!: PieceList
+  protected livePieceList!: PieceList
   /**
    * 当前选中的棋子
    */
-  private choosePiece!: ChessOfPeice | null
+  protected choosePiece!: ChessOfPeice | null
   /**
    * 棋盘绘制起始 x 值
    */
-  private startX!: number;
+  protected startX!: number;
   /**
    * 棋盘绘制末尾 x 值
    */
-  private endX!: number;
+  protected endX!: number;
   /**
    * 棋盘绘制起始 y 值
    */
-  private startY!: number;
+  protected startY!: number;
   /**
    * 棋盘绘制末尾 y 值
    */
-  private endY!: number;
+  protected endY!: number;
   /**
    * 象棋格子宽度
    */
-  private gridWidth!: number;
+  protected gridWidth!: number;
   /**
    * 象棋格子高度
    */
-  private gridHeight!: number;
+  protected gridHeight!: number;
   /**
    * 象棋半径
    */
-  private radius!: number;
+  protected radius!: number;
   /**
    * 游戏窗口高度
    */
-  private width!: number;
+  protected width!: number;
   /**
    * 游戏窗口高度
    */
-  private height!: number;
+  protected height!: number;
   /**
    * 背景 和 线条 二维操作上下文
    */
-  private ctx?: CTX
+  protected ctx?: CTX
   /**
    * 存放棋盘格子的所有坐标
    */
-  private gridPostionList: Array<Point>
+  protected gridPostionList: Array<Point>
   /**
    * 棋子运动速度时长 毫秒单位
    */
   duration: number
 
-  private drawMovePoint: boolean
+  protected drawMovePoint: boolean
   /**
    * 玩家 x轴 格子距离相差
    */
-  private gridDiffX!: GamePeiceGridDiffX
+  protected gridDiffX!: GamePeiceGridDiffX
   /**
    * 玩家 y轴 格子距离相差
    */
-  private gridDiffY!: GamePeiceGridDiffY
+  protected gridDiffY!: GamePeiceGridDiffY
   /**
    * 游戏进行状态
    */
-  private gameState!: GameState
+  protected gameState!: GameState
   /**
    * 游戏移动监听事件列表
    */
-  private moveEvents: Array<MoveCallback>
+  protected moveEvents: Array<MoveCallback>
   /**
    * 游戏移动失败监听事件列表
    */
-  private moveFailEvents: Array<MoveFailCallback>
+  protected moveFailEvents: Array<MoveFailCallback>
   /**
    * 游戏日志监听事件列表
    */
-  private logEvents: Array<GameLogCallback>
+  protected logEvents: Array<GameLogCallback>
   /**
    * 游戏结束监听事件列表
    */
-  private overEvents: Array<GameOverCallback>
+  protected overEvents: Array<GameOverCallback>
   /**
    * 游戏运行报错事件列表
    */
-  private errorEvents: Array<GameErrorCallback>
+  protected errorEvents: Array<GameErrorCallback>
   /**
    * 红色棋子背景颜色
    */
-  private redPeiceBackground: string;
+  protected redPeiceBackground: string;
   /**
    * 黑色棋子背景颜色
    */
-  private blackPeiceBackground: string;
+  protected blackPeiceBackground: string;
   /**
    * 棋盘背景颜色
    */
-  private checkerboardBackground: string;
+  protected checkerboardBackground: string;
   /**
    * 赢方
    */
-  private winner: PieceSide | null = null;
+  protected winner: PieceSide | null = null;
   /**
    * 当前游戏方
    */
-  private gameSide: PieceSide | null = null;
+  protected gameSide: PieceSide | null = null;
 
   /**
    * 动画方法
    */
-  private animate: (cb: FrameRequestCallback) => number;
+  protected animate: (cb: FrameRequestCallback) => number;
 
   /**
    * 清除动画方法
    */
-  private cancelAnimate: (hander: number) => void;
+  protected cancelAnimate: (hander: number) => void;
   /**
    * 画布缩放大小
    * @defaultValue `1`
    */
-  private scaleRatio: number;
+  protected scaleRatio: number;
 
-  private movePointColor: string;
+  protected movePointColor: string;
 
   /**
    * 上次移动点：棋盘上移动棋子移动前的位置坐标点
    */
-  private lastMovePoint: Point | undefined;
+  protected lastMovePoint: Point | undefined;
 
   /**
    * 上次移动象棋：棋盘上的上一次移动棋子
    */
-  private lastMovePiece: ChessOfPeice | undefined;
+  protected lastMovePiece: ChessOfPeice | undefined;
 
   constructor({
     ctx,
@@ -283,7 +283,7 @@ export default class ZhChess {
   /**
    * 设置游戏窗口 棋盘 棋子大小
    */
-  private setGameWindow(w: number, h: number, p: number) {
+  protected setGameWindow(w: number, h: number, p: number) {
     const playHeight = h - p * 2;
     let playWidth = playHeight;
     while (playWidth % 9 !== 0) {
@@ -305,7 +305,7 @@ export default class ZhChess {
    * @param key 坐标轴
    * @returns 
    */
-  private getGridDiff(side: PieceSide, key: "x" | "y"): GamePeiceGridDiffX | GamePeiceGridDiffY {
+  protected getGridDiff(side: PieceSide, key: "x" | "y"): GamePeiceGridDiffX | GamePeiceGridDiffY {
     if (side === "BLACK") {
       if (key === "x") {
         return 8
@@ -318,7 +318,7 @@ export default class ZhChess {
    * 根据玩家方 设置 x，y轴差值
    * @param side 玩家方
    */
-  private setGridDiff(side: PieceSide) {
+  protected setGridDiff(side: PieceSide) {
     this.gridDiffX = this.getGridDiff(side, "x") as GamePeiceGridDiffX
     this.gridDiffY = this.getGridDiff(side, "y") as GamePeiceGridDiffY
   }
@@ -326,7 +326,7 @@ export default class ZhChess {
   /**
    * 获取所有格子的坐标
    */
-  private setGridList() {
+  protected setGridList() {
     for (let i = 0; i < 9; i++) {
       for (let j = 0; j < 10; j++) {
         this.gridPostionList.push(new Point(i, j))
@@ -339,7 +339,7 @@ export default class ZhChess {
    * @param p 点击点的 x,y 坐标
    * @returns 返回棋盘的x，y坐标轴
    */
-  private getGridPosition(p: Point) {
+  protected getGridPosition(p: Point) {
     return this.gridPostionList.find(item => {
       const x1 = Math.abs(item.x - this.gridDiffX) * this.gridWidth + this.startX
       const y1 = Math.abs(item.y - this.gridDiffY) * this.gridHeight + this.startY
@@ -350,7 +350,7 @@ export default class ZhChess {
   /**
    * 初始化象棋盘
    */
-  private init() {
+  protected init() {
     this.currentSide = "RED"
     this.choosePiece = null
     this.livePieceList = []
@@ -359,7 +359,7 @@ export default class ZhChess {
   /**
    * 初始化象棋个数
    */
-  private initPiece() {
+  protected initPiece() {
     this.setPenCodeList(initBoardPen)
     this.choosePiece = null
     this.checkDraw()
@@ -595,7 +595,7 @@ export default class ZhChess {
   /**
    * 画棋盘
    */
-  private drawChessLine(ctx: CTX) {
+  protected drawChessLine(ctx: CTX) {
     const { startX, startY, endX, endY, gridWidth, gridHeight, scaleRatio } = this
     // 画背景
     ctx.fillStyle = this.checkerboardBackground;
@@ -791,7 +791,7 @@ export default class ZhChess {
   /**
   * 清除移动完选中的棋子
   */
-  private clearMoveChoosePeiece() {
+  protected clearMoveChoosePeiece() {
     if (this.choosePiece) {
       this.choosePiece.isChoose = false
       this.choosePiece = null
@@ -801,7 +801,7 @@ export default class ZhChess {
   /**
    * 更换当前运行玩家
    */
-  private changeSide() {
+  protected changeSide() {
     this.currentSide = this.currentSide === "RED" ? "BLACK" : "RED"
   }
   /**
@@ -834,7 +834,7 @@ export default class ZhChess {
    * @param pl 当前棋盘列表
    * @returns 是否安全
    */
-  private checkGeneralInTrouble(side: PieceSide, pos: ChessOfPeice, cp: CheckPoint, pl: PieceList) {
+  protected checkGeneralInTrouble(side: PieceSide, pos: ChessOfPeice, cp: CheckPoint, pl: PieceList) {
     const enemySide: PieceSide = side === "BLACK" ? "RED" : "BLACK"
     let list: PieceList;
     if ("move" in cp) {
@@ -871,7 +871,7 @@ export default class ZhChess {
    * @param side 当前下棋方
    * @returns 是否危险
    */
-  private checkGeneralsFaceToFaceInTrouble(pl: PieceList) {
+  protected checkGeneralsFaceToFaceInTrouble(pl: PieceList) {
     const points = pl.filter(i => i instanceof GeneralPiece).map(i => ({ x: i.x, y: i.y }))
     const max = points[0].y > points[1].y ? points[0].y : points[1].y
     const min = points[0].y < points[1].y ? points[0].y : points[1].y
@@ -892,7 +892,7 @@ export default class ZhChess {
    * @param pl 当前棋盘列表
    * @returns  返回是否有解
    */
-  private checkEnemySideInTroubleHasSolution(enemySide: PieceSide, pl: PieceList) {
+  protected checkEnemySideInTroubleHasSolution(enemySide: PieceSide, pl: PieceList) {
     return pl.filter(i => i.side === enemySide).some(item => {
       const mps = item.getMovePoints(pl)
       // 是否有解法
@@ -914,7 +914,7 @@ export default class ZhChess {
    * @param enemySide 敌方
    * @returns {boolean}
    */
-  private checkEnemySideHasMovePoints(enemySide: PieceSide, pl: PieceList) {
+  protected checkEnemySideHasMovePoints(enemySide: PieceSide, pl: PieceList) {
     // 当前棋子列表
     const currentList = pl
     // 敌方棋子列表
@@ -1158,9 +1158,9 @@ export default class ZhChess {
     }
   }
   /**
-   * 
+   * 设置上次移动状态
    */
-  private setLastMovePeiceStatus(status: boolean) {
+  protected setLastMovePeiceStatus(status: boolean) {
     if (this.lastMovePiece) {
       this.lastMovePiece.isLastMove = status
     }

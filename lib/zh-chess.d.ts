@@ -575,173 +575,173 @@ declare class ZhChess {
     /**
      * 当前走棋方
      */
-    private currentSide;
+    protected currentSide: PieceSide;
     /**
      * 当前棋盘上存活的棋子
      */
-    private livePieceList;
+    protected livePieceList: PieceList;
     /**
      * 当前选中的棋子
      */
-    private choosePiece;
+    protected choosePiece: ChessOfPeice | null;
     /**
      * 棋盘绘制起始 x 值
      */
-    private startX;
+    protected startX: number;
     /**
      * 棋盘绘制末尾 x 值
      */
-    private endX;
+    protected endX: number;
     /**
      * 棋盘绘制起始 y 值
      */
-    private startY;
+    protected startY: number;
     /**
      * 棋盘绘制末尾 y 值
      */
-    private endY;
+    protected endY: number;
     /**
      * 象棋格子宽度
      */
-    private gridWidth;
+    protected gridWidth: number;
     /**
      * 象棋格子高度
      */
-    private gridHeight;
+    protected gridHeight: number;
     /**
      * 象棋半径
      */
-    private radius;
+    protected radius: number;
     /**
      * 游戏窗口高度
      */
-    private width;
+    protected width: number;
     /**
      * 游戏窗口高度
      */
-    private height;
+    protected height: number;
     /**
      * 背景 和 线条 二维操作上下文
      */
-    private ctx?;
+    protected ctx?: CTX;
     /**
      * 存放棋盘格子的所有坐标
      */
-    private gridPostionList;
+    protected gridPostionList: Array<Point>;
     /**
      * 棋子运动速度时长 毫秒单位
      */
     duration: number;
-    private drawMovePoint;
+    protected drawMovePoint: boolean;
     /**
      * 玩家 x轴 格子距离相差
      */
-    private gridDiffX;
+    protected gridDiffX: GamePeiceGridDiffX;
     /**
      * 玩家 y轴 格子距离相差
      */
-    private gridDiffY;
+    protected gridDiffY: GamePeiceGridDiffY;
     /**
      * 游戏进行状态
      */
-    private gameState;
+    protected gameState: GameState;
     /**
      * 游戏移动监听事件列表
      */
-    private moveEvents;
+    protected moveEvents: Array<MoveCallback>;
     /**
      * 游戏移动失败监听事件列表
      */
-    private moveFailEvents;
+    protected moveFailEvents: Array<MoveFailCallback>;
     /**
      * 游戏日志监听事件列表
      */
-    private logEvents;
+    protected logEvents: Array<GameLogCallback>;
     /**
      * 游戏结束监听事件列表
      */
-    private overEvents;
+    protected overEvents: Array<GameOverCallback>;
     /**
      * 游戏运行报错事件列表
      */
-    private errorEvents;
+    protected errorEvents: Array<GameErrorCallback>;
     /**
      * 红色棋子背景颜色
      */
-    private redPeiceBackground;
+    protected redPeiceBackground: string;
     /**
      * 黑色棋子背景颜色
      */
-    private blackPeiceBackground;
+    protected blackPeiceBackground: string;
     /**
      * 棋盘背景颜色
      */
-    private checkerboardBackground;
+    protected checkerboardBackground: string;
     /**
      * 赢方
      */
-    private winner;
+    protected winner: PieceSide | null;
     /**
      * 当前游戏方
      */
-    private gameSide;
+    protected gameSide: PieceSide | null;
     /**
      * 动画方法
      */
-    private animate;
+    protected animate: (cb: FrameRequestCallback) => number;
     /**
      * 清除动画方法
      */
-    private cancelAnimate;
+    protected cancelAnimate: (hander: number) => void;
     /**
      * 画布缩放大小
      * @defaultValue `1`
      */
-    private scaleRatio;
-    private movePointColor;
+    protected scaleRatio: number;
+    protected movePointColor: string;
     /**
      * 上次移动点：棋盘上移动棋子移动前的位置坐标点
      */
-    private lastMovePoint;
+    protected lastMovePoint: Point | undefined;
     /**
      * 上次移动象棋：棋盘上的上一次移动棋子
      */
-    private lastMovePiece;
+    protected lastMovePiece: ChessOfPeice | undefined;
     constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, duration, redPeiceBackground, blackPeiceBackground, checkerboardBackground, movePointColor, drawMovePoint }: GameInfo);
     /**
      * 设置游戏窗口 棋盘 棋子大小
      */
-    private setGameWindow;
+    protected setGameWindow(w: number, h: number, p: number): void;
     /**
      * 根据玩家返回绘画坐标轴的差值
      * @param side 玩家
      * @param key 坐标轴
      * @returns
      */
-    private getGridDiff;
+    protected getGridDiff(side: PieceSide, key: "x" | "y"): GamePeiceGridDiffX | GamePeiceGridDiffY;
     /**
      * 根据玩家方 设置 x，y轴差值
      * @param side 玩家方
      */
-    private setGridDiff;
+    protected setGridDiff(side: PieceSide): void;
     /**
      * 获取所有格子的坐标
      */
-    private setGridList;
+    protected setGridList(): void;
     /**
      * 根据点击点返回所在棋盘上x,y的位置
      * @param p 点击点的 x,y 坐标
      * @returns 返回棋盘的x，y坐标轴
      */
-    private getGridPosition;
+    protected getGridPosition(p: Point): Point | undefined;
     /**
      * 初始化象棋盘
      */
-    private init;
+    protected init(): void;
     /**
      * 初始化象棋个数
      */
-    private initPiece;
+    protected initPiece(): void;
     /**
      * 游戏根据坐标点 移动点来进行更新游戏运行数据。这是一个返回一个promise结果，也表示 这个方法是异步的。
      * @param pos 坐标点
@@ -777,7 +777,7 @@ declare class ZhChess {
     /**
      * 画棋盘
      */
-    private drawChessLine;
+    protected drawChessLine(ctx: CTX): void;
     /**
      * 根据移动方的描述文字来进行移动棋子
      * @param str 文字
@@ -801,11 +801,11 @@ declare class ZhChess {
     /**
     * 清除移动完选中的棋子
     */
-    private clearMoveChoosePeiece;
+    protected clearMoveChoosePeiece(): void;
     /**
      * 更换当前运行玩家
      */
-    private changeSide;
+    protected changeSide(): void;
     /**
      * 更换玩家视角
      * @param side 玩家
@@ -828,27 +828,27 @@ declare class ZhChess {
      * @param pl 当前棋盘列表
      * @returns 是否安全
      */
-    private checkGeneralInTrouble;
+    protected checkGeneralInTrouble(side: PieceSide, pos: ChessOfPeice, cp: CheckPoint, pl: PieceList): boolean;
     /**
      * 检查棋子移动 双方将领在一条直线上 false 不危险 true 危险
      * @param pl 假设移动后的棋子列表
      * @param side 当前下棋方
      * @returns 是否危险
      */
-    private checkGeneralsFaceToFaceInTrouble;
+    protected checkGeneralsFaceToFaceInTrouble(pl: PieceList): boolean;
     /**
      * 判断敌方被将军时，是否有解
      * @param enemySide 敌方
      * @param pl 当前棋盘列表
      * @returns  返回是否有解
      */
-    private checkEnemySideInTroubleHasSolution;
+    protected checkEnemySideInTroubleHasSolution(enemySide: PieceSide, pl: PieceList): boolean;
     /**
      * 判断敌方是否还有下一步走法 无走法就是绝杀
      * @param enemySide 敌方
      * @returns {boolean}
      */
-    private checkEnemySideHasMovePoints;
+    protected checkEnemySideHasMovePoints(enemySide: PieceSide, pl: PieceList): boolean;
     /**
      * 棋子运动前检查游戏状态是否可以运动
      * @returns 是否可以运动
@@ -913,9 +913,9 @@ declare class ZhChess {
      */
     drawLastMovePoint(ctx: CTX): void;
     /**
-     *
+     * 设置上次移动状态
      */
-    private setLastMovePeiceStatus;
+    protected setLastMovePeiceStatus(status: boolean): void;
 }
 
 export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameErrorCallback, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateFail, UpdateMoveCallback, UpdateResult, chessOfPeiceMap, ZhChess as default, diffPenStr, gen_PEN_Point_Str, gen_PEN_Str, initBoardPen, parse_PEN_Str, peiceSideMap, updateSuccess };
