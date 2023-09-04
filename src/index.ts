@@ -388,7 +388,7 @@ export default class ZhChess {
     const xstep = diffx / (this.duration / 16)
     const ystep = diffy / (this.duration / 16)
     // this.clearMoveChoosePeiece()
-    let raf: number, posPeice: ChessOfPeice | undefined
+    let raf: number, posPeice = findPiece(this.livePieceList, new Point(posX, posY))
     return new Promise((resovle) => {
       const animateFn = () => {
         if (Math.abs(posX - mov.x) <= Math.abs(xstep) && Math.abs(posY - mov.y) <= Math.abs(ystep)) {
@@ -398,8 +398,6 @@ export default class ZhChess {
           }
           return resovle(null)
         }
-        const point = new Point(posX, posY)
-        posPeice = findPiece(this.livePieceList, point)
         posX -= xstep
         posY -= ystep
         const newPoint = new Point(posX, posY)
