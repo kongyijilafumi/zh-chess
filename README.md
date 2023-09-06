@@ -9,7 +9,7 @@
 
 一款JavaScript语言编写的中国象棋游戏框架，支持nodejs，浏览器，vue，react等前端框架。(支持typescript)[更多象棋知识](https://www.xqbase.com/index.htm)
 
-## [案例网站](https://chess.azhengpersonalblog.top/)
+## [案例网站](https://chess.z3web.cn/)
 
 ## 安装使用
 
