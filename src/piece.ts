@@ -317,7 +317,7 @@ export class ElephantPiece extends HorsePiece {
       const bdy = this.y + 1
       mps.push(new MovePoint(bx, by, { x: bdx, y: bdy }))
     }
-    return this.filterMovePoints(mps, pl)
+    return this.filterMovePoints(mps, pl).filter(item => !Boolean(findPiece(pl, item.disPoint)))
   }
   /**
     * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
