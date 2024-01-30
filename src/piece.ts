@@ -68,14 +68,15 @@ export class Piece implements PieceInfo {
    * @param radius 象棋园半径
    * @param textColor 象棋字体颜色
    * @param bgColor 象棋背景颜色
+   * @param choosePeiceBorderColor 选中的边框色
    */
   draw(ctx: CanvasRenderingContext2D,
     startX: number, startY: number,
     gridWidth: number, gridHeight: number,
     gridDiffX: GamePeiceGridDiffX, gridDiffY: GamePeiceGridDiffY,
     radius: number,
-    textColor: string, bgColor: string) {
-    const borderColor = this.isChoose ? "red" : "#000";
+    textColor: string, bgColor: string, choosePeiceBorderColor: string) {
+    const borderColor = this.isChoose ? choosePeiceBorderColor : textColor;
     let x = startX + Math.abs(this.x - gridDiffX) * gridWidth;
     let y = startY + Math.abs(this.y - gridDiffY) * gridHeight;
     let r = radius, ty = 0;

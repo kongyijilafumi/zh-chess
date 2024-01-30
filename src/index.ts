@@ -1,6 +1,6 @@
 import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint, GamePeiceGridDiffX, GamePeiceGridDiffY, UpdateResult, UpdateMoveCallback, GameErrorCallback } from './types';
 import { Point, PieceInfo, MoveResult } from './types';
-import { gen_PEN_Str, initBoardPen, parseStrToPoint, parse_PEN_Str } from '../utils';
+import { gameDefaultCfg, gen_PEN_Str, initBoardPen, parseStrToPoint, parse_PEN_Str } from '../utils';
 import { getSquarePoints } from '../utils/draw';
 import { ChessOfPeice, GeneralPiece, PieceList, chessOfPeiceMap } from './piece';
 import "core-js/proposals/global-this"
@@ -8,6 +8,8 @@ const findPiece = (pl: PieceList, p: Point) => pl.find(item => item.x === p.x &&
 
 type CTX = CanvasRenderingContext2D
 
+type CtxConfig = Omit<GameInfo, keyof typeof gameDefaultCfg>
+type DefaultConfig = (typeof gameDefaultCfg) & CtxConfig
 /**
  * promise返回的运动结果
  */
@@ -62,13 +64,33 @@ export interface GameInfo {
    */
   blackPeiceBackground?: string
   /**
+   * 红棋子字体颜色
+   * @defaultValue `#c1190c`
+   */
+  redPeiceTextColor?: string
+  /**
+   * 黑棋子字体颜色
+   * @defaultValue `#000`
+   */
+  blackPeiceTextColor?: string
+  /**
+   * 棋子选中的边框颜色
+   * @defaultValue `#ff0000`
+   */
+  choosePeiceBorderColor?: string
+  /**
+   * 棋盘线条颜色
+   * @defaultValue `#000`
+   */
+  boardTextColor?: string
+  /**
    * 可移动点 颜色
    * @defaultValue `#25dd2a`
    */
   movePointColor?: string
   /**
    * 选中是否绘画可移动的点
-   * @defaultValue `false`
+   * @defaultValue `true`
    */
   drawMovePoint?: boolean
 }
@@ -177,6 +199,25 @@ export default class ZhChess {
    */
   protected blackPeiceBackground: string;
   /**
+   * 红棋子字体颜色
+   * @defaultValue `#c1190c`
+   */
+  protected redPeiceTextColor: string
+  /**
+   * 黑棋子字体颜色
+   * @defaultValue `#000`
+   */
+  protected blackPeiceTextColor: string
+  /**
+   * 选中的棋子边框颜色
+   */
+  protected choosePeiceBorderColor: string
+  /**
+   * 棋盘线条颜色
+   * @defaultValue `#000`
+   */
+  protected boardTextColor: string
+  /**
    * 棋盘背景颜色
    */
   protected checkerboardBackground: string;
@@ -216,28 +257,25 @@ export default class ZhChess {
    */
   protected lastMovePiece: ChessOfPeice | undefined;
 
-  constructor({
-    ctx,
-    gameWidth = 800,
-    gameHeight = 800,
-    gamePadding = 20,
-    scaleRatio = 1,
-    duration = 200,
-    redPeiceBackground = "#feeca0",
-    blackPeiceBackground = "#fdec9e",
-    checkerboardBackground = "#faebd7",
-    movePointColor = "#25dd2a",
-    drawMovePoint = true
-  }: GameInfo) {
+  constructor(inputCfg?: GameInfo) {
+    let cfg: DefaultConfig = { ...gameDefaultCfg }
+    if (inputCfg && typeof inputCfg === "object") {
+      cfg = { ...gameDefaultCfg, ...inputCfg }
+    }
+    const { redPeiceBackground, redPeiceTextColor, blackPeiceBackground, blackPeiceTextColor, boardTextColor, checkerboardBackground, choosePeiceBorderColor, drawMovePoint, duration, gameHeight, gamePadding, gameWidth, movePointColor, scaleRatio, } = cfg
     this.moveEvents = []
     this.moveFailEvents = []
     this.logEvents = []
     this.overEvents = []
     this.errorEvents = []
-    this.ctx = ctx
+    this.ctx = cfg.ctx
     this.redPeiceBackground = redPeiceBackground
     this.blackPeiceBackground = blackPeiceBackground
     this.checkerboardBackground = checkerboardBackground
+    this.redPeiceTextColor = redPeiceTextColor
+    this.blackPeiceTextColor = blackPeiceTextColor
+    this.choosePeiceBorderColor = choosePeiceBorderColor
+    this.boardTextColor = boardTextColor
     this.movePointColor = movePointColor
     // 设置 缩放 来解决移动端模糊问题
     this.ctx?.scale(scaleRatio, scaleRatio)
@@ -564,26 +602,26 @@ export default class ZhChess {
   draw(ctx: CTX) {
     ctx.clearRect(0, 0, this.width, this.height)
     this.drawChessLine(ctx)
-    const { startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, movePointColor } = this
+    const { startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, movePointColor, choosePeiceBorderColor, blackPeiceBackground, redPeiceBackground, redPeiceTextColor, blackPeiceTextColor } = this
     this.livePieceList.forEach(item => {
-      const textColor = item.side === "BLACK" ? "#000" : "#c1190c",
-        bgColor = item.side === "BLACK" ? this.blackPeiceBackground : this.redPeiceBackground;
+      const textColor = item.side === "BLACK" ? blackPeiceTextColor : redPeiceTextColor,
+        bgColor = item.side === "BLACK" ? blackPeiceBackground : redPeiceBackground;
       if (this.choosePiece === item || this.lastMovePiece === item) {
         return true
       }
-      item.draw(ctx, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, textColor, bgColor)
+      item.draw(ctx, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, textColor, bgColor, choosePeiceBorderColor)
     })
 
     if (this.lastMovePiece) {
-      const textColor = this.lastMovePiece.side === "BLACK" ? "#000" : "#c1190c",
-        bgColor = this.lastMovePiece.side === "BLACK" ? this.blackPeiceBackground : this.redPeiceBackground;
-      this.lastMovePiece.draw(ctx, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, textColor, bgColor)
+      const textColor = this.lastMovePiece.side === "BLACK" ? blackPeiceTextColor : redPeiceTextColor,
+        bgColor = this.lastMovePiece.side === "BLACK" ? blackPeiceBackground : redPeiceBackground;
+      this.lastMovePiece.draw(ctx, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, textColor, bgColor, choosePeiceBorderColor)
     }
 
     if (this.choosePiece) {
-      const textColor = this.choosePiece.side === "BLACK" ? "#000" : "#c1190c",
-        bgColor = this.choosePiece.side === "BLACK" ? this.blackPeiceBackground : this.redPeiceBackground;
-      this.choosePiece.draw(ctx, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, textColor, bgColor)
+      const textColor = this.choosePiece.side === "BLACK" ? blackPeiceTextColor : redPeiceTextColor,
+        bgColor = this.choosePiece.side === "BLACK" ? blackPeiceBackground : redPeiceBackground;
+      this.choosePiece.draw(ctx, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, textColor, bgColor, choosePeiceBorderColor)
       if (this.drawMovePoint && this.gameState !== "MOVE") {
         this.choosePiece.drawMovePoints(ctx, this.livePieceList, startX, startY, gridWidth, gridHeight, gridDiffX, gridDiffY, radius, movePointColor)
       }
@@ -598,7 +636,7 @@ export default class ZhChess {
     // 画背景
     ctx.fillStyle = this.checkerboardBackground;
     ctx.fillRect(0, 0, this.width, this.width);
-    ctx.strokeStyle = "#000";
+    ctx.strokeStyle = this.boardTextColor;
     // 横线
     for (let index = 0; index < 10; index++) {
       ctx.beginPath();
@@ -701,7 +739,7 @@ export default class ZhChess {
     //  楚河 汉界
     ctx.textBaseline = "middle"
     ctx.textAlign = "left"
-    ctx.fillStyle = "#000"
+    ctx.fillStyle = this.boardTextColor
     const fontSize = gridHeight * .7
     ctx.font = fontSize + 'px serif'
     ctx.fillText("楚河", startX + gridWidth, startY + gridHeight * 4.5)

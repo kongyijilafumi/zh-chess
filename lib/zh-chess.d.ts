@@ -40,8 +40,9 @@ declare class Piece implements PieceInfo {
      * @param radius 象棋园半径
      * @param textColor 象棋字体颜色
      * @param bgColor 象棋背景颜色
+     * @param choosePeiceBorderColor 选中的边框色
      */
-    draw(ctx: CanvasRenderingContext2D, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: GamePeiceGridDiffX, gridDiffY: GamePeiceGridDiffY, radius: number, textColor: string, bgColor: string): void;
+    draw(ctx: CanvasRenderingContext2D, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: GamePeiceGridDiffX, gridDiffY: GamePeiceGridDiffY, radius: number, textColor: string, bgColor: string, choosePeiceBorderColor: string): void;
     /**
      * 根据棋子列表判断 当前棋子可移动的点
      * @param _pl 棋子列表
@@ -561,13 +562,33 @@ interface GameInfo {
      */
     blackPeiceBackground?: string;
     /**
+     * 红棋子字体颜色
+     * @defaultValue `#c1190c`
+     */
+    redPeiceTextColor?: string;
+    /**
+     * 黑棋子字体颜色
+     * @defaultValue `#000`
+     */
+    blackPeiceTextColor?: string;
+    /**
+     * 棋子选中的边框颜色
+     * @defaultValue `#ff0000`
+     */
+    choosePeiceBorderColor?: string;
+    /**
+     * 棋盘线条颜色
+     * @defaultValue `#000`
+     */
+    boardTextColor?: string;
+    /**
      * 可移动点 颜色
      * @defaultValue `#25dd2a`
      */
     movePointColor?: string;
     /**
      * 选中是否绘画可移动的点
-     * @defaultValue `false`
+     * @defaultValue `true`
      */
     drawMovePoint?: boolean;
 }
@@ -674,6 +695,25 @@ declare class ZhChess {
      */
     protected blackPeiceBackground: string;
     /**
+     * 红棋子字体颜色
+     * @defaultValue `#c1190c`
+     */
+    protected redPeiceTextColor: string;
+    /**
+     * 黑棋子字体颜色
+     * @defaultValue `#000`
+     */
+    protected blackPeiceTextColor: string;
+    /**
+     * 选中的棋子边框颜色
+     */
+    protected choosePeiceBorderColor: string;
+    /**
+     * 棋盘线条颜色
+     * @defaultValue `#000`
+     */
+    protected boardTextColor: string;
+    /**
      * 棋盘背景颜色
      */
     protected checkerboardBackground: string;
@@ -707,7 +747,7 @@ declare class ZhChess {
      * 上次移动象棋：棋盘上的上一次移动棋子
      */
     protected lastMovePiece: ChessOfPeice | undefined;
-    constructor({ ctx, gameWidth, gameHeight, gamePadding, scaleRatio, duration, redPeiceBackground, blackPeiceBackground, checkerboardBackground, movePointColor, drawMovePoint }: GameInfo);
+    constructor(inputCfg?: GameInfo);
     /**
      * 设置游戏窗口 棋盘 棋子大小
      */
