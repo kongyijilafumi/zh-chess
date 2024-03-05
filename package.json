@@ -2,13 +2,13 @@
   "name": "zh-chess",
   "version": "2.1.1",
   "description": "A Chinese chess framework that supports browsers and nodejs(一款运行在浏览器和nodejs环境的中国象棋框架)",
-  "main": "./lib/zh-chess.cjs.js",
-  "module": "./lib/zh-chess.es.js",
+  "main": "./dist/zh-chess.cjs.js",
+  "module": "./dist/zh-chess.es.js",
   "browser": {
-    "./lib/zh-chess.es.js": "./lib/zh-chess.es.js",
-    "./lib/zh-chess.cjs.js": "./lib/zh-chess.cjs.js"
+    "./dist/zh-chess.es.js": "./dist/zh-chess.es.js",
+    "./dist/zh-chess.cjs.js": "./dist/zh-chess.cjs.js"
   },
-  "types": "./lib/zh-chess.d.ts",
+  "types": "./dist/zh-chess.d.ts",
   "scripts": {
     "dev": "rollup -c -w",
     "bulid": "rollup -c",

@@ -5,7 +5,7 @@ import { terser } from "rollup-plugin-terser";
 import commonjs from "@rollup/plugin-commonjs";
 import pkg from './package.json';
 import { resolve } from "path"
-const outDir = resolve(".", "lib")
+const outDir = resolve(".", "dist")
 
 const libs = [
   {// 浏览器导入
