@@ -1,26 +1,26 @@
 import { moveFailMessage } from "./rule";
-import { MovePoint, MovePointList, MoveResult, PeiceInputInfo, PeicePositonPoint, PeiceSide, PeiceUtils } from "./types";
+import { MovePoint, MovePointList, MoveResult, PieceInputInfo, PiecePositonPoint, PieceSide, PieceMethods } from "./types";
 
-export interface PeiceCurrentInfo {
-  side: PeiceSide;
+export interface PieceCurrentInfo {
+  side: PieceSide;
   name: string;
   x: number;
   y: number;
   isChoose: boolean;
   isLastMove: boolean;
 }
-export class Piece implements PeiceInputInfo {
+export class Piece implements PieceInputInfo {
   name: string;
-  side: PeiceSide;
+  side: PieceSide;
   x: number;
   y: number;
   isChoose: boolean;
   isLastMove: boolean;
   draw: typeof defaultPieceDraw;
-  move: (this: Piece, pos: PeicePositonPoint | MovePoint, peiceList: PeiceList) => MoveResult;
-  getMovePointList: (this: Piece, pl: PeiceList) => MovePointList;
-  drawMovePointList: (this: Piece, pl: PeiceList, startX: number, startY: number, width: number, height: number, radius: number, color: string, ctx: CanvasRenderingContext2D) => void;
-  constructor(pieceInfo: PeiceInputInfo) {
+  move: (this: Piece, pos: PiecePositonPoint | MovePoint, PieceList: PieceList) => MoveResult;
+  getMovePointList: (this: Piece, pl: PieceList) => MovePointList;
+  drawMovePointList: (this: Piece, pl: PieceList, startX: number, startY: number, width: number, height: number, radius: number, color: string, ctx: CanvasRenderingContext2D) => void;
+  constructor(pieceInfo: PieceInputInfo) {
     if (!pieceInfo) {
       throw Error("请输入正确初始化棋子信息")
     }
@@ -35,7 +35,7 @@ export class Piece implements PeiceInputInfo {
     this.getMovePointList = pieceInfo.getMovePointList
     this.drawMovePointList = pieceInfo.drawMovePointList
   }
-  getInfo(): PeiceCurrentInfo {
+  getInfo(): PieceCurrentInfo {
     return {
       side: this.side,
       name: this.name,
@@ -53,7 +53,7 @@ export class Piece implements PeiceInputInfo {
     this.isLastMove = b
   }
 }
-export type PeiceList = Piece[]
+export type PieceList = Piece[]
 
 export function defaultPieceDraw(this: Piece, startX: number, startY: number, endX: number, endY: number, ctx?: CanvasRenderingContext2D) {
   if (ctx) {
@@ -111,11 +111,11 @@ export const drawMovePointList = (x: number, y: number, radius: number, color: s
   ctx.closePath();
   ctx.fill()
 }
-export const notExistPoint: PeicePositonPoint = {
+export const notExistPoint: PiecePositonPoint = {
   x: 999,
   y: 999
 }
-export function defaultPieceMovePointDraw(this: Piece, pl: PeiceList, startX: number, startY: number, width: number, height: number, radius: number, color: string, ctx: CanvasRenderingContext2D) {
+export function defaultPieceMovePointDraw(this: Piece, pl: PieceList, startX: number, startY: number, width: number, height: number, radius: number, color: string, ctx: CanvasRenderingContext2D) {
   this.getMovePointList(pl).forEach(p => {
     let x = startX + width * p.x
     let y = startY + height * p.y
@@ -123,7 +123,7 @@ export function defaultPieceMovePointDraw(this: Piece, pl: PeiceList, startX: nu
   })
 }
 
-export function defaultPieceMove(this: Piece, pos: PeicePositonPoint | MovePoint, pl: PeiceList): MoveResult {
+export function defaultPieceMove(this: Piece, pos: PiecePositonPoint | MovePoint, pl: PieceList): MoveResult {
   let mps = this.getMovePointList(pl)
   let find = mps.find(m => m.x === pos.x && m.y === pos.y)
   if (find) {
@@ -131,14 +131,14 @@ export function defaultPieceMove(this: Piece, pos: PeicePositonPoint | MovePoint
   }
   return moveFailMessage()
 }
-export const movePointPush = (pointMinX: number, pointMaxX: number, pointMinY: number, pointMaxY: number, x: number, y: number, disPos: PeicePositonPoint, pl: (PeiceCurrentInfo | null)[][], arr: MovePointList) => {
+export const movePointPush = (pointMinX: number, pointMaxX: number, pointMinY: number, pointMaxY: number, x: number, y: number, disPos: PiecePositonPoint, pl: (PieceCurrentInfo | null)[][], arr: MovePointList) => {
   if (x > pointMaxX || x < pointMinX || y < pointMinY || y > pointMaxY || (pl[disPos.x] && pl[disPos.x][disPos.y])) {
     return
   }
   arr.push({ x, y, disPos })
 }
-export function getPiecePointArr(pl: PeiceList) {
-  let arr: Array<Array<null | PeiceCurrentInfo>> = []
+export function getPiecePointArr(pl: PieceList) {
+  let arr: Array<Array<null | PieceCurrentInfo>> = []
   for (let index = 0; index < 9; index++) {
     arr[index] = []
     for (let j = 0; j < 10; j++) {
@@ -151,11 +151,11 @@ export function getPiecePointArr(pl: PeiceList) {
   return arr
 }
 // 车
-export const ChariotPieceDefaultUtils: PeiceUtils = {
+export const ChariotPieceDefaultUtils: PieceMethods = {
   draw: defaultPieceDraw,
   getMovePointList(pl) {
     const points: MovePointList = []
-    let peicePosArr = getPiecePointArr(pl)
+    let PiecePosArr = getPiecePointArr(pl)
     let diffKey: ["x", "y"] = ["x", "y"], boundary = [[0, 8], [0, 9]]
     for (let index = 0; index < 2; index++) {
       const key = diffKey[index];
@@ -164,7 +164,7 @@ export const ChariotPieceDefaultUtils: PeiceUtils = {
       while (minNum >= min || maxNum <= max) {
         let x = --minNum, y = ++maxNum;
         if (x >= min) {
-          let info = isDiffX ? peicePosArr[x][this.y] : peicePosArr[this.x][x]
+          let info = isDiffX ? PiecePosArr[x][this.y] : PiecePosArr[this.x][x]
           let p = isDiffX ? { x, y: this.y, disPos: notExistPoint } : { x: this.x, y: x, disPos: notExistPoint }
           if (!info || info.side !== this.side) {
             points.push(p)
@@ -174,7 +174,7 @@ export const ChariotPieceDefaultUtils: PeiceUtils = {
           }
         }
         if (y <= max) {
-          let info = isDiffX ? peicePosArr[y][this.y] : peicePosArr[this.x][y]
+          let info = isDiffX ? PiecePosArr[y][this.y] : PiecePosArr[this.x][y]
           let p = isDiffX ? { x: y, y: this.y, disPos: notExistPoint } : { x: this.x, y, disPos: notExistPoint }
           if (!info || info.side !== this.side) {
             points.push(p)
@@ -191,46 +191,46 @@ export const ChariotPieceDefaultUtils: PeiceUtils = {
   drawMovePointList: defaultPieceMovePointDraw
 }
 // 马
-export const HorsePieceDefaultUtils: PeiceUtils = {
+export const HorsePieceDefaultUtils: PieceMethods = {
   move: defaultPieceMove,
   draw: defaultPieceDraw,
   drawMovePointList: defaultPieceMovePointDraw,
   getMovePointList(pl) {
     const mps: MovePointList = []
-    const peicePosArr = getPiecePointArr(pl)
+    const PiecePosArr = getPiecePointArr(pl)
     for (let index = 0; index < 2; index++) {
       // 左
       const lx = this.x - 2
       const ly = index * 2 + (this.y - 1)
-      movePointPush(0, 8, 0, 9, lx, ly, { x: this.x - 1, y: this.y }, peicePosArr, mps)
+      movePointPush(0, 8, 0, 9, lx, ly, { x: this.x - 1, y: this.y }, PiecePosArr, mps)
 
       // 右
       const rx = this.x + 2
       const ry = ly
-      movePointPush(0, 8, 0, 9, rx, ry, { x: this.x + 1, y: this.y }, peicePosArr, mps)
+      movePointPush(0, 8, 0, 9, rx, ry, { x: this.x + 1, y: this.y }, PiecePosArr, mps)
 
 
       // 上
       const tx = index * 2 + (this.x - 1)
       const ty = this.y - 2
-      movePointPush(0, 8, 0, 9, tx, ty, { x: this.x, y: this.y - 1 }, peicePosArr, mps)
+      movePointPush(0, 8, 0, 9, tx, ty, { x: this.x, y: this.y - 1 }, PiecePosArr, mps)
 
       // 下
       const bx = tx
       const by = this.y + 2
-      movePointPush(0, 8, 0, 9, bx, by, { x: this.x, y: this.y + 1 }, peicePosArr, mps)
+      movePointPush(0, 8, 0, 9, bx, by, { x: this.x, y: this.y + 1 }, PiecePosArr, mps)
 
     }
     return mps
   },
 }
 // 象
-export const ElephantPieceDefaultUtils: PeiceUtils = {
+export const ElephantPieceDefaultUtils: PieceMethods = {
   move: defaultPieceMove,
   draw: defaultPieceDraw,
   drawMovePointList: defaultPieceMovePointDraw,
   getMovePointList(pl) {
-    const mps: MovePointList = [], peicePosArr = getPiecePointArr(pl)
+    const mps: MovePointList = [], PiecePosArr = getPiecePointArr(pl)
     let isRed = this.side === "RED"
     let minY = isRed ? 0 : 5, maxY = isRed ? 9 : 4;
     for (let index = 0; index < 2; index++) {
@@ -239,20 +239,20 @@ export const ElephantPieceDefaultUtils: PeiceUtils = {
       const ty = this.y - 2
       const tdx = this.x - 1 + index * 2
       const tdy = this.y - 1
-      movePointPush(0, 8, minY, maxY, tx, ty, { x: tdx, y: tdy }, peicePosArr, mps)
+      movePointPush(0, 8, minY, maxY, tx, ty, { x: tdx, y: tdy }, PiecePosArr, mps)
 
       // 下
       const bx = this.x - 2 + index * 4
       const by = this.y + 2
       const bdx = tdx
       const bdy = this.y + 1
-      movePointPush(0, 8, minY, maxY, bx, by, { x: bdx, y: bdy }, peicePosArr, mps)
+      movePointPush(0, 8, minY, maxY, bx, by, { x: bdx, y: bdy }, PiecePosArr, mps)
     }
     return mps
   },
 }
 // 士
-export const GuardPieceDefaultUtils: PeiceUtils = {
+export const GuardPieceDefaultUtils: PieceMethods = {
   move: defaultPieceMove,
   draw: defaultPieceDraw,
   drawMovePointList: defaultPieceMovePointDraw,
@@ -275,7 +275,7 @@ export const GuardPieceDefaultUtils: PeiceUtils = {
   },
 }
 // 帅
-export const GeneralPieceDefaultUtils: PeiceUtils = {
+export const GeneralPieceDefaultUtils: PieceMethods = {
   move: defaultPieceMove,
   draw: defaultPieceDraw,
   drawMovePointList: defaultPieceMovePointDraw,
@@ -291,13 +291,13 @@ export const GeneralPieceDefaultUtils: PeiceUtils = {
   },
 }
 // 炮
-export const CannonPieceDefaultUtils: PeiceUtils = {
+export const CannonPieceDefaultUtils: PieceMethods = {
   draw: defaultPieceDraw,
   move: defaultPieceMove,
   drawMovePointList: defaultPieceMovePointDraw,
   getMovePointList(pl) {
     const points: MovePointList = []
-    let peicePosArr = getPiecePointArr(pl)
+    let PiecePosArr = getPiecePointArr(pl)
     let diffKey: ["x", "y"] = ["x", "y"], boundary = [[0, 8], [0, 9]]
     for (let index = 0; index < 2; index++) {
       const key = diffKey[index];
@@ -306,7 +306,7 @@ export const CannonPieceDefaultUtils: PeiceUtils = {
       while (minNum >= min || maxNum <= max) {
         let x = --minNum, y = ++maxNum;
         if (x >= min) {
-          let info = isDiffX ? peicePosArr[x][this.y] : peicePosArr[this.x][x]
+          let info = isDiffX ? PiecePosArr[x][this.y] : PiecePosArr[this.x][x]
           let p = isDiffX ? { x, y: this.y, disPos: notExistPoint } : { x: this.x, y: x, disPos: notExistPoint }
           if (!info) {
             points.push(p)
@@ -315,7 +315,7 @@ export const CannonPieceDefaultUtils: PeiceUtils = {
           let side = info.side
           let x1 = x - 1
           while (x1 >= min) {
-            let next = isDiffX ? peicePosArr[x1][this.y] : peicePosArr[this.x][x1]
+            let next = isDiffX ? PiecePosArr[x1][this.y] : PiecePosArr[this.x][x1]
             x1--
             if (!next) {
               continue
@@ -328,7 +328,7 @@ export const CannonPieceDefaultUtils: PeiceUtils = {
           minNum = min - 1
         }
         if (y <= max) {
-          let info = isDiffX ? peicePosArr[y][this.y] : peicePosArr[this.x][y]
+          let info = isDiffX ? PiecePosArr[y][this.y] : PiecePosArr[this.x][y]
           let p = isDiffX ? { x: y, y: this.y, disPos: notExistPoint } : { x: this.x, y, disPos: notExistPoint }
           if (!info) {
             points.push(p)
@@ -337,7 +337,7 @@ export const CannonPieceDefaultUtils: PeiceUtils = {
           let side = info.side
           let y1 = y + 1
           while (y1 <= max) {
-            let next = isDiffX ? peicePosArr[y1][this.y] : peicePosArr[this.x][y1]
+            let next = isDiffX ? PiecePosArr[y1][this.y] : PiecePosArr[this.x][y1]
             y1++
             if (!next) {
               continue
@@ -356,7 +356,7 @@ export const CannonPieceDefaultUtils: PeiceUtils = {
 }
 
 // 兵
-export const SoldierPieceDefaultUtils: PeiceUtils = {
+export const SoldierPieceDefaultUtils: PieceMethods = {
   move: defaultPieceMove,
   draw: defaultPieceDraw,
   drawMovePointList: defaultPieceMovePointDraw,

@@ -1,34 +1,33 @@
-import { PeiceList, Piece, defaultPieceDraw } from "./piece"
+import { PieceList, Piece } from "./piece"
 
 /**
  * 棋子双方
  */
-export type PeiceSide = "RED" | "BLACK"
+export type PieceSide = "RED" | "BLACK"
 
-export interface PeicePositonPoint {
+export interface PiecePositonPoint {
   x: number
   y: number
 }
 
-export interface PeiceInputInfo extends PeicePositonPoint, PeiceUtils {
+export interface PieceInputInfo extends PiecePositonPoint, PieceMethods {
   name: string
-  side: PeiceSide
+  side: PieceSide
   isChoose: boolean
-  draw: typeof defaultPieceDraw
   isLastMove: boolean
 }
 
 
-export interface PeiceUtils {
-  draw: typeof defaultPieceDraw
-  move: (this: Piece, pos: MovePoint | PeicePositonPoint, peiceList: PeiceList) => MoveResult
-  getMovePointList: (this: Piece, pl: PeiceList) => MovePointList
-  drawMovePointList: (this: Piece, pl: PeiceList, startX: number, startY: number, width: number, height: number, radius: number, color: string, ctx: CanvasRenderingContext2D) => void
+export interface PieceMethods {
+  draw: (this: Piece, startX: number, startY: number, endX: number, endY: number, ctx?: CanvasRenderingContext2D) => void
+  move: (this: Piece, pos: MovePoint | PiecePositonPoint, PieceList: PieceList) => MoveResult
+  getMovePointList: (this: Piece, pl: PieceList) => MovePointList
+  drawMovePointList: (this: Piece, pl: PieceList, startX: number, startY: number, width: number, height: number, radius: number, color: string, ctx: CanvasRenderingContext2D) => void
 }
 
 
-export type MovePoint = PeicePositonPoint & {
-  disPos: PeicePositonPoint
+export type MovePoint = PiecePositonPoint & {
+  disPos: PiecePositonPoint
 }
 
 
