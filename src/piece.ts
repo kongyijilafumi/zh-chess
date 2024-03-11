@@ -16,10 +16,9 @@ export class Piece implements PieceInputInfo {
   y: number;
   isChoose: boolean;
   isLastMove: boolean;
-  draw: typeof defaultPieceDraw;
+  draw: (this: Piece, x: number, y: number, radius: number, ctx?: CanvasRenderingContext2D | undefined) => void;
   move: (this: Piece, pos: PiecePositonPoint | MovePoint, PieceList: PieceList) => MoveResult;
   getMovePointList: (this: Piece, pl: PieceList) => MovePointList;
-  drawMovePointList: (this: Piece, pl: PieceList, startX: number, startY: number, width: number, height: number, radius: number, color: string, ctx: CanvasRenderingContext2D) => void;
   constructor(pieceInfo: PieceInputInfo) {
     if (!pieceInfo) {
       throw Error("请输入正确初始化棋子信息")
@@ -33,7 +32,6 @@ export class Piece implements PieceInputInfo {
     this.isLastMove = pieceInfo.isLastMove
     this.move = pieceInfo.move
     this.getMovePointList = pieceInfo.getMovePointList
-    this.drawMovePointList = pieceInfo.drawMovePointList
   }
   getInfo(): PieceCurrentInfo {
     return {
@@ -55,20 +53,20 @@ export class Piece implements PieceInputInfo {
 }
 export type PieceList = Piece[]
 
-export function defaultPieceDraw(this: Piece, startX: number, startY: number, endX: number, endY: number, ctx?: CanvasRenderingContext2D) {
+export function defaultPieceDraw(this: Piece, x: number, y: number, radius: number, ctx?: CanvasRenderingContext2D) {
   if (ctx) {
-    let centerX = (startX + endX) / 2, centerY = (startY + endY) / 2, radius = (endX - startX) / 2;
-    let borderColor = this.isChoose ? '#fdec9e' : "ff0000"
-    let textColor = this.side === "RED" ? "#ff000" : "#000"
+    let borderColor = this.isChoose ? '#ff0000' : "#000"
+    let textColor = this.side === "RED" ? "#ff0000" : "#000"
     if (this.isChoose || this.isLastMove) {
       radius = radius / 0.9
     }
-    drawPieceBackground(centerX, centerY, radius, "#fdec9e", "#000", ctx)
+    drawPieceBackground(x, y, radius, "#fdec9e", "#000", ctx)
     // clear shadow
     clearShadow(ctx)
-    drawPieceBoder(centerX, centerY, radius, 0, Math.PI * 2, borderColor, ctx)
-    drawPieceBoder(centerX, centerY, radius - 3, 0, Math.PI * 2, borderColor, ctx)
-    drawPieceText(centerX, centerY, "12px yahei", this.name, textColor, "center", "middle", ctx)
+
+    drawPieceBoder(x, y, radius, 0, Math.PI * 2, borderColor, ctx)
+    drawPieceBoder(x, y, radius - 3, 0, Math.PI * 2, borderColor, ctx)
+    drawPieceText(x, y, "12px yahei", this.name, textColor, "center", "middle", ctx)
   }
 }
 export const drawPieceBackground = (x: number, y: number, radius: number, bgColor: string, shadowColor: string, ctx: CanvasRenderingContext2D) => {
@@ -104,23 +102,18 @@ export const drawPieceBoder = (x: number, y: number, radius: number, startAngle:
   ctx.closePath();
   ctx.stroke();
 }
-export const drawMovePointList = (x: number, y: number, radius: number, color: string, ctx: CanvasRenderingContext2D) => {
-  ctx.fillStyle = color
-  ctx.beginPath();
-  ctx.arc(x, y, radius * .25, 0, 2 * Math.PI);
-  ctx.closePath();
-  ctx.fill()
+export const drawMovePoint = (x: number, y: number, radius: number, color: string, ctx?: CanvasRenderingContext2D) => {
+  if (ctx) {
+    ctx.fillStyle = color
+    ctx.beginPath();
+    ctx.arc(x, y, radius * .25, 0, 2 * Math.PI);
+    ctx.closePath();
+    ctx.fill()
+  }
 }
 export const notExistPoint: PiecePositonPoint = {
   x: 999,
   y: 999
-}
-export function defaultPieceMovePointDraw(this: Piece, pl: PieceList, startX: number, startY: number, width: number, height: number, radius: number, color: string, ctx: CanvasRenderingContext2D) {
-  this.getMovePointList(pl).forEach(p => {
-    let x = startX + width * p.x
-    let y = startY + height * p.y
-    drawMovePointList(x, y, radius, color, ctx)
-  })
 }
 
 export function defaultPieceMove(this: Piece, pos: PiecePositonPoint | MovePoint, pl: PieceList): MoveResult {
@@ -151,7 +144,7 @@ export function getPiecePointArr(pl: PieceList) {
   return arr
 }
 // 车
-export const ChariotPieceDefaultUtils: PieceMethods = {
+export const ChariotPieceDefaultMethods: PieceMethods = {
   draw: defaultPieceDraw,
   getMovePointList(pl) {
     const points: MovePointList = []
@@ -188,13 +181,11 @@ export const ChariotPieceDefaultUtils: PieceMethods = {
     return points
   },
   move: defaultPieceMove,
-  drawMovePointList: defaultPieceMovePointDraw
 }
 // 马
-export const HorsePieceDefaultUtils: PieceMethods = {
+export const HorsePieceDefaultMethods: PieceMethods = {
   move: defaultPieceMove,
   draw: defaultPieceDraw,
-  drawMovePointList: defaultPieceMovePointDraw,
   getMovePointList(pl) {
     const mps: MovePointList = []
     const PiecePosArr = getPiecePointArr(pl)
@@ -225,10 +216,9 @@ export const HorsePieceDefaultUtils: PieceMethods = {
   },
 }
 // 象
-export const ElephantPieceDefaultUtils: PieceMethods = {
+export const ElephantPieceDefaultMethods: PieceMethods = {
   move: defaultPieceMove,
   draw: defaultPieceDraw,
-  drawMovePointList: defaultPieceMovePointDraw,
   getMovePointList(pl) {
     const mps: MovePointList = [], PiecePosArr = getPiecePointArr(pl)
     let isRed = this.side === "RED"
@@ -252,10 +242,9 @@ export const ElephantPieceDefaultUtils: PieceMethods = {
   },
 }
 // 士
-export const GuardPieceDefaultUtils: PieceMethods = {
+export const GuardPieceDefaultMethods: PieceMethods = {
   move: defaultPieceMove,
   draw: defaultPieceDraw,
-  drawMovePointList: defaultPieceMovePointDraw,
   getMovePointList() {
     const mps: MovePointList = []
       , isRed = this.side === "RED"
@@ -275,10 +264,9 @@ export const GuardPieceDefaultUtils: PieceMethods = {
   },
 }
 // 帅
-export const GeneralPieceDefaultUtils: PieceMethods = {
+export const GeneralPieceDefaultMethods: PieceMethods = {
   move: defaultPieceMove,
   draw: defaultPieceDraw,
-  drawMovePointList: defaultPieceMovePointDraw,
   getMovePointList() {
     const mps: MovePointList = []
       , isRed = this.side === "RED"
@@ -291,10 +279,9 @@ export const GeneralPieceDefaultUtils: PieceMethods = {
   },
 }
 // 炮
-export const CannonPieceDefaultUtils: PieceMethods = {
+export const CannonPieceDefaultMethods: PieceMethods = {
   draw: defaultPieceDraw,
   move: defaultPieceMove,
-  drawMovePointList: defaultPieceMovePointDraw,
   getMovePointList(pl) {
     const points: MovePointList = []
     let PiecePosArr = getPiecePointArr(pl)
@@ -356,10 +343,9 @@ export const CannonPieceDefaultUtils: PieceMethods = {
 }
 
 // 兵
-export const SoldierPieceDefaultUtils: PieceMethods = {
+export const SoldierPieceDefaultMethods: PieceMethods = {
   move: defaultPieceMove,
   draw: defaultPieceDraw,
-  drawMovePointList: defaultPieceMovePointDraw,
   getMovePointList() {
     const mps: MovePointList = [],
       isCross = this.side === "RED" ? (this.y <= 4) : (this.y >= 5),
@@ -372,4 +358,3 @@ export const SoldierPieceDefaultUtils: PieceMethods = {
     return mps
   },
 }
-
