@@ -138,7 +138,7 @@ export function getBoardMatrix(pl: PieceList) {
   for (let index = 0; index < 9; index++) {
     arr[index] = []
     for (let j = 0; j < 10; j++) {
-      arr[index] = [null]
+      arr[index][j] = null
     }
   }
   pl.forEach(item => {
@@ -300,44 +300,46 @@ export const CannonPieceDefaultMethods: PieceMethods = {
           let p = isDiffX ? { x, y: this.y, disPos: notExistPoint } : { x: this.x, y: x, disPos: notExistPoint }
           if (!info) {
             points.push(p)
-            continue
-          }
-          let side = info.side
-          let x1 = x - 1
-          while (x1 >= min) {
-            let next = isDiffX ? boardMatrix[x1][this.y] : boardMatrix[this.x][x1]
-            x1--
-            if (!next) {
-              continue
+          } else {
+            let side = info.side
+            let x1 = x - 1
+            while (x1 >= min) {
+              let next = isDiffX ? boardMatrix[x1][this.y] : boardMatrix[this.x][x1]
+              x1--
+              if (!next) {
+                continue
+              }
+              if ((next.side !== side && this.side === side) || (this.side !== side && next.side === side)) {
+                points.push({ x: next.x, y: next.y, disPos: notExistPoint })
+              }
+              break
             }
-            if (next.side === side) {
-              points.push({ x: next.x, y: next.y, disPos: notExistPoint })
-            }
-            break
+            minNum = min - 1
           }
-          minNum = min - 1
+
         }
         if (y <= max) {
           let info = isDiffX ? boardMatrix[y][this.y] : boardMatrix[this.x][y]
           let p = isDiffX ? { x: y, y: this.y, disPos: notExistPoint } : { x: this.x, y, disPos: notExistPoint }
           if (!info) {
             points.push(p)
-            continue
-          }
-          let side = info.side
-          let y1 = y + 1
-          while (y1 <= max) {
-            let next = isDiffX ? boardMatrix[y1][this.y] : boardMatrix[this.x][y1]
-            y1++
-            if (!next) {
-              continue
+          } else {
+            let side = info.side
+            let y1 = y + 1
+            while (y1 <= max) {
+              let next = isDiffX ? boardMatrix[y1][this.y] : boardMatrix[this.x][y1]
+              y1++
+              if (!next) {
+                continue
+              }
+              if ((next.side !== side && this.side === side) || (this.side !== side && next.side === side)) {
+                points.push({ x: next.x, y: next.y, disPos: notExistPoint })
+              }
+              break
             }
-            if (next.side === side) {
-              points.push({ x: next.x, y: next.y, disPos: notExistPoint })
-            }
-            break
+            maxNum = max + 1
           }
-          maxNum = max + 1
+
         }
       }
     }
