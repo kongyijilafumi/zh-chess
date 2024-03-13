@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>demo</title>
+  <script src="../dist/zh-chess.browser.min.js"></script>
+</head>
+
+<body>
+  <canvas id="ctx" width="400" height="400"></canvas>
+  <hr>
+  <h2>控制</h2>
+  <div>
+    <button id="changeSide">切换视角</button>
+  </div>
+  <script>
+    console.log(ZhChess)
+    const { Piece, Board, CannonPieceDefaultMethods, ChariotPieceDefaultMethods, ElephantPieceDefaultMethods, GeneralPieceDefaultMethods, GuardPieceDefaultMethods, HorsePieceDefaultMethods,
+      SoldierPieceDefaultMethods,
+    } = ZhChess
+
+    const ctx = document.querySelector("#ctx").getContext('2d')
+    const bd = new Board({
+      width: 400, height: 400, padding: 30, viewSide: "RED", scaleRatio: 1, context: ctx
+    })
+    let pieceImg = new Image()
+    pieceImg.src = "./piece.png"
+
+    const pieceList = [
+      new Piece({
+        x: 1,
+        y: 0,
+        name: "车",
+        side: "RED",
+        isChoose: true,
+        isLastMove: false,
+        ...HorsePieceDefaultMethods,
+        draw(x, y, r, ctx) {
+          if (ctx) {
+            if (this.isChoose || this.isLastMove) {
+              r = r / 0.9
+            }
+
+            let w = pieceImg.naturalWidth, h = pieceImg.naturalHeight
+            console.log(w, h, x - r, y - r, r * 2, r * 2);
+
+            ctx.drawImage(pieceImg, 0, 0, w, h, x - r, y - r, r * 2, r * 2)
+
+          }
+
+        }
+      }),
+      new Piece({
+        x: 1,
+        y: 2,
+        name: "车",
+        side: "BLACK",
+        isChoose: false,
+        isLastMove: false,
+        ...HorsePieceDefaultMethods
+      }),
+      new Piece({
+        x: 3,
+        y: 2,
+        name: "马",
+        side: "BLACK",
+        isChoose: false,
+        isLastMove: true,
+        ...HorsePieceDefaultMethods
+      })
+    ]
+    bd.setPieceList(pieceList)
+    pieceImg.onload = () => {
+      bd.draw()
+    }
+    document.querySelector("#changeSide").addEventListener("click", () => {
+      bd.changeViewSide(bd.viewSide === "RED" ? "BLACK" : "RED")
+      bd.draw()
+    })
+  </script>
+</body>
+
+</html>

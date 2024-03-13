@@ -208,7 +208,7 @@ export default function App() {
 
  `GameInfo Properties`
 
-* blackPeiceBackground?: string 黑棋子背景色 默认：`#fdec9e`
+* blackPieceBackground?: string 黑棋子背景色 默认：`#fdec9e`
 * checkerboardBackground?: string 棋盘背景色  默认：`#faebd7`
 * ctx?: CanvasRenderingContext2D 画布 
 
@@ -220,7 +220,7 @@ export default function App() {
 * gamePadding?: number 游戏内边距大小距离棋盘 默认:`20`
 * gameWidth?: number 游戏窗口宽度大小 默认：`800`
 * movePointColor?: string 绘画可移动点的颜色 默认：`#25dd2a`
-* redPeiceBackground?: string 红棋子背景色 默认：`#feeca0`
+* redPieceBackground?: string 红棋子背景色 默认：`#feeca0`
 * scaleRatio?: number 画布缩放大小 默认：`1` (用于移动端，解决画布模糊问题)
 
 #### Properties
@@ -361,9 +361,9 @@ game.moveStr("车1进1", "RED") // 红方 车1进1 返回 { flag:true } 或者 {
 
 游戏监听事件
 
-* e为`move`时，fn函数的参数有 `(peice: ChessOfPeice, cp: CheckPoint, enemyhasTrouble: boolean)`
+* e为`move`时，fn函数的参数有 `(Piece: ChessOfPiece, cp: CheckPoint, enemyhasTrouble: boolean)`
 
-* e为`moveFail`时，fn函数的参数有`(peice: ChessOfPeice, p: Point, currentSideDanger: boolean, msg: string)`
+* e为`moveFail`时，fn函数的参数有`(Piece: ChessOfPiece, p: Point, currentSideDanger: boolean, msg: string)`
 
 * e为`log`时，fn函数的参数有`(str: any)`
 
@@ -399,6 +399,6 @@ game.moveStr("车1进1", "RED") // 红方 车1进1 返回 { flag:true } 或者 {
 const ctx = document.getElementById("canvas").getContext("2d")
 const game = new ZhChess({})
 game.gameStart("RED")
-game.updateAsync(pos, mov, side, true, (posPeice, newPoint) => console.log(posPeice, newPoint)) // 每次运动都去绘画一次
-game.updateAsync(pos, mov, side, false, (posPeice, newPoint) => game.draw(ctx)) // 每次运动 自己去调用游戏绘画
+game.updateAsync(pos, mov, side, true, (posPiece, newPoint) => console.log(posPiece, newPoint)) // 每次运动都去绘画一次
+game.updateAsync(pos, mov, side, false, (posPiece, newPoint) => game.draw(ctx)) // 每次运动 自己去调用游戏绘画
 ```
