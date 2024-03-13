@@ -1,5 +1,4 @@
-import { moveFailMessage } from "./rule";
-import { MovePoint, MovePointList, MoveResult, PieceInputInfo, PiecePositonPoint, PieceSide, PieceMethods } from "./types";
+import { MovePoint, MovePointList, MoveResult, PieceInputInfo, PiecePositonPoint, PieceSide, PieceMethods, BoardMatrix } from "./types";
 
 export interface PieceCurrentInfo {
   side: PieceSide;
@@ -8,6 +7,7 @@ export interface PieceCurrentInfo {
   y: number;
   isChoose: boolean;
   isLastMove: boolean;
+  isGeneral: boolean
 }
 export class Piece implements PieceInputInfo {
   name: string;
@@ -16,6 +16,7 @@ export class Piece implements PieceInputInfo {
   y: number;
   isChoose: boolean;
   isLastMove: boolean;
+  isGeneral: boolean;
   draw: (this: Piece, x: number, y: number, radius: number, ctx?: CanvasRenderingContext2D | undefined) => void;
   move: (this: Piece, pos: PiecePositonPoint | MovePoint, PieceList: PieceList) => MoveResult;
   getMovePointList: (this: Piece, pl: PieceList) => MovePointList;
@@ -26,6 +27,7 @@ export class Piece implements PieceInputInfo {
     this.draw = pieceInfo.draw || defaultPieceDraw
     this.name = pieceInfo.name
     this.side = pieceInfo.side
+    this.isGeneral = pieceInfo.isGeneral
     this.isChoose = pieceInfo.isChoose
     this.x = pieceInfo.x
     this.y = pieceInfo.y
@@ -40,7 +42,8 @@ export class Piece implements PieceInputInfo {
       x: this.x,
       y: this.y,
       isChoose: this.isChoose,
-      isLastMove: this.isLastMove
+      isLastMove: this.isLastMove,
+      isGeneral: this.isGeneral
     }
   }
   update(x: number, y: number) {
@@ -122,7 +125,7 @@ export function defaultPieceMove(this: Piece, pos: PiecePositonPoint | MovePoint
   if (find) {
     return { flag: true }
   }
-  return moveFailMessage()
+  return { flag: false, message: "走法错误：移动位置不符合规则" }
 }
 export const movePointPush = (pointMinX: number, pointMaxX: number, pointMinY: number, pointMaxY: number, x: number, y: number, disPos: PiecePositonPoint, pl: (PieceCurrentInfo | null)[][], arr: MovePointList) => {
   if (x > pointMaxX || x < pointMinX || y < pointMinY || y > pointMaxY || (pl[disPos.x] && pl[disPos.x][disPos.y])) {
@@ -130,8 +133,8 @@ export const movePointPush = (pointMinX: number, pointMaxX: number, pointMinY: n
   }
   arr.push({ x, y, disPos })
 }
-export function getPiecePointArr(pl: PieceList) {
-  let arr: Array<Array<null | PieceCurrentInfo>> = []
+export function getBoardMatrix(pl: PieceList) {
+  let arr: BoardMatrix = []
   for (let index = 0; index < 9; index++) {
     arr[index] = []
     for (let j = 0; j < 10; j++) {
@@ -139,7 +142,7 @@ export function getPiecePointArr(pl: PieceList) {
     }
   }
   pl.forEach(item => {
-    arr[item.x][item.y] = item.getInfo()
+    arr[item.x][item.y] = item
   })
   return arr
 }
@@ -148,7 +151,7 @@ export const ChariotPieceDefaultMethods: PieceMethods = {
   draw: defaultPieceDraw,
   getMovePointList(pl) {
     const points: MovePointList = []
-    let PiecePosArr = getPiecePointArr(pl)
+    let boardMatrix = getBoardMatrix(pl)
     let diffKey: ["x", "y"] = ["x", "y"], boundary = [[0, 8], [0, 9]]
     for (let index = 0; index < 2; index++) {
       const key = diffKey[index];
@@ -157,7 +160,7 @@ export const ChariotPieceDefaultMethods: PieceMethods = {
       while (minNum >= min || maxNum <= max) {
         let x = --minNum, y = ++maxNum;
         if (x >= min) {
-          let info = isDiffX ? PiecePosArr[x][this.y] : PiecePosArr[this.x][x]
+          let info = isDiffX ? boardMatrix[x][this.y] : boardMatrix[this.x][x]
           let p = isDiffX ? { x, y: this.y, disPos: notExistPoint } : { x: this.x, y: x, disPos: notExistPoint }
           if (!info || info.side !== this.side) {
             points.push(p)
@@ -167,7 +170,7 @@ export const ChariotPieceDefaultMethods: PieceMethods = {
           }
         }
         if (y <= max) {
-          let info = isDiffX ? PiecePosArr[y][this.y] : PiecePosArr[this.x][y]
+          let info = isDiffX ? boardMatrix[y][this.y] : boardMatrix[this.x][y]
           let p = isDiffX ? { x: y, y: this.y, disPos: notExistPoint } : { x: this.x, y, disPos: notExistPoint }
           if (!info || info.side !== this.side) {
             points.push(p)
@@ -188,28 +191,28 @@ export const HorsePieceDefaultMethods: PieceMethods = {
   draw: defaultPieceDraw,
   getMovePointList(pl) {
     const mps: MovePointList = []
-    const PiecePosArr = getPiecePointArr(pl)
+    const boardMatrix = getBoardMatrix(pl)
     for (let index = 0; index < 2; index++) {
       // 左
       const lx = this.x - 2
       const ly = index * 2 + (this.y - 1)
-      movePointPush(0, 8, 0, 9, lx, ly, { x: this.x - 1, y: this.y }, PiecePosArr, mps)
+      movePointPush(0, 8, 0, 9, lx, ly, { x: this.x - 1, y: this.y }, boardMatrix, mps)
 
       // 右
       const rx = this.x + 2
       const ry = ly
-      movePointPush(0, 8, 0, 9, rx, ry, { x: this.x + 1, y: this.y }, PiecePosArr, mps)
+      movePointPush(0, 8, 0, 9, rx, ry, { x: this.x + 1, y: this.y }, boardMatrix, mps)
 
 
       // 上
       const tx = index * 2 + (this.x - 1)
       const ty = this.y - 2
-      movePointPush(0, 8, 0, 9, tx, ty, { x: this.x, y: this.y - 1 }, PiecePosArr, mps)
+      movePointPush(0, 8, 0, 9, tx, ty, { x: this.x, y: this.y - 1 }, boardMatrix, mps)
 
       // 下
       const bx = tx
       const by = this.y + 2
-      movePointPush(0, 8, 0, 9, bx, by, { x: this.x, y: this.y + 1 }, PiecePosArr, mps)
+      movePointPush(0, 8, 0, 9, bx, by, { x: this.x, y: this.y + 1 }, boardMatrix, mps)
 
     }
     return mps
@@ -220,7 +223,7 @@ export const ElephantPieceDefaultMethods: PieceMethods = {
   move: defaultPieceMove,
   draw: defaultPieceDraw,
   getMovePointList(pl) {
-    const mps: MovePointList = [], PiecePosArr = getPiecePointArr(pl)
+    const mps: MovePointList = [], boardMatrix = getBoardMatrix(pl)
     let isRed = this.side === "RED"
     let minY = isRed ? 0 : 5, maxY = isRed ? 9 : 4;
     for (let index = 0; index < 2; index++) {
@@ -229,14 +232,14 @@ export const ElephantPieceDefaultMethods: PieceMethods = {
       const ty = this.y - 2
       const tdx = this.x - 1 + index * 2
       const tdy = this.y - 1
-      movePointPush(0, 8, minY, maxY, tx, ty, { x: tdx, y: tdy }, PiecePosArr, mps)
+      movePointPush(0, 8, minY, maxY, tx, ty, { x: tdx, y: tdy }, boardMatrix, mps)
 
       // 下
       const bx = this.x - 2 + index * 4
       const by = this.y + 2
       const bdx = tdx
       const bdy = this.y + 1
-      movePointPush(0, 8, minY, maxY, bx, by, { x: bdx, y: bdy }, PiecePosArr, mps)
+      movePointPush(0, 8, minY, maxY, bx, by, { x: bdx, y: bdy }, boardMatrix, mps)
     }
     return mps
   },
@@ -284,7 +287,7 @@ export const CannonPieceDefaultMethods: PieceMethods = {
   move: defaultPieceMove,
   getMovePointList(pl) {
     const points: MovePointList = []
-    let PiecePosArr = getPiecePointArr(pl)
+    let boardMatrix = getBoardMatrix(pl)
     let diffKey: ["x", "y"] = ["x", "y"], boundary = [[0, 8], [0, 9]]
     for (let index = 0; index < 2; index++) {
       const key = diffKey[index];
@@ -293,7 +296,7 @@ export const CannonPieceDefaultMethods: PieceMethods = {
       while (minNum >= min || maxNum <= max) {
         let x = --minNum, y = ++maxNum;
         if (x >= min) {
-          let info = isDiffX ? PiecePosArr[x][this.y] : PiecePosArr[this.x][x]
+          let info = isDiffX ? boardMatrix[x][this.y] : boardMatrix[this.x][x]
           let p = isDiffX ? { x, y: this.y, disPos: notExistPoint } : { x: this.x, y: x, disPos: notExistPoint }
           if (!info) {
             points.push(p)
@@ -302,7 +305,7 @@ export const CannonPieceDefaultMethods: PieceMethods = {
           let side = info.side
           let x1 = x - 1
           while (x1 >= min) {
-            let next = isDiffX ? PiecePosArr[x1][this.y] : PiecePosArr[this.x][x1]
+            let next = isDiffX ? boardMatrix[x1][this.y] : boardMatrix[this.x][x1]
             x1--
             if (!next) {
               continue
@@ -315,7 +318,7 @@ export const CannonPieceDefaultMethods: PieceMethods = {
           minNum = min - 1
         }
         if (y <= max) {
-          let info = isDiffX ? PiecePosArr[y][this.y] : PiecePosArr[this.x][y]
+          let info = isDiffX ? boardMatrix[y][this.y] : boardMatrix[this.x][y]
           let p = isDiffX ? { x: y, y: this.y, disPos: notExistPoint } : { x: this.x, y, disPos: notExistPoint }
           if (!info) {
             points.push(p)
@@ -324,7 +327,7 @@ export const CannonPieceDefaultMethods: PieceMethods = {
           let side = info.side
           let y1 = y + 1
           while (y1 <= max) {
-            let next = isDiffX ? PiecePosArr[y1][this.y] : PiecePosArr[this.x][y1]
+            let next = isDiffX ? boardMatrix[y1][this.y] : boardMatrix[this.x][y1]
             y1++
             if (!next) {
               continue
