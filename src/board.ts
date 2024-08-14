@@ -1,10 +1,10 @@
 import { Piece, PieceList, drawMovePoint, getBoardMatrix } from "./piece"
-import { checkChessPieceMovement, checkWillCauseSelf } from "./rule"
-import { BoardInfo, MoveResult, MoveType, PiecePositonPoint, PieceSide } from "./types"
+import { checkChessPieceMovement, checkInTroubleHasSolution, checkWillCauseSelf } from "./rule"
+import { BoardInfo, MoveResult, PiecePositonPoint, PieceSide } from "./types"
 
 
 
-export class Board {
+export class ChessBoard {
   context?: CanvasRenderingContext2D
   width: number
   height: number
@@ -31,7 +31,7 @@ export class Board {
   getPieceRadius(padding: number) {
     let cell = (this.width - 2 * padding) / 9 / 2, row = (this.height - 2 * padding) / 10 / 2;
     // 给每个棋子留出间隙
-    return (cell > row ? row : cell) * 0.9
+    return Math.floor((cell > row ? row : cell) * 0.9)
   }
   getPieceViewPostion(x: number, y: number): PiecePositonPoint {
     if (this.viewSide === "RED") {
@@ -44,6 +44,7 @@ export class Board {
   }
   changeViewSide(side: PieceSide) {
     this.viewSide = side
+    this.draw()
   }
   draw() {
     this.drawBackground()
@@ -191,22 +192,57 @@ export class Board {
   setPieceList(pl: PieceList) {
     this.pieceList = pl
   }
-  update(mov: PiecePositonPoint, pos: PiecePositonPoint): MoveResult {
-    const boardMatrix = getBoardMatrix(this.pieceList)
-    let movPiece = boardMatrix[mov.x][mov.y], posPiece = boardMatrix[pos.x][pos.y]
-    const movementResult = checkChessPieceMovement(movPiece, pos, this.pieceList)
+  update(piece: Piece, pos: PiecePositonPoint): MoveResult {
+    const movementResult = checkChessPieceMovement(piece, pos, this.pieceList)
     if (!movementResult.flag) {
       return movementResult
     }
-    let moveType: MoveType = "MOVE"
-    if (posPiece) {
-      moveType = "EAT"
-    }
-    const causeSelf = checkWillCauseSelf(movPiece, pos, this.pieceList)
+
+    const causeSelf = checkWillCauseSelf(piece, pos, this.pieceList)
     if (!causeSelf.flag) {
       return causeSelf
     }
     return { flag: true }
+  }
+  move(mov: PiecePositonPoint, pos?: PiecePositonPoint) {
+    const boardMatrix = getBoardMatrix(this.pieceList)
+    const piece = boardMatrix[mov.x][mov.y]
+    let check = this.checkMove(piece, pos)
+    if (!piece || !check) {
+      return
+    }
+    if (!pos) {
+      this.pieceList.forEach(p => {
+        p.setChoose(false)
+      })
+      piece.setChoose(true)
+      this.draw()
+      return
+    }
+    const posPiece = boardMatrix[pos.x][pos.y]
+    if (posPiece) {
+      this.pieceList = this.pieceList.filter(p => !(p.x === posPiece.x && p.y === posPiece.y))
+    }
+
+    piece.setChoose(false)
+    piece.setLast(true)
+    piece.update(pos.x, pos.y)
+    const hassolution = checkInTroubleHasSolution(piece.side === "BLACK" ? "RED" : "BLACK", this.pieceList)
+    console.log("hassolution,", hassolution)
+    this.draw()
+  }
+  checkMove(movPiece: Piece | null, pos?: PiecePositonPoint) {
+    if (!movPiece) {
+      return false
+    }
+    if (!pos) {
+      return true
+    }
+    const updateResult = this.update(movPiece, pos)
+    if (!updateResult.flag) {
+      return false
+    }
+    return true
   }
 }
 
@@ -217,4 +253,8 @@ export function getSquarePoints(lt: PiecePositonPoint, width: number, height: nu
     { x: width + lt.x, y: lt.y + height },
     { x: lt.x, y: lt.y + height },
   ]
+}
+
+export function getSideMove() {
+  
 }

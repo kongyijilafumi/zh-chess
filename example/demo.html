@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>demo</title>
-  <script src="../dist/zh-chess.browser.min.js"></script>
+  <script src="../dist/zh-chess.browser.js"></script>
 </head>
 
 <body>
@@ -16,68 +16,68 @@
     <button id="changeSide">切换视角</button>
   </div>
   <script>
+  </script>
+  <script>
     console.log(ZhChess)
-    const { Piece, Board, CannonPieceDefaultMethods, ChariotPieceDefaultMethods, ElephantPieceDefaultMethods, GeneralPieceDefaultMethods, GuardPieceDefaultMethods, HorsePieceDefaultMethods,
+    const { Piece, ChessBoard,
+      CannonPieceDefaultMethods,
+      ChariotPieceDefaultMethods,
+      ElephantPieceDefaultMethods,
+      GeneralPieceDefaultMethods,
+      GuardPieceDefaultMethods,
+      HorsePieceDefaultMethods,
       SoldierPieceDefaultMethods,
     } = ZhChess
-
+    const p2 = [
+      new Piece({ isGeneral: true, isChoose: false, side: 'BLACK', name: '将', x: 5, y: 0, isLastMove: false, ...GeneralPieceDefaultMethods }),
+      new Piece({ isGeneral: false, isChoose: false, side: 'RED', name: '车', x: 4, y: 6, isLastMove: false, ...ChariotPieceDefaultMethods }),
+      new Piece({ isGeneral: false, isChoose: false, side: 'RED', name: '马', x: 5, y: 4, isLastMove: false, ...HorsePieceDefaultMethods }),
+      new Piece({ isGeneral: true, isChoose: false, side: 'RED', name: '帅', x: 4, y: 9, isLastMove: false, ...GeneralPieceDefaultMethods })
+    ]
+    const plData = [
+      new Piece({ "x": 0, "y": 0, "name": "車", "side": "BLACK", "isChoose": false, "isLastMove": false, ...ChariotPieceDefaultMethods }),
+      new Piece({ "x": 1, "y": 0, "name": "馬", "side": "BLACK", "isChoose": false, "isLastMove": false, ...HorsePieceDefaultMethods }),
+      new Piece({ "x": 2, "y": 0, "name": "象", "side": "BLACK", "isChoose": false, "isLastMove": false, ...ElephantPieceDefaultMethods }),
+      new Piece({ "x": 3, "y": 0, "name": "仕", "side": "BLACK", "isChoose": false, "isLastMove": false, ...GuardPieceDefaultMethods }),
+      new Piece({ "x": 4, "y": 0, "name": "将", "side": "BLACK", "isChoose": false, "isLastMove": false, isGeneral: true, ...GeneralPieceDefaultMethods }),
+      new Piece({ "x": 5, "y": 0, "name": "仕", "side": "BLACK", "isChoose": false, "isLastMove": false, ...GuardPieceDefaultMethods }),
+      new Piece({ "x": 6, "y": 0, "name": "象", "side": "BLACK", "isChoose": false, "isLastMove": false, ...ElephantPieceDefaultMethods }),
+      new Piece({ "x": 7, "y": 0, "name": "馬", "side": "BLACK", "isChoose": false, "isLastMove": false, ...HorsePieceDefaultMethods }),
+      new Piece({ "x": 8, "y": 0, "name": "車", "side": "BLACK", "isChoose": false, "isLastMove": false, ...ChariotPieceDefaultMethods }),
+      new Piece({ "x": 1, "y": 2, "name": "砲", "side": "BLACK", "isChoose": false, "isLastMove": false, ...CannonPieceDefaultMethods }),
+      new Piece({ "x": 7, "y": 2, "name": "砲", "side": "BLACK", "isChoose": false, "isLastMove": false, ...CannonPieceDefaultMethods }),
+      new Piece({ "x": 0, "y": 3, "name": "卒", "side": "BLACK", "isChoose": false, "isLastMove": false, ...SoldierPieceDefaultMethods }),
+      new Piece({ "x": 2, "y": 3, "name": "卒", "side": "BLACK", "isChoose": false, "isLastMove": false, ...SoldierPieceDefaultMethods }),
+      new Piece({ "x": 4, "y": 5, "name": "卒", "side": "BLACK", "isChoose": false, "isLastMove": false, ...SoldierPieceDefaultMethods }),
+      new Piece({ "x": 6, "y": 3, "name": "卒", "side": "BLACK", "isChoose": false, "isLastMove": false, ...SoldierPieceDefaultMethods }),
+      new Piece({ "x": 8, "y": 3, "name": "卒", "side": "BLACK", "isChoose": false, "isLastMove": false, ...SoldierPieceDefaultMethods }),
+      new Piece({ "x": 0, "y": 6, "name": "兵", "side": "RED", "isChoose": false, "isLastMove": false, ...SoldierPieceDefaultMethods }),
+      new Piece({ "x": 2, "y": 6, "name": "兵", "side": "RED", "isChoose": false, "isLastMove": false, ...SoldierPieceDefaultMethods }),
+      new Piece({ "x": 4, "y": 6, "name": "兵", "side": "RED", "isChoose": false, "isLastMove": false, ...SoldierPieceDefaultMethods }),
+      new Piece({ "x": 6, "y": 6, "name": "兵", "side": "RED", "isChoose": false, "isLastMove": false, ...SoldierPieceDefaultMethods }),
+      new Piece({ "x": 8, "y": 6, "name": "兵", "side": "RED", "isChoose": false, "isLastMove": false, ...SoldierPieceDefaultMethods }),
+      new Piece({ "x": 4, "y": 7, "name": "炮", "side": "RED", "isChoose": true, "isLastMove": false, ...CannonPieceDefaultMethods }),
+      new Piece({ "x": 7, "y": 7, "name": "炮", "side": "RED", "isChoose": false, "isLastMove": false, ...CannonPieceDefaultMethods }),
+      new Piece({ "x": 0, "y": 9, "name": "车", "side": "RED", "isChoose": false, "isLastMove": false, ...ChariotPieceDefaultMethods }),
+      new Piece({ "x": 1, "y": 9, "name": "马", "side": "RED", "isChoose": false, "isLastMove": false, ...HorsePieceDefaultMethods }),
+      new Piece({ "x": 2, "y": 9, "name": "相", "side": "RED", "isChoose": false, "isLastMove": false, ...ElephantPieceDefaultMethods }),
+      new Piece({ "x": 3, "y": 9, "name": "士", "side": "RED", "isChoose": false, "isLastMove": false, ...GuardPieceDefaultMethods }),
+      new Piece({ "x": 4, "y": 9, "name": "帅", "side": "RED", "isChoose": false, "isLastMove": false, isGeneral: true, ...GeneralPieceDefaultMethods }),
+      new Piece({ "x": 5, "y": 9, "name": "士", "side": "RED", "isChoose": false, "isLastMove": false, ...GuardPieceDefaultMethods }),
+      new Piece({ "x": 6, "y": 9, "name": "相", "side": "RED", "isChoose": false, "isLastMove": false, ...ElephantPieceDefaultMethods }),
+      new Piece({ "x": 7, "y": 9, "name": "马", "side": "RED", "isChoose": false, "isLastMove": false, ...HorsePieceDefaultMethods }),
+      new Piece({ "x": 8, "y": 9, "name": "车", "side": "RED", "isChoose": false, "isLastMove": false, ...ChariotPieceDefaultMethods })
+    ]
     const ctx = document.querySelector("#ctx").getContext('2d')
-    const bd = new Board({
+    const bd = new ChessBoard({
       width: 400, height: 400, padding: 30, viewSide: "RED", scaleRatio: 1, context: ctx
     })
     let pieceImg = new Image()
     pieceImg.src = "./piece.png"
-
-    const pieceList = [
-      new Piece({
-        x: 1,
-        y: 0,
-        name: "车",
-        side: "RED",
-        isChoose: true,
-        isLastMove: false,
-        ...HorsePieceDefaultMethods,
-        draw(x, y, r, ctx) {
-          if (ctx) {
-            if (this.isChoose || this.isLastMove) {
-              r = r / 0.9
-            }
-
-            let w = pieceImg.naturalWidth, h = pieceImg.naturalHeight
-            console.log(w, h, x - r, y - r, r * 2, r * 2);
-
-            ctx.drawImage(pieceImg, 0, 0, w, h, x - r, y - r, r * 2, r * 2)
-
-          }
-
-        }
-      }),
-      new Piece({
-        x: 1,
-        y: 2,
-        name: "车",
-        side: "BLACK",
-        isChoose: false,
-        isLastMove: false,
-        ...HorsePieceDefaultMethods
-      }),
-      new Piece({
-        x: 3,
-        y: 2,
-        name: "马",
-        side: "BLACK",
-        isChoose: false,
-        isLastMove: true,
-        ...HorsePieceDefaultMethods
-      })
-    ]
-    bd.setPieceList(pieceList)
-    pieceImg.onload = () => {
-      bd.draw()
-    }
+    bd.setPieceList(p2)
+    bd.draw()
     document.querySelector("#changeSide").addEventListener("click", () => {
       bd.changeViewSide(bd.viewSide === "RED" ? "BLACK" : "RED")
-      bd.draw()
     })
   </script>
 </body>

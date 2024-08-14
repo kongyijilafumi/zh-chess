@@ -53,6 +53,9 @@ export class Piece implements PieceInputInfo {
   setLast(b: boolean) {
     this.isLastMove = b
   }
+  setChoose(b: boolean) {
+    this.isChoose = b
+  }
 }
 export type PieceList = Piece[]
 
