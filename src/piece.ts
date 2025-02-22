@@ -7,12 +7,14 @@ export class Piece implements PieceInfo {
   name: ChessOfPeiceName
   side: PieceSide
   isChoose: boolean
+  isLastMove: boolean
   constructor(pieceInfo: PieceInfo) {
     this.x = pieceInfo.x
     this.y = pieceInfo.y
     this.name = pieceInfo.name
     this.side = pieceInfo.side
     this.isChoose = pieceInfo.isChoose || false
+    this.isLastMove = pieceInfo.isLastMove
   }
   /**
    * 格式化象棋棋子输出字符串信息
@@ -42,7 +44,8 @@ export class Piece implements PieceInfo {
       side: this.side,
       name: this.name,
       x: this.x,
-      y: this.y
+      y: this.y,
+      isLastMove: this.isLastMove
     }
   }
   /**
@@ -65,14 +68,15 @@ export class Piece implements PieceInfo {
    * @param radius 象棋园半径
    * @param textColor 象棋字体颜色
    * @param bgColor 象棋背景颜色
+   * @param choosePeiceBorderColor 选中的边框色
    */
   draw(ctx: CanvasRenderingContext2D,
     startX: number, startY: number,
     gridWidth: number, gridHeight: number,
     gridDiffX: GamePeiceGridDiffX, gridDiffY: GamePeiceGridDiffY,
     radius: number,
-    textColor: string, bgColor: string) {
-    const borderColor = this.isChoose ? "red" : "#000";
+    textColor: string, bgColor: string, choosePeiceBorderColor: string) {
+    const borderColor = this.isChoose ? choosePeiceBorderColor : textColor;
     let x = startX + Math.abs(this.x - gridDiffX) * gridWidth;
     let y = startY + Math.abs(this.y - gridDiffY) * gridHeight;
     let r = radius, ty = 0;
@@ -86,10 +90,10 @@ export class Piece implements PieceInfo {
     }
 
     // 选中动画
-    if (this.isChoose) {
-      r = r / 0.98
-      ty = this.side === "RED" ? -.3 * radius : .3 * radius
-      ty = gridDiffY > 0 ? ty * -1 : ty
+    if (this.isChoose || this.isLastMove) {
+      r = r / 0.9
+      // ty = this.side === "RED" ? -.3 * radius : .3 * radius
+      // ty = gridDiffY > 0 ? ty * -1 : ty
     }
 
     // 象棋背景
@@ -314,7 +318,7 @@ export class ElephantPiece extends HorsePiece {
       const bdy = this.y + 1
       mps.push(new MovePoint(bx, by, { x: bdx, y: bdy }))
     }
-    return this.filterMovePoints(mps, pl)
+    return this.filterMovePoints(mps, pl).filter(item => !Boolean(findPiece(pl, item.disPoint)))
   }
   /**
     * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
@@ -428,15 +432,14 @@ export class CannonPiece extends RookPiece {
       if (list.length === 1 && (list[0].x === p.x && list[0].y === p.y)) {
         return { flag: false, message: "无法击中敌方棋子(缺少炮架)，移动无效" }
       }
+      const hasPeice = pieceList.find(i => i.x === p.x && i.y === p.y)
       if (list.length === 1) {
-        const hasPeice = pieceList.find(i => i.x === p.x && i.y === p.y)
         if (hasPeice) {
           return { flag: true }
         }
         return { flag: false, message: "无法击中敌方棋子，移动无效" }
       }
       // 无炮架  且 目标位置有敌方棋子
-      const hasPeice = pieceList.find(i => i.x === p.x && i.y === p.y)
       if (list.length === 0 && hasPeice) {
         return { flag: false, message: "无法击中敌方棋子(缺少炮架)，移动无效" }
       }

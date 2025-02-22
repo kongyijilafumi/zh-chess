@@ -3,13 +3,22 @@ import type { MovePoint, ParsePENStrData, PeicePosInfo, PENPeiceNameCode, PieceS
 import { Point } from '../src/types';
 import { chessOfPeiceMap } from '../src/piece';
 
-/**
-* 根据棋盘列表位置返回棋子 可能该位置没有棋子
-* @param pl 棋盘列表
-* @param p 棋盘坐标点
-* @returns 返回当前棋盘坐标点上的棋子
-*/
-
+export const gameDefaultCfg = {
+  drawMovePoint: true,
+  duration: 200,
+  blackPeiceBackground: "#fdec9e",
+  blackPeiceTextColor: "#000",
+  boardTextColor: "#000",
+  checkerboardBackground: "#faebd7",
+  choosePeiceBorderColor: "#ff0000",
+  gameHeight: 800,
+  gamePadding: 20,
+  gameWidth: 800,
+  movePointColor: "#25dd2a",
+  redPeiceBackground: "#feeca0",
+  redPeiceTextColor: "#c1190c",
+  scaleRatio: 1,
+}
 
 const numPos = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 const zhnumPos = ["一", "二", "三", "四", "五", "六", "七", "八", "九"]
@@ -402,7 +411,7 @@ export function parse_PEN_Str(penStr: string): ParsePENStrData {
       const pieceName = parse_PEN_PeiceName(str)
       if (pieceName) {
         const p_side: PieceSide = str.toLocaleLowerCase() === str ? 'BLACK' : 'RED'
-        pl.push({ side: p_side, name: pieceName, x: 9 - (px), y })
+        pl.push({ side: p_side, name: pieceName, x: 9 - (px), y, isLastMove: false })
       } else if (isNumber(str)) {
         px -= Number(str) - 1
       }

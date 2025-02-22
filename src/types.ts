@@ -49,6 +49,10 @@ export interface PieceInfo {
    * 是否被选中
    */
   isChoose?: boolean
+  /**
+   * 是否上一个移动棋子
+   */
+  isLastMove: boolean
 }
 /**
  * 四变形的四个点
@@ -168,11 +172,12 @@ export type GameState = "INIT" | "START" | "OVER" | "MOVE"
 
 /**
  * 监听棋子移动函数
- * @param peice 运动的象棋
+ * @param pos 运动的象棋
  * @param cp
  * if("move" in cp) 成立 说明是 移动点 使用cp.move访问 
  * 否则是 吃掉坐标上点的棋子 使用 cp.eat 访问改坐标点
  * @param enemyhasTrouble 敌方是否被将军
+ * @param penCode 移动后的penCode格式代码
  */
 export type MoveCallback = (pos: ChessOfPeice, cp: CheckPoint, enemyhasTrouble: boolean, penCode: string) => void
 
@@ -265,6 +270,7 @@ export type PeicePosInfo = {
   name: ChessOfPeiceName;
   x: number;
   y: number;
+  isLastMove: boolean
 }
 
 /**
