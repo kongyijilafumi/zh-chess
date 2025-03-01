@@ -1,30 +1,61 @@
-import { MovePoint, MovePointList, MoveResult, PieceInputInfo, PiecePositonPoint, PieceSide, PieceMethods, BoardMatrix } from "./types";
+import { MovePoint, MovePointList, MoveResult, PieceInputInfo, PiecePositonPoint, PieceSide, PieceMethods } from "./types";
+import { getBoardMatrix } from "./utils";
 
+/** 棋子当前信息接口
+ * 用于表示棋子在游戏中的当前状态
+ */
 export interface PieceCurrentInfo {
+  /** 棋子所属方（红方或黑方） */
   side: PieceSide;
+  /** 棋子名称（如：车、马、炮等） */
   name: string;
+  /** 棋子在棋盘上的横坐标（0-8） */
   x: number;
+  /** 棋子在棋盘上的纵坐标（0-9） */
   y: number;
+  /** 棋子是否被选中 */
   isChoose: boolean;
+  /** 是否是最后一次移动的棋子 */
   isLastMove: boolean;
+  /** 是否是将帅类棋子 */
   isGeneral: boolean
 }
+
+/** 
+ * 棋子类
+ * 实现了棋子的基本属性和行为
+ */
 export class Piece implements PieceInputInfo {
+  /** 棋子名称 */
   name: string;
+  /** 棋子所属方 */
   side: PieceSide;
+  /** 横坐标位置 */
   x: number;
+  /** 纵坐标位置 */
   y: number;
+  /** 是否被选中 */
   isChoose: boolean;
+  /** 是否是最后移动的棋子 */
   isLastMove: boolean;
+  /** 是否是将帅 */
   isGeneral: boolean;
+  /** 绘制棋子的方法 */
   draw: (this: Piece, x: number, y: number, radius: number, ctx?: CanvasRenderingContext2D | undefined) => void;
+  /** 移动棋子的方法 */
   move: (this: Piece, pos: PiecePositonPoint | MovePoint, PieceList: PieceList) => MoveResult;
+  /** 获取可移动位置列表的方法 */
   getMovePointList: (this: Piece, pl: PieceList) => MovePointList;
+  
+  /**
+   * 构造函数
+   * @param pieceInfo 棋子初始化信息
+   */
   constructor(pieceInfo: PieceInputInfo) {
     if (!pieceInfo) {
       throw Error("请输入正确初始化棋子信息")
     }
-    this.draw = pieceInfo.draw || defaultPieceDraw
+    this.draw = pieceInfo.draw.bind(this) || defaultPieceDraw.bind(this)
     this.name = pieceInfo.name
     this.side = pieceInfo.side
     this.isGeneral = pieceInfo.isGeneral
@@ -32,9 +63,14 @@ export class Piece implements PieceInputInfo {
     this.x = pieceInfo.x
     this.y = pieceInfo.y
     this.isLastMove = pieceInfo.isLastMove
-    this.move = pieceInfo.move
-    this.getMovePointList = pieceInfo.getMovePointList
+    this.move = pieceInfo.move.bind(this)
+    this.getMovePointList = pieceInfo.getMovePointList.bind(this)
   }
+  
+  /**
+   * 获取棋子当前信息
+   * @returns 返回棋子的当前状态信息
+   */
   getInfo(): PieceCurrentInfo {
     return {
       side: this.side,
@@ -46,19 +82,44 @@ export class Piece implements PieceInputInfo {
       isGeneral: this.isGeneral
     }
   }
+  
+  /**
+   * 更新棋子位置
+   * @param x 新的横坐标
+   * @param y 新的纵坐标
+   */
   update(x: number, y: number) {
     this.x = x
     this.y = y
   }
+  
+  /**
+   * 设置是否为最后移动的棋子
+   * @param b 是否为最后移动的棋子
+   */
   setLast(b: boolean) {
     this.isLastMove = b
   }
+  
+  /**
+   * 设置棋子是否被选中
+   * @param b 是否被选中
+   */
   setChoose(b: boolean) {
     this.isChoose = b
   }
 }
+
+/** 棋子列表类型 */
 export type PieceList = Piece[]
 
+/**
+ * 默认的棋子绘制方法
+ * @param x 绘制位置的x坐标
+ * @param y 绘制位置的y坐标
+ * @param radius 棋子半径
+ * @param ctx Canvas上下文
+ */
 export function defaultPieceDraw(this: Piece, x: number, y: number, radius: number, ctx?: CanvasRenderingContext2D) {
   if (ctx) {
     let borderColor = this.isChoose ? '#ff0000' : "#000"
@@ -136,19 +197,7 @@ export const movePointPush = (pointMinX: number, pointMaxX: number, pointMinY: n
   }
   arr.push({ x, y, disPos })
 }
-export function getBoardMatrix(pl: PieceList) {
-  let arr: BoardMatrix = []
-  for (let index = 0; index < 9; index++) {
-    arr[index] = []
-    for (let j = 0; j < 10; j++) {
-      arr[index][j] = null
-    }
-  }
-  pl.forEach(item => {
-    arr[item.x][item.y] = item
-  })
-  return arr
-}
+
 // 车
 export const ChariotPieceDefaultMethods: PieceMethods = {
   draw: defaultPieceDraw,

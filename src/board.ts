@@ -1,21 +1,39 @@
-import { Piece, PieceList, drawMovePoint, getBoardMatrix } from "./piece"
+import { Piece, PieceList, drawMovePoint } from "./piece"
 import { checkChessPieceMovement, checkInTroubleHasSolution, checkWillCauseSelf } from "./rule"
 import { BoardInfo, MoveResult, PiecePositonPoint, PieceSide } from "./types"
+import { getBoardMatrix } from "./utils"
 
-
-
+/**
+ * 象棋棋盘类
+ * 负责处理棋盘的绘制、棋子移动、视角切换等核心功能
+ */
 export class ChessBoard {
+  /** Canvas 2D渲染上下文 */
   context?: CanvasRenderingContext2D
+  /** 棋盘宽度 */
   width: number
+  /** 棋盘高度 */
   height: number
+  /** 棋子半径 */
   pieceRadius: number
+  /** 棋盘内边距 */
   padding: number
+  /** 缩放比例 */
   scaleRatio: number
+  /** 棋子列表 */
   pieceList: Piece[]
+  /** 当前视角方（红方/黑方） */
   viewSide: PieceSide
+  /** 当前选中的棋子 */
   choosePiece: undefined | Piece
+  /** 格子宽度（横向） */
   cell: number
+  /** 格子高度（纵向） */
   row: number
+  /**
+   * 构造函数
+   * @param info 棋盘初始化信息，包含宽度、高度、内边距等
+   */
   constructor(info: BoardInfo) {
     this.context = info.context
     this.width = info.width
@@ -28,11 +46,22 @@ export class ChessBoard {
     this.cell = (this.width - 2 * this.padding) / 8
     this.row = (this.height - 2 * this.padding) / 9
   }
+  /**
+   * 计算棋子半径
+   * @param padding 棋盘内边距
+   * @returns 棋子半径
+   */
   getPieceRadius(padding: number) {
     let cell = (this.width - 2 * padding) / 9 / 2, row = (this.height - 2 * padding) / 10 / 2;
     // 给每个棋子留出间隙
     return Math.floor((cell > row ? row : cell) * 0.9)
   }
+  /**
+   * 获取棋子在视图中的实际位置
+   * @param x 棋子的逻辑x坐标
+   * @param y 棋子的逻辑y坐标
+   * @returns 棋子在视图中的实际坐标
+   */
   getPieceViewPostion(x: number, y: number): PiecePositonPoint {
     if (this.viewSide === "RED") {
       return { x: this.padding + x * this.cell, y: this.padding + y * this.row }
@@ -42,15 +71,25 @@ export class ChessBoard {
       y: this.padding + Math.abs(y - 9) * this.row
     }
   }
+  /**
+   * 切换棋盘视角
+   * @param side 目标视角方
+   */
   changeViewSide(side: PieceSide) {
     this.viewSide = side
     this.draw()
   }
+  /**
+   * 绘制整个棋盘
+   */
   draw() {
     this.drawBackground()
-
     this.drawPiece()
   }
+  /**
+   * 绘制棋盘背景
+   * 包括棋盘底色、网格线、士的交叉线、炮/兵位置标记、楚河汉界等
+   */
   drawBackground() {
     if (this.context) {
       const startY = this.padding, startX = this.padding,
@@ -173,6 +212,10 @@ export class ChessBoard {
       this.context.setTransform(this.scaleRatio, 0, 0, this.scaleRatio, 0, 0);
     }
   }
+  /**
+   * 绘制所有棋子
+   * 包括棋子本身和选中棋子的可移动位置标记
+   */
   drawPiece() {
     const choose = this.pieceList.filter(p => {
       const pos = this.getPieceViewPostion(p.x, p.y)
@@ -189,21 +232,36 @@ export class ChessBoard {
       })
     })
   }
+  /**
+   * 设置棋子列表
+   * @param pl 新的棋子列表
+   */
   setPieceList(pl: PieceList) {
     this.pieceList = pl
   }
+  /**
+   * 验证棋子移动的合法性
+   * @param piece 要移动的棋子
+   * @param pos 目标位置
+   * @returns 移动结果
+   */
   update(piece: Piece, pos: PiecePositonPoint): MoveResult {
     const movementResult = checkChessPieceMovement(piece, pos, this.pieceList)
     if (!movementResult.flag) {
       return movementResult
     }
-
+  
     const causeSelf = checkWillCauseSelf(piece, pos, this.pieceList)
     if (!causeSelf.flag) {
       return causeSelf
     }
     return { flag: true }
   }
+  /**
+   * 移动棋子
+   * @param mov 起始位置
+   * @param pos 目标位置（可选，如果不提供则只是选中棋子）
+   */
   move(mov: PiecePositonPoint, pos?: PiecePositonPoint) {
     const boardMatrix = getBoardMatrix(this.pieceList)
     const piece = boardMatrix[mov.x][mov.y]
@@ -223,7 +281,7 @@ export class ChessBoard {
     if (posPiece) {
       this.pieceList = this.pieceList.filter(p => !(p.x === posPiece.x && p.y === posPiece.y))
     }
-
+  
     piece.setChoose(false)
     piece.setLast(true)
     piece.update(pos.x, pos.y)
@@ -231,6 +289,12 @@ export class ChessBoard {
     console.log("hassolution,", hassolution)
     this.draw()
   }
+  /**
+   * 检查棋子移动是否合法
+   * @param movPiece 要移动的棋子
+   * @param pos 目标位置（可选，如果不提供则表示只是选中）
+   * @returns 是否可以移动
+   */
   checkMove(movPiece: Piece | null, pos?: PiecePositonPoint) {
     if (!movPiece) {
       return false
@@ -253,8 +317,4 @@ export function getSquarePoints(lt: PiecePositonPoint, width: number, height: nu
     { x: width + lt.x, y: lt.y + height },
     { x: lt.x, y: lt.y + height },
   ]
-}
-
-export function getSideMove() {
-  
 }
