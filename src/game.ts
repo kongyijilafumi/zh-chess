@@ -1,6 +1,7 @@
-import { ChessBoard } from "./board";
+import { ChessBoard, enemySideMap } from "./board";
 import { Piece, PieceList } from "./piece";
-import { GameWindowInfo, MoveResult, PieceInputInfo, PiecePositonPoint, PieceSide } from "./types";
+import { GameWindowInfo, MoveResult, PiecePositonPoint, PieceSide } from "./types";
+import { getBoardMatrix } from "./utils";
 
 /** 移动历史记录项 */
 interface MoveHistoryItem {
@@ -11,7 +12,12 @@ interface MoveHistoryItem {
   /** 移动方 */
   side: PieceSide;
   /** 被吃掉的棋子（如果有） */
-  capturedPiece?: PieceInputInfo;
+  capturedPiece?: {
+    x: number;
+    y: number;
+    side: PieceSide;
+    name: string;
+  };
 }
 
 export class Game {
@@ -67,61 +73,31 @@ export class Game {
     if (this.isGameOver) {
       return { flag: false, message: "游戏已结束" };
     }
-
-    // 获取起始位置的棋子
-    const boardMatrix = this.board.pieceList;
-    const piece = boardMatrix.find(p => p.x === mov.x && p.y === mov.y);
-    if (!piece) {
-      return { flag: false, message: "不存在起始位置的棋子" };
+    const boardMatrix = getBoardMatrix(this.board.pieceList);
+    const piece = boardMatrix[mov.x][mov.y]
+    if (piece && this.gameSide !== piece.side) {
+      return { flag: false, message: "当前棋子不属于当前游戏方" };
     }
-    // 检查是否是当前游戏方的棋子
-    if (piece.side !== this.gameSide) {
-      return { flag: false, message: "不是当前游戏方的棋子" };
-    }
-    // 如果是完整的移动（而不是选中），记录历史
-    if (pos) {
-      const targetPiece = boardMatrix.find(p => p.x === pos.x && p.y === pos.y);
-      const historyItem: MoveHistoryItem = {
-        from: { x: mov.x, y: mov.y },
-        to: { x: pos.x, y: pos.y },
-        side: piece.side
-      };
-
-      if (targetPiece) {
-        historyItem.capturedPiece = {
-          x: targetPiece.x,
-          y: targetPiece.y,
-          side: targetPiece.side,
-          name: targetPiece.name,
-          isChoose: false,
-          isGeneral: false,
-          isLastMove: false,
-          draw: targetPiece.draw,
-          move: targetPiece.move,
-          getMovePointList: targetPiece.getMovePointList
-        };
-      }
-
-      // 如果当前不是在历史记录的最新位置，清除之后的历史
-      if (this.currentHistoryIndex < this.moveHistory.length - 1) {
-        this.moveHistory = this.moveHistory.slice(0, this.currentHistoryIndex + 1);
-      }
-
-      this.moveHistory.push(historyItem);
-      this.currentHistoryIndex++;
-    }
-
     // 执行移动
-    this.board.move(mov, pos);
-
-    // 如果是完整的移动（而不是选中），则切换游戏方
-    if (pos) {
-      this.switchGameSide();
-      // 检查游戏是否结束
-      this.checkGameOver();
-      return { flag: true };
+    const boardMoveResult = this.board.move(mov, pos, boardMatrix);
+    if (!boardMoveResult.flag) {
+      return boardMoveResult
     }
-
+    if (boardMoveResult.type === "CHOOSE") {
+      return { flag: true }
+    }
+    // 记录移动历史记录
+    const historyItem: MoveHistoryItem = {
+      from: boardMoveResult.from,
+      to: boardMoveResult.to,
+      side: boardMoveResult.side,
+      capturedPiece: boardMoveResult.capturedPiece
+    };
+    this.moveHistory.push(historyItem);
+    this.currentHistoryIndex++;
+    // 检查游戏是否结束
+    this.checkGameOver(enemySideMap[this.gameSide]);
+    this.switchGameSide();
     return { flag: true };
   }
 
@@ -210,12 +186,13 @@ export class Game {
   }
 
   /**
+   * @param side 要检查的游戏方
    * 检查游戏是否结束
    */
-  private checkGameOver() {
+  private checkGameOver(side: PieceSide) {
     // 检查当前游戏方是否还有解
     const hassolution = this.pieceList.some(p => {
-      if (p.side === this.gameSide) {
+      if (p.side === side) {
         return p.getMovePointList(this.pieceList).some(m => {
           return this.board.checkMove(p, m);
         });
@@ -225,8 +202,7 @@ export class Game {
 
     if (!hassolution) {
       this.isGameOver = true;
-      const winner = this.gameSide === "RED" ? "BLACK" : "RED";
-      console.log(`游戏结束，${winner === "RED" ? "红方" : "黑方"}胜利！`);
+      console.log(`游戏结束，${enemySideMap[side] === "RED" ? "红方" : "黑方"}胜利！`);
     }
   }
 
@@ -254,79 +230,53 @@ export class Game {
   public getCurrentHistoryIndex(): number {
     return this.currentHistoryIndex;
   }
-
   /**
    * 处理画布点击事件
-   * @param x 点击位置的x坐标
-   * @param y 点击位置的y坐标
+   * @param clickX 点击位置的x坐标
+   * @param clickY 点击位置的y坐标
    * @returns 处理结果
    */
-  public handleCanvasClick(x: number, y: number): MoveResult {
-    // 获取当前选中的棋子
-    const selectedPiece = this.pieceList.find(p => p.isChoose);
-
+  public handleCanvasClick(clickX: number, clickY: number): MoveResult {
     // 将画布坐标转换为棋盘逻辑坐标
     const cell = (this.board.width - 2 * this.board.padding) / 8;
     const row = (this.board.height - 2 * this.board.padding) / 9;
 
-    const boardX = Math.floor((x - 2 * this.board.padding) / cell);
-    const boardY = Math.floor((y - 2 * this.board.padding) / row);
-
-    // 如果点击位置超出棋盘范围，返回错误
-    if (boardX < 0 || boardX > 8 || boardY < 0 || boardY > 9) {
-      return { flag: false, message: "点击位置超出棋盘范围" };
-    }
-
-    // 根据视角方向调整坐标
-    const adjustedX = this.viewSide === "RED" ? boardX : Math.abs(boardX - 8);
-    const adjustedY = this.viewSide === "RED" ? boardY : Math.abs(boardY - 9);
-
-    // 计算点击位置在画布上的实际坐标
-    const clickX = x;
-    const clickY = y;
-
-    // 如果已有选中的棋子，检查目标位置
-    if (selectedPiece) {
-      // 获取目标位置的棋子（如果有）
-      const targetPiece = this.pieceList.find(p => p.x === adjustedX && p.y === adjustedY);
-
-      // 如果目标位置有棋子，检查点击是否在棋子范围内
-      if (targetPiece) {
-        const piecePos = this.board.getPieceViewPostion(targetPiece.x, targetPiece.y);
-        const distance = Math.sqrt(Math.pow(clickX - piecePos.x, 2) + Math.pow(clickY - piecePos.y, 2));
-
-        // 如果点击不在棋子范围内，认为是点击了空白位置
-        if (distance > this.board.pieceRadius) {
-          return this.handleMove(
-            { x: selectedPiece.x, y: selectedPiece.y },
-            { x: adjustedX, y: adjustedY }
-          );
+    const boardMatrix = getBoardMatrix(this.pieceList);
+    let selectedPiece: Piece | undefined;
+    let clickPoint: PiecePositonPoint | undefined;
+    boardMatrix.forEach((rowPieceList, x) => {
+      rowPieceList.forEach((piece, y) => {
+        if (piece && piece.isChoose) {
+          selectedPiece = piece;
         }
+        const adjustedX = this.board.padding + x * cell;
+        const adjustedY = this.board.padding + y * row;
+        // 检查是否是当前点击位置的棋子
+        if (Math.pow(clickX - adjustedX, 2) + Math.pow(clickY - adjustedY, 2) <= Math.pow(this.board.pieceRadius, 2)) {
+          clickPoint = { x, y };
+        }
+      })
+    })
+
+    // 如果已有选中的棋子
+    if (selectedPiece) {
+      // 如果点击位置在棋子范围内
+      if (clickPoint) {
+        // 点击在空白位置
+        return this.handleMove(
+          { x: selectedPiece.x, y: selectedPiece.y },
+          { x: clickPoint.x, y: clickPoint.y }
+        );
       }
 
-      // 点击在空白位置或目标棋子范围内
-      return this.handleMove(
-        { x: selectedPiece.x, y: selectedPiece.y },
-        { x: adjustedX, y: adjustedY }
-      );
     }
-
-    // 尝试选中点击位置的棋子
-    const clickedPiece = this.pieceList.find(p => {
-      if (p.x === adjustedX && p.y === adjustedY) {
-        const piecePos = this.board.getPieceViewPostion(p.x, p.y);
-        const distance = Math.sqrt(Math.pow(clickX - piecePos.x, 2) + Math.pow(clickY - piecePos.y, 2));
-        return distance <= this.board.pieceRadius;
-      }
-      return false;
-    });
 
     // 如果找到了点击范围内的棋子，尝试选中它
-    if (clickedPiece) {
-      return this.handleMove({ x: clickedPiece.x, y: clickedPiece.y });
+    if (clickPoint) {
+      return this.handleMove({ x: clickPoint.x, y: clickPoint.y });
     }
 
     // 点击在空白位置，不做任何操作
-    return { flag: false, message: "未选中任何棋子" };
+    return { flag: false, message: "未选中任何位置" };
   }
 }

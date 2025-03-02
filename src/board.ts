@@ -1,6 +1,6 @@
 import { Piece, PieceList, drawMovePoint } from "./piece"
-import { checkChessPieceMovement, checkInTroubleHasSolution, checkWillCauseSelf } from "./rule"
-import { BoardInfo, MoveResult, PiecePositonPoint, PieceSide } from "./types"
+import { checkChessPieceMovement, checkWillCauseSelf } from "./rule"
+import { BoardInfo, BoardMatrix, MoveResult, PiecePositonPoint, PieceSide } from "./types"
 import { getBoardMatrix } from "./utils"
 
 /**
@@ -250,7 +250,7 @@ export class ChessBoard {
     if (!movementResult.flag) {
       return movementResult
     }
-  
+
     const causeSelf = checkWillCauseSelf(piece, pos, this.pieceList)
     if (!causeSelf.flag) {
       return causeSelf
@@ -261,33 +261,59 @@ export class ChessBoard {
    * 移动棋子
    * @param mov 起始位置
    * @param pos 目标位置（可选，如果不提供则只是选中棋子）
+   * @returns 移动是否成功
    */
-  move(mov: PiecePositonPoint, pos?: PiecePositonPoint) {
-    const boardMatrix = getBoardMatrix(this.pieceList)
+  move(mov: PiecePositonPoint, pos?: PiecePositonPoint, boardMatrix?: BoardMatrix): BoardMoveResult {
+    boardMatrix = boardMatrix || getBoardMatrix(this.pieceList)
     const piece = boardMatrix[mov.x][mov.y]
-    let check = this.checkMove(piece, pos)
-    if (!piece || !check) {
-      return
+
+    if (!piece) {
+      return { flag: false, message: "不存在起始位置的棋子" }
     }
+    //  如果没有棋子 切换选中
     if (!pos) {
       this.pieceList.forEach(p => {
         p.setChoose(false)
       })
       piece.setChoose(true)
       this.draw()
-      return
+      return { flag: true, type: "CHOOSE" }
     }
+
     const posPiece = boardMatrix[pos.x][pos.y]
+    let capturedPiece: CapturedPieceInfo | undefined;
+    // 如果移动目标位置有棋子
     if (posPiece) {
+      // 如果是同色棋子 切换选中
+      if (posPiece.side === piece.side) {
+        piece.setChoose(false)
+        posPiece.setChoose(true)
+        this.draw()
+        return { flag: true, type: "CHOOSE" }
+      }
+    }
+
+    let check = this.checkMove(piece, pos)
+    if (!check.flag) {
+      return check
+    }
+    if (posPiece) {
+      // 不是同色 代表吃掉
+      capturedPiece = {
+        side: posPiece.side,
+        x: posPiece.x,
+        y: posPiece.y,
+        name: posPiece.name,
+      }
       this.pieceList = this.pieceList.filter(p => !(p.x === posPiece.x && p.y === posPiece.y))
     }
-  
     piece.setChoose(false)
     piece.setLast(true)
     piece.update(pos.x, pos.y)
-    const hassolution = checkInTroubleHasSolution(piece.side === "BLACK" ? "RED" : "BLACK", this.pieceList)
-    console.log("hassolution,", hassolution)
+    // const hassolution = checkInTroubleHasSolution(enemySideMap[piece.side], this.pieceList)
+    // console.log("hassolution,", hassolution)
     this.draw()
+    return { flag: true, type: "MOVE", side: piece.side, from: { x: mov.x, y: mov.y }, to: { x: pos.x, y: pos.y, }, capturedPiece }
   }
   /**
    * 检查棋子移动是否合法
@@ -295,18 +321,8 @@ export class ChessBoard {
    * @param pos 目标位置（可选，如果不提供则表示只是选中）
    * @returns 是否可以移动
    */
-  checkMove(movPiece: Piece | null, pos?: PiecePositonPoint) {
-    if (!movPiece) {
-      return false
-    }
-    if (!pos) {
-      return true
-    }
-    const updateResult = this.update(movPiece, pos)
-    if (!updateResult.flag) {
-      return false
-    }
-    return true
+  checkMove(movPiece: Piece, pos: PiecePositonPoint) {
+    return this.update(movPiece, pos)
   }
 }
 
@@ -317,4 +333,32 @@ export function getSquarePoints(lt: PiecePositonPoint, width: number, height: nu
     { x: width + lt.x, y: lt.y + height },
     { x: lt.x, y: lt.y + height },
   ]
+}
+
+
+export const enemySideMap: { [key in PieceSide]: PieceSide } = {
+  RED: "BLACK",
+  BLACK: "RED"
+}
+
+export type BoardMoveResult = {
+  flag: false,
+  message: string
+} | {
+  flag: true
+  type: "CHOOSE",
+} | {
+  flag: true
+  type: "MOVE"
+  from: PiecePositonPoint
+  to: PiecePositonPoint
+  side: PieceSide
+  capturedPiece?: CapturedPieceInfo
+}
+
+export type CapturedPieceInfo = {
+  side: PieceSide
+  name: string
+  x: number
+  y: number
 }

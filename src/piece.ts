@@ -1,4 +1,4 @@
-import { MovePoint, MovePointList, MoveResult, PieceInputInfo, PiecePositonPoint, PieceSide, PieceMethods } from "./types";
+import { MovePoint, MovePointList, MoveResult, PieceInputInfo, PiecePositonPoint, PieceSide, PieceMethods, PieceEnName, PieceZhName } from "./types";
 import { getBoardMatrix } from "./utils";
 
 /** 棋子当前信息接口
@@ -46,7 +46,7 @@ export class Piece implements PieceInputInfo {
   move: (this: Piece, pos: PiecePositonPoint | MovePoint, PieceList: PieceList) => MoveResult;
   /** 获取可移动位置列表的方法 */
   getMovePointList: (this: Piece, pl: PieceList) => MovePointList;
-  
+
   /**
    * 构造函数
    * @param pieceInfo 棋子初始化信息
@@ -66,7 +66,7 @@ export class Piece implements PieceInputInfo {
     this.move = pieceInfo.move.bind(this)
     this.getMovePointList = pieceInfo.getMovePointList.bind(this)
   }
-  
+
   /**
    * 获取棋子当前信息
    * @returns 返回棋子的当前状态信息
@@ -82,7 +82,7 @@ export class Piece implements PieceInputInfo {
       isGeneral: this.isGeneral
     }
   }
-  
+
   /**
    * 更新棋子位置
    * @param x 新的横坐标
@@ -92,7 +92,7 @@ export class Piece implements PieceInputInfo {
     this.x = x
     this.y = y
   }
-  
+
   /**
    * 设置是否为最后移动的棋子
    * @param b 是否为最后移动的棋子
@@ -100,7 +100,7 @@ export class Piece implements PieceInputInfo {
   setLast(b: boolean) {
     this.isLastMove = b
   }
-  
+
   /**
    * 设置棋子是否被选中
    * @param b 是否被选中
@@ -277,7 +277,7 @@ export const ElephantPieceDefaultMethods: PieceMethods = {
   getMovePointList(pl) {
     const mps: MovePointList = [], boardMatrix = getBoardMatrix(pl)
     let isRed = this.side === "RED"
-    let minY = isRed ? 0 : 5, maxY = isRed ? 9 : 4;
+    let minY = isRed ? 5 : 0, maxY = isRed ? 9 : 4;
     for (let index = 0; index < 2; index++) {
       // 上
       const tx = this.x - 2 + index * 4
@@ -414,4 +414,29 @@ export const SoldierPieceDefaultMethods: PieceMethods = {
     }
     return mps
   },
+}
+
+
+export const PieceDefaultMethodsMap: { [key in PieceEnName | PieceZhName]: PieceMethods } = {
+  "兵": ChariotPieceDefaultMethods,
+  "卒": ChariotPieceDefaultMethods,
+  "p": ChariotPieceDefaultMethods,
+  "炮": CannonPieceDefaultMethods,
+  "砲": CannonPieceDefaultMethods,
+  "c": CannonPieceDefaultMethods,
+  "帅": GeneralPieceDefaultMethods,
+  "将": GeneralPieceDefaultMethods,
+  "k": GeneralPieceDefaultMethods,
+  "仕": GuardPieceDefaultMethods,
+  "士": GuardPieceDefaultMethods,
+  "a": GuardPieceDefaultMethods,
+  "相": ElephantPieceDefaultMethods,
+  "象": ElephantPieceDefaultMethods,
+  "b": ElephantPieceDefaultMethods,
+  "马": HorsePieceDefaultMethods,
+  "馬": HorsePieceDefaultMethods,
+  "n": HorsePieceDefaultMethods,
+  "车": ChariotPieceDefaultMethods,
+  "車": ChariotPieceDefaultMethods,
+  "r": ChariotPieceDefaultMethods,
 }

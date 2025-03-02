@@ -1,5 +1,5 @@
 import { PieceList } from "src/piece";
-import { BoardMatrix } from "src/types";
+import { BoardMatrix, PiecePositonPoint } from "src/types";
 
 
 export function boardMatrixToString(boardMatrix: BoardMatrix) {
@@ -30,3 +30,11 @@ export function getBoardMatrix(pl: PieceList) {
   return arr
 }
 
+
+export function getBoardAllPoint(): PiecePositonPoint[][] {
+  let arr = []
+  for (let x = 0; x < 9; x++) {
+    arr[x] = Array.from({ length: 10 }, (_, y) => ({ x, y }))
+  }
+  return arr
+}
