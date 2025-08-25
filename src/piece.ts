@@ -191,8 +191,22 @@ export function defaultPieceMove(this: Piece, pos: PiecePositonPoint | MovePoint
   }
   return { flag: false, message: "走法错误：移动位置不符合规则" }
 }
-export const movePointPush = (pointMinX: number, pointMaxX: number, pointMinY: number, pointMaxY: number, x: number, y: number, disPos: PiecePositonPoint, pl: (PieceCurrentInfo | null)[][], arr: MovePointList) => {
-  if (x > pointMaxX || x < pointMinX || y < pointMinY || y > pointMaxY || (pl[disPos.x] && pl[disPos.x][disPos.y])) {
+export const movePointPush = (
+  pointMinX: number, pointMaxX: number,
+  pointMinY: number, pointMaxY: number,
+  x: number, y: number,
+  disPos: PiecePositonPoint,
+  side: PieceSide,
+  pl: (PieceCurrentInfo | null)[][],
+  arr: MovePointList
+) => {
+  let posPiece: PieceCurrentInfo | null = null
+  if (
+    x > pointMaxX || x < pointMinX ||
+    y < pointMinY || y > pointMaxY ||
+    (pl[disPos.x] && pl[disPos.x][disPos.y]) ||
+    ((posPiece = pl[x][y]) && posPiece.side === side)
+  ) {
     return
   }
   arr.push({ x, y, disPos })
@@ -248,23 +262,23 @@ export const HorsePieceDefaultMethods: PieceMethods = {
       // 左
       const lx = this.x - 2
       const ly = index * 2 + (this.y - 1)
-      movePointPush(0, 8, 0, 9, lx, ly, { x: this.x - 1, y: this.y }, boardMatrix, mps)
+      movePointPush(0, 8, 0, 9, lx, ly, { x: this.x - 1, y: this.y }, this.side, boardMatrix, mps)
 
       // 右
       const rx = this.x + 2
       const ry = ly
-      movePointPush(0, 8, 0, 9, rx, ry, { x: this.x + 1, y: this.y }, boardMatrix, mps)
+      movePointPush(0, 8, 0, 9, rx, ry, { x: this.x + 1, y: this.y }, this.side, boardMatrix, mps)
 
 
       // 上
       const tx = index * 2 + (this.x - 1)
       const ty = this.y - 2
-      movePointPush(0, 8, 0, 9, tx, ty, { x: this.x, y: this.y - 1 }, boardMatrix, mps)
+      movePointPush(0, 8, 0, 9, tx, ty, { x: this.x, y: this.y - 1 }, this.side, boardMatrix, mps)
 
       // 下
       const bx = tx
       const by = this.y + 2
-      movePointPush(0, 8, 0, 9, bx, by, { x: this.x, y: this.y + 1 }, boardMatrix, mps)
+      movePointPush(0, 8, 0, 9, bx, by, { x: this.x, y: this.y + 1 }, this.side, boardMatrix, mps)
 
     }
     return mps
@@ -284,14 +298,14 @@ export const ElephantPieceDefaultMethods: PieceMethods = {
       const ty = this.y - 2
       const tdx = this.x - 1 + index * 2
       const tdy = this.y - 1
-      movePointPush(0, 8, minY, maxY, tx, ty, { x: tdx, y: tdy }, boardMatrix, mps)
+      movePointPush(0, 8, minY, maxY, tx, ty, { x: tdx, y: tdy }, this.side, boardMatrix, mps)
 
       // 下
       const bx = this.x - 2 + index * 4
       const by = this.y + 2
       const bdx = tdx
       const bdy = this.y + 1
-      movePointPush(0, 8, minY, maxY, bx, by, { x: bdx, y: bdy }, boardMatrix, mps)
+      movePointPush(0, 8, minY, maxY, bx, by, { x: bdx, y: bdy }, this.side, boardMatrix, mps)
     }
     return mps
   },
@@ -300,20 +314,20 @@ export const ElephantPieceDefaultMethods: PieceMethods = {
 export const GuardPieceDefaultMethods: PieceMethods = {
   move: defaultPieceMove,
   draw: defaultPieceDraw,
-  getMovePointList() {
-    const mps: MovePointList = []
+  getMovePointList(pl) {
+    const mps: MovePointList = [], boardMatrix = getBoardMatrix(pl)
       , isRed = this.side === "RED"
       , minY = isRed ? 7 : 0, maxY = isRed ? 9 : 2;
     for (let index = 0; index < 2; index++) {
       // 上
       const tx = this.x - 1 + index * 2
       const ty = this.y - 1
-      movePointPush(3, 5, minY, maxY, tx, ty, notExistPoint, [], mps)
+      movePointPush(3, 5, minY, maxY, tx, ty, notExistPoint, this.side, boardMatrix, mps)
 
       // 下
       const bx = this.x - 1 + index * 2
       const by = this.y + 1
-      movePointPush(3, 5, minY, maxY, bx, by, notExistPoint, [], mps)
+      movePointPush(3, 5, minY, maxY, bx, by, notExistPoint, this.side, boardMatrix, mps)
     }
     return mps
   },
@@ -322,14 +336,14 @@ export const GuardPieceDefaultMethods: PieceMethods = {
 export const GeneralPieceDefaultMethods: PieceMethods = {
   move: defaultPieceMove,
   draw: defaultPieceDraw,
-  getMovePointList() {
-    const mps: MovePointList = []
+  getMovePointList(pl) {
+    const mps: MovePointList = [], boardMatrix = getBoardMatrix(pl)
       , isRed = this.side === "RED"
       , minY = isRed ? 7 : 0, maxY = isRed ? 9 : 2;
-    movePointPush(3, 5, minY, maxY, this.x - 1, this.y, notExistPoint, [], mps)
-    movePointPush(3, 5, minY, maxY, this.x + 1, this.y, notExistPoint, [], mps)
-    movePointPush(3, 5, minY, maxY, this.x, this.y - 1, notExistPoint, [], mps)
-    movePointPush(3, 5, minY, maxY, this.x, this.y + 1, notExistPoint, [], mps)
+    movePointPush(3, 5, minY, maxY, this.x - 1, this.y, notExistPoint, this.side, boardMatrix, mps)
+    movePointPush(3, 5, minY, maxY, this.x + 1, this.y, notExistPoint, this.side, boardMatrix, mps)
+    movePointPush(3, 5, minY, maxY, this.x, this.y - 1, notExistPoint, this.side, boardMatrix, mps)
+    movePointPush(3, 5, minY, maxY, this.x, this.y + 1, notExistPoint, this.side, boardMatrix, mps)
     return mps
   },
 }
@@ -403,14 +417,14 @@ export const CannonPieceDefaultMethods: PieceMethods = {
 export const SoldierPieceDefaultMethods: PieceMethods = {
   move: defaultPieceMove,
   draw: defaultPieceDraw,
-  getMovePointList() {
-    const mps: MovePointList = [],
+  getMovePointList(pl) {
+    const mps: MovePointList = [], boardMatrix = getBoardMatrix(pl),
       isCross = this.side === "RED" ? (this.y <= 4) : (this.y >= 5),
       step = this.side === "RED" ? -1 : +1;
-    movePointPush(0, 8, 0, 9, this.x, this.y + step, notExistPoint, [], mps)
+    movePointPush(0, 8, 0, 9, this.x, this.y + step, notExistPoint, this.side, boardMatrix, mps)
     if (isCross) {
-      movePointPush(0, 8, 0, 9, this.x + 1, this.y, notExistPoint, [], mps)
-      movePointPush(0, 8, 0, 9, this.x - 1, this.y, notExistPoint, [], mps)
+      movePointPush(0, 8, 0, 9, this.x + 1, this.y, notExistPoint, this.side, boardMatrix, mps)
+      movePointPush(0, 8, 0, 9, this.x - 1, this.y, notExistPoint, this.side, boardMatrix, mps)
     }
     return mps
   },

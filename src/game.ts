@@ -20,7 +20,16 @@ interface MoveHistoryItem {
   };
 }
 
+/** 游戏事件类型 */
+export type GameEventType = 'pieceSelected' | 'pieceMoved' | 'gameOver';
+
+/** 游戏事件监听器 */
+export type GameEventListener = (data: any) => void;
+
 export class Game {
+  /** 事件监听器映射 */
+  private eventListeners: Map<GameEventType, Set<GameEventListener>> = new Map();
+
   /** 棋盘实例 */
   private board: ChessBoard;
   /** 棋子列表 */
@@ -60,7 +69,9 @@ export class Game {
    * 切换游戏方
    */
   private switchGameSide() {
-    this.gameSide = this.gameSide === "RED" ? "BLACK" : "RED";
+    if (!this.isGameOver) {
+      this.gameSide = this.gameSide === "RED" ? "BLACK" : "RED";
+    }
   }
 
   /**
@@ -84,6 +95,8 @@ export class Game {
       return boardMoveResult
     }
     if (boardMoveResult.type === "CHOOSE") {
+      // 触发棋子选中事件
+      this.emit("pieceSelected", { x: boardMoveResult.x, y: boardMoveResult.y })
       return { flag: true }
     }
     // 记录移动历史记录
@@ -98,6 +111,12 @@ export class Game {
     // 检查游戏是否结束
     this.checkGameOver(enemySideMap[this.gameSide]);
     this.switchGameSide();
+    // 触发棋子移动事件
+    this.emit("pieceMoved", { from: boardMoveResult.from, to: boardMoveResult.to })
+    if (this.isGameOver) {
+      // 触发游戏结束事件
+      this.emit("gameOver", { side: this.gameSide })
+    }
     return { flag: true };
   }
 
@@ -202,7 +221,9 @@ export class Game {
 
     if (!hassolution) {
       this.isGameOver = true;
-      console.log(`游戏结束，${enemySideMap[side] === "RED" ? "红方" : "黑方"}胜利！`);
+      const winner = enemySideMap[side] === "RED" ? "红方" : "黑方";
+      console.log(`游戏结束，${winner}胜利！`);
+      // 触发游戏结束事件
     }
   }
 
@@ -278,5 +299,32 @@ export class Game {
 
     // 点击在空白位置，不做任何操作
     return { flag: false, message: "未选中任何位置" };
+  }
+
+  /**
+   * 添加游戏监听事件
+   * @param event 事件类型
+   * @param fn 事件函数
+   */
+  public addEventListener(event: GameEventType, fn: any) {
+    let eventFns = this.eventListeners.get(event);
+    if (!eventFns) {
+      this.eventListeners.set(event, eventFns = new Set())
+    }
+    if (typeof fn === "function") eventFns.add(fn);
+  }
+
+  /**
+   * 触发游戏事件
+   * @param event 事件类型
+   * @param eventData 事件数据
+   */
+  private emit(event: GameEventType, eventData: any) {
+    const fns = this.eventListeners.get(event)
+    if (fns) {
+      fns.forEach(fn => {
+        fn(eventData)
+      })
+    }
   }
 }

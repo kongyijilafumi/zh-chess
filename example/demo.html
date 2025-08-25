@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>demo</title>
-  <script src="../dist/zh-chess.browser.js"></script>
+  <script src="./zh-chess.browser.js"></script>
 </head>
 
 <body>
@@ -27,6 +27,8 @@
       GuardPieceDefaultMethods,
       HorsePieceDefaultMethods,
       SoldierPieceDefaultMethods,
+      Game,
+      getMoveScores
     } = ZhChess
     const p2 = [
       new Piece({ isGeneral: true, isChoose: false, side: 'BLACK', name: '将', x: 5, y: 0, isLastMove: false, ...GeneralPieceDefaultMethods }),
@@ -56,7 +58,7 @@
       new Piece({ "x": 4, "y": 6, "name": "兵", "side": "RED", "isChoose": false, "isLastMove": false, ...SoldierPieceDefaultMethods }),
       new Piece({ "x": 6, "y": 6, "name": "兵", "side": "RED", "isChoose": false, "isLastMove": false, ...SoldierPieceDefaultMethods }),
       new Piece({ "x": 8, "y": 6, "name": "兵", "side": "RED", "isChoose": false, "isLastMove": false, ...SoldierPieceDefaultMethods }),
-      new Piece({ "x": 4, "y": 7, "name": "炮", "side": "RED", "isChoose": true, "isLastMove": false, ...CannonPieceDefaultMethods }),
+      new Piece({ "x": 4, "y": 7, "name": "炮", "side": "RED", "isChoose": false, "isLastMove": false, ...CannonPieceDefaultMethods }),
       new Piece({ "x": 7, "y": 7, "name": "炮", "side": "RED", "isChoose": false, "isLastMove": false, ...CannonPieceDefaultMethods }),
       new Piece({ "x": 0, "y": 9, "name": "车", "side": "RED", "isChoose": false, "isLastMove": false, ...ChariotPieceDefaultMethods }),
       new Piece({ "x": 1, "y": 9, "name": "马", "side": "RED", "isChoose": false, "isLastMove": false, ...HorsePieceDefaultMethods }),
@@ -68,16 +70,31 @@
       new Piece({ "x": 7, "y": 9, "name": "马", "side": "RED", "isChoose": false, "isLastMove": false, ...HorsePieceDefaultMethods }),
       new Piece({ "x": 8, "y": 9, "name": "车", "side": "RED", "isChoose": false, "isLastMove": false, ...ChariotPieceDefaultMethods })
     ]
-    const ctx = document.querySelector("#ctx").getContext('2d')
-    const bd = new ChessBoard({
-      width: 400, height: 400, padding: 30, viewSide: "RED", scaleRatio: 1, context: ctx
+    const canvasDom = document.querySelector("#ctx")
+    const ctx = canvasDom.getContext('2d')
+    const game = new Game(plData, "RED", "RED", {
+      width: canvasDom.width, height: canvasDom.height, padding: 30
+    }, ctx)
+    // const bd = new ChessBoard({
+    //   width: 400, height: 400, padding: 30, viewSide: "RED", scaleRatio: 1, context: ctx
+    // })
+    // let pieceImg = new Image()
+    // pieceImg.src = "./piece.png"
+    // bd.setPieceList(plData)
+    game.addEventListener("pieceMoved", (data) => {
+      if (game.gameSide === "BLACK") {
+        const scores = getMoveScores(game.gameSide, game.board.pieceList)
+        console.log(scores)
+      }
     })
-    let pieceImg = new Image()
-    pieceImg.src = "./piece.png"
-    bd.setPieceList(p2)
-    bd.draw()
+    canvasDom.addEventListener("click", (e) => {
+      const x = e.offsetX, y = e.offsetY;
+      console.log(game.handleCanvasClick(x, y), x, y)
+    })
+    // console.log(ZhChess.boardMatrixToString(ZhChess.getBoardMatrix(plData)))
+    // bd.draw()
     document.querySelector("#changeSide").addEventListener("click", () => {
-      bd.changeViewSide(bd.viewSide === "RED" ? "BLACK" : "RED")
+      // bd.changeViewSide(bd.viewSide === "RED" ? "BLACK" : "RED")
     })
   </script>
 </body>

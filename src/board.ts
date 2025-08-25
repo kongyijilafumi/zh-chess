@@ -277,7 +277,7 @@ export class ChessBoard {
       })
       piece.setChoose(true)
       this.draw()
-      return { flag: true, type: "CHOOSE" }
+      return { flag: true, type: "CHOOSE", x: piece.x, y: piece.y }
     }
 
     const posPiece = boardMatrix[pos.x][pos.y]
@@ -289,7 +289,7 @@ export class ChessBoard {
         piece.setChoose(false)
         posPiece.setChoose(true)
         this.draw()
-        return { flag: true, type: "CHOOSE" }
+        return { flag: true, type: "CHOOSE", x: posPiece.x, y: posPiece.y }
       }
     }
 
@@ -347,6 +347,8 @@ export type BoardMoveResult = {
 } | {
   flag: true
   type: "CHOOSE",
+  x: number,
+  y: number
 } | {
   flag: true
   type: "MOVE"
