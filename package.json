@@ -13,6 +13,8 @@
     "dev": "rollup -c -w",
     "bulid": "rollup -c",
     "node:test": "node ./example/node.js",
+    "test": "node ./example/equivalence-test.js",
+    "bench": "node ./example/bench.js",
     "doc:gen": "typedoc --name zh-chess(中国象棋js框架) --entryPoints src/index.ts --out docs --readme intro.md --htmlLang zh-cn",
     "doc:dev": "typedoc  --name zh-chess(中国象棋js框架) --entryPoints src/index.ts --out docs --readme intro.md --htmlLang zh-cn --watch"
   },

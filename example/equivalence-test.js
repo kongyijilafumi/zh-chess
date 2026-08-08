@@ -1,14 +1,24 @@
 /**
- * 等价性测试：对比 lib-v2（旧版）与 lib（新版）在随机局面下
- * 走法生成集合与走子判定结果是否完全一致。
- * 用法: node example/equivalence-test.js [rounds]
+ * 黄金快照回归测试
+ *
+ * 对固定局面序列（含 4 个经典局面 + 固定随机种子的中局局面）计算
+ * 「走法生成集合 + 逐走法走子判定」指纹，与 v2.1.1 生成的黄金快照
+ * （example/equivalence-snapshot.json，来源 git 提交 20c0af8）逐位对比，
+ * 确保任何重构或优化都不改变公开行为。
+ *
+ * 用法:
+ *   node example/equivalence-test.js            # 对比黄金快照（默认）
+ *   node example/equivalence-test.js --regen [rounds]  # 用当前库重新生成快照（有意变更行为时使用）
  */
-const libV2 = require("../lib-v2/zh-chess.cjs")
-const libV3 = require("../lib/zh-chess.cjs")
+const fs = require("fs")
+const path = require("path")
+const lib = require("../lib/zh-chess.cjs")
 
-const ROUNDS = Number(process.argv[2] || 300)
+const REGEN = process.argv.includes("--regen")
+const ROUNDS = Number(process.argv.find((a) => /^\d+$/.test(a)) || 300)
+const SNAPSHOT_PATH = path.join(__dirname, "equivalence-snapshot.json")
 
-function makeGame(lib) {
+function makeGame() {
   const g = new lib.default({ gameWidth: 800, gameHeight: 800 })
   g.gameStart("RED")
   return g
@@ -21,17 +31,24 @@ const seedPens = [
   "r1ba1ab1r/4k4/2n1c1n2/p1p1p1p1p/9/9/P1P1P1P1P/2N1C1N2/4K4/R1BA1AB1R w",
 ]
 
-function randomMove(lib, game, side, rand) {
+const KIND_CHAR = {
+  RookPiece: "R",
+  HorsePiece: "H",
+  CannonPiece: "C",
+  SoldierPiece: "S",
+  GeneralPiece: "G",
+  AdvisorPiece: "A",
+  ElephantPiece: "E",
+}
+
+function randomMove(game, side, rand) {
   const pl = game.currentLivePieceList
   const cands = []
   for (const pc of pl) {
     if (pc.side !== side) continue
-    for (const mp of pc.getMovePoints(pl)) {
-      cands.push({ from: pc.getPoint(), to: mp })
-    }
+    for (const mp of pc.getMovePoints(pl)) cands.push({ from: pc.getPoint(), to: mp })
   }
   if (!cands.length) return null
-  // 打乱并试走
   for (let i = cands.length - 1; i > 0; i--) {
     const j = (rand() * (i + 1)) | 0
     ;[cands[i], cands[j]] = [cands[j], cands[i]]
@@ -46,105 +63,115 @@ function randomMove(lib, game, side, rand) {
   return null
 }
 
-// 用 libV3 随机生成局面（作为共同基准局面来源）
 function genRandomPosition(rand, steps) {
-  const g = makeGame(libV3)
+  const g = makeGame()
   g.gameStart("RED")
   let side = g.currentSide
   for (let i = 0; i < steps; i++) {
-    const m = randomMove(libV3, g, side, rand)
+    const m = randomMove(g, side, rand)
     if (!m) break
     side = g.currentSide
   }
   return g.getCurrentPenCode(g.currentSide)
 }
 
-function comparePosition(pen, stats) {
-  const g2 = makeGame(libV2)
-  const g3 = makeGame(libV3)
-  g2.setPenCodeList(pen)
-  g3.setPenCodeList(pen)
-  const side = g2.currentSide
-  const pl2 = g2.currentLivePieceList
-  const pl3 = g3.currentLivePieceList
+/** 计算局面指纹：按位置排序的每枚棋子 (x,y,side,kind):moves:judges */
+function fingerprint(pen) {
+  const g = makeGame()
+  g.setPenCodeList(pen)
+  const pl = g.currentLivePieceList
+  const side = g.currentSide
+  const sorted = [...pl].sort((a, b) => a.x - b.x || a.y - b.y)
+  const parts = []
+  for (const pc of sorted) {
+    const mps = pc.getMovePoints(pl)
+    const pairs = mps.map((mp) => ({
+      mp,
+      x: mp.x,
+      y: mp.y,
+      dx: mp.disPoint ? mp.disPoint.x : -1,
+      dy: mp.disPoint ? mp.disPoint.y : -1,
+    }))
+    pairs.sort((a, b) => a.x - b.x || a.y - b.y)
+    const movesKey = pairs.map((p) => `${p.x}${p.y}${p.dx >= 0 ? "." + p.dx + p.dy : ""}`).join(",")
+    const judgesKey = pairs
+      .map((p) => {
+        const res = g.update(pc.getPoint(), p.mp, side, false)
+        return res.flag && res.move ? "1" : "0"
+      })
+      .join("")
+    const sideChar = pc.side === "RED" ? "r" : "b"
+    const kindChar = KIND_CHAR[pc.constructor.name] || "?"
+    parts.push(`${pc.x}${pc.y}${sideChar}${kindChar}:${movesKey}:${judgesKey}`)
+  }
+  return parts.join(";")
+}
 
-  const norm = (mp) => ({ x: mp.x, y: mp.y, dx: mp.disPoint ? mp.disPoint.x : null, dy: mp.disPoint ? mp.disPoint.y : null })
-  const sortKey = (a) => `${a.x},${a.y}`
+function generatePositions(rand, rounds) {
+  const positions = [...seedPens]
+  const startSteps = [10, 20, 30, 40, 50]
+  for (let r = 0; r < rounds; r++) {
+    positions.push(genRandomPosition(rand, startSteps[r % startSteps.length]))
+  }
+  return positions
+}
 
-  // 1) 走法生成集合对比
-  for (const p2 of pl2) {
-    const p3 = pl3.find((q) => q.x === p2.x && q.y === p2.y)
-    if (!p3) {
-      stats.missingPiece++
-      continue
-    }
-    const mps2 = p2.getMovePoints(pl2).map(norm).sort((a, b) => (sortKey(a) < sortKey(b) ? -1 : 1))
-    const mps3 = p3.getMovePoints(pl3).map(norm).sort((a, b) => (sortKey(a) < sortKey(b) ? -1 : 1))
-    const k2 = mps2.map((m) => `${m.x},${m.y},${m.dx},${m.dy}`).join("|")
-    const k3 = mps3.map((m) => `${m.x},${m.y},${m.dx},${m.dy}`).join("|")
-    if (k2 !== k3) {
-      stats.genMismatch++
-      if (stats.genMismatch <= 5) {
-        console.log(`  [gen] mismatch piece at (${p2.x},${p2.y}) side=${p2.side} kind=${p2.constructor.name}`)
-        console.log(`    v2: ${k2}`)
-        console.log(`    v3: ${k3}`)
-      }
-    } else {
-      stats.genSame++
-    }
-    // 2) 逐走法判定对比
-    for (const mp of mps2) {
-      const res2 = g2.update(p2.getPoint(), mp, side, false)
-      const res3 = g3.update(p3.getPoint(), mp, side, false)
-      const ok2 = !!(res2.flag && res2.move)
-      const ok3 = !!(res3.flag && res3.move)
-      stats.judge++
-      if (ok2 !== ok3) {
-        stats.judgeMismatch++
-        if (stats.judgeMismatch <= 10) {
-          console.log(`  [judge] mismatch piece(${p2.x},${p2.y}) -> (${mp.x},${mp.y}) v2=${ok2} v3=${ok3}`)
-        }
-      } else if (ok2 && ok3 && res2.message !== res3.message) {
-        stats.msgMismatch++
-        if (stats.msgMismatch <= 10) {
-          console.log(`  [msg]   piece(${p2.x},${p2.y}) -> (${mp.x},${mp.y}) v2="${res2.message}" v3="${res3.message}"`)
-        }
-      }
+if (REGEN) {
+  let s = 42
+  const rand = () => {
+    s = (s * 1103515245 + 12345) & 0x7fffffff
+    return s / 0x7fffffff
+  }
+  const positions = generatePositions(rand, ROUNDS)
+  const fingerprints = {}
+  for (const pen of positions) fingerprints[pen] = fingerprint(pen)
+  const out = {
+    meta: {
+      source: "current lib (regen)",
+      generated: new Date().toISOString(),
+      rounds: ROUNDS,
+      positions: positions.length,
+      unique: Object.keys(fingerprints).length,
+    },
+    positions,
+    fingerprints,
+  }
+  fs.writeFileSync(SNAPSHOT_PATH, JSON.stringify(out, null, 1), "utf8")
+  console.log(`[regen] snapshot rewritten: ${positions.length} positions, ${Object.keys(fingerprints).length} unique`)
+  return
+}
+
+const snapshot = JSON.parse(fs.readFileSync(SNAPSHOT_PATH, "utf8"))
+const stats = { compared: 0, same: 0, mismatch: 0 }
+const failures = []
+for (const pen of snapshot.positions) {
+  const fp = fingerprint(pen)
+  stats.compared++
+  if (fp === snapshot.fingerprints[pen]) {
+    stats.same++
+  } else {
+    stats.mismatch++
+    if (stats.mismatch <= 5) {
+      failures.push({ pen, expected: snapshot.fingerprints[pen].slice(0, 300), actual: fp.slice(0, 300) })
     }
   }
 }
 
-// 可复现随机
-let s = 42
-const rand = () => {
-  s = (s * 1103515245 + 12345) & 0x7fffffff
-  return s / 0x7fffffff
-}
-
-const stats = { genSame: 0, genMismatch: 0, missingPiece: 0, judge: 0, judgeMismatch: 0, msgMismatch: 0 }
-
-// 先对比固定局面
-for (const pen of seedPens) {
-  comparePosition(pen, stats)
-}
-// 再对比随机走子生成的中局局面
-const startSteps = [10, 20, 30, 40, 50]
-for (let r = 0; r < ROUNDS; r++) {
-  const steps = startSteps[r % startSteps.length]
-  const pen = genRandomPosition(rand, steps)
-  comparePosition(pen, stats)
-}
-
 console.log("================================================")
-console.log(`PEN positions compared     : ${seedPens.length + ROUNDS}`)
-console.log(`getMovePoints same         : ${stats.genSame}`)
-console.log(`getMovePoints mismatch     : ${stats.genMismatch}`)
-console.log(`missing pieces             : ${stats.missingPiece}`)
-console.log(`update judged              : ${stats.judge}`)
-console.log(`update result mismatch     : ${stats.judgeMismatch}`)
-console.log(`message-only mismatch      : ${stats.msgMismatch}`)
-if (stats.genMismatch === 0 && stats.missingPiece === 0 && stats.judgeMismatch === 0) {
-  console.log("RESULT: PASS (行为完全一致)")
+console.log(`snapshot source       : ${snapshot.meta.source}`)
+console.log(`positions compared    : ${stats.compared}`)
+console.log(`fingerprint same      : ${stats.same}`)
+console.log(`fingerprint mismatch  : ${stats.mismatch}`)
+if (failures.length) {
+  for (const f of failures) {
+    console.log(`  [mismatch] ${f.pen}`)
+    console.log(`    expected: ${f.expected}`)
+    console.log(`    actual  : ${f.actual}`)
+  }
+}
+if (stats.mismatch === 0) {
+  console.log("RESULT: PASS (与 v2.1.1 黄金快照行为一致)")
 } else {
-  console.log("RESULT: FAIL (存在差异!)")
+  console.log("RESULT: FAIL (行为发生变更!)")
+  process.exitCode = 1
 }
