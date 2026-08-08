@@ -1,6 +1,6 @@
 {
   "name": "zh-chess",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "A Chinese chess framework that supports browsers and nodejs(一款运行在浏览器和nodejs环境的中国象棋框架)",
   "main": "./lib/zh-chess.cjs.js",
   "module": "./lib/zh-chess.es.js",
@@ -40,6 +40,7 @@
     "@rollup/plugin-commonjs": "^25.0.2",
     "@rollup/plugin-node-resolve": "^13.3.0",
     "@rollup/plugin-typescript": "^8.4.0",
+    "@types/node": "^18.0.0",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "core-js": "^3.31.1",

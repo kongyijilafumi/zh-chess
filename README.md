@@ -11,6 +11,21 @@
 
 ## [案例网站](https://chess.z3web.cn/)
 
+## 更新日志
+
+### v3.1.0
+
+* 新增 `generateMoves(side)` 批量走法生成 API，作为 AI 搜索入口（内部仅构建一次棋盘位表并交由本方棋子复用，比逐个调用 `getMovePoints(pl)` 更高效）。
+* 项目工程化：新增 ESLint / Prettier 配置与 GitHub Actions CI（install / lint / format / build / test），清理存量 lint 告警。
+* 等价性测试黄金快照化，新增 `generateMoves` 与逐子 `getMovePoints` 的一致性断言。
+
+### v3.0.0
+
+* 重写走法生成与合法性校验，性能与正确性提升。
+* 优化将军判定：按精确 `constructor` 判断棋子类型，避免继承链误判。
+* 棋盘位表（`Board`）在走法生成与将军检测间复用，减少重复构建。
+* 等价性回归测试固定为 v2.1.1 行为，保证重构后规则完全一致。
+
 ## 安装使用
 
 ### nodejs
@@ -288,6 +303,17 @@ export default function App() {
 ##### gameStart(side: PieceSide): void
 
 初始化选择玩家方 初始化棋盘
+
+##### generateMoves(side: PieceSide): MovePointList[]
+
+批量生成指定方所有存活棋子的走法列表（AI 搜索入口）。内部仅构建一次棋盘位表并交由本方全部棋子复用，比逐个调用 `getMovePoints(pl)` 更高效。
+
+```js
+game.gameStart("RED")
+const moves = game.generateMoves("RED") // MovePointList[]
+const redPieces = game.currentLivePieceList.filter(p => p.side === "RED")
+// moves[i] 对应 redPieces[i] 的走法列表
+```
 
 ##### getCurrentPenCode(side: PieceSide): string
 
