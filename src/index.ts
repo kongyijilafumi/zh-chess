@@ -32,6 +32,16 @@ import {
   posIdx,
   Board
 } from './piece'
+import type {
+  ChessGameHost,
+  ChessPlugin,
+  ChessRenderer,
+  ChessVariant,
+  DrawLayout,
+  PieceDrawStyle,
+  TextBoardOptions
+} from './framework'
+import { chainFormatCells, exportTextBoard as formatTextBoard } from './framework'
 import 'core-js/proposals/global-this'
 const findPiece = (pl: PieceList, p: Point) => pl.find(item => item.x === p.x && item.y === p.y)
 
@@ -122,6 +132,18 @@ export interface GameInfo {
    * @defaultValue `true`
    */
   drawMovePoint?: boolean
+  /**
+   * 扩展插件列表（构造时按顺序 `use`）
+   */
+  plugins?: ChessPlugin[]
+  /**
+   * 自定义渲染器（也可通过插件的 `renderer` 注入；后者覆盖前者）
+   */
+  renderer?: ChessRenderer
+  /**
+   * 变体规则（也可通过插件的 `variant` 注入；后者覆盖前者）
+   */
+  variant?: ChessVariant
 }
 
 export default class ZhChess {
@@ -286,6 +308,31 @@ export default class ZhChess {
    */
   protected lastMovePiece: ChessOfPeice | undefined
 
+  /**
+   * 已注册插件（按 use 顺序）
+   */
+  protected plugins: ChessPlugin[] = []
+
+  /**
+   * 当前生效的自定义渲染器
+   */
+  protected renderer: ChessRenderer | undefined
+
+  /**
+   * 当前生效的变体规则
+   */
+  protected variant: ChessVariant | undefined
+
+  /**
+   * 构造时直传的渲染器（插件全部卸载后回退）
+   */
+  protected baseRenderer: ChessRenderer | undefined
+
+  /**
+   * 构造时直传的变体（插件全部卸载后回退）
+   */
+  protected baseVariant: ChessVariant | undefined
+
   constructor(inputCfg?: GameInfo) {
     let cfg: DefaultConfig = { ...gameDefaultCfg }
     if (inputCfg && typeof inputCfg === 'object') {
@@ -361,6 +408,19 @@ export default class ZhChess {
         //@ts-ignore
         globalThis.msCancelAnimationFrame ||
         globalThis.clearTimeout
+    }
+    if (cfg.renderer) {
+      this.baseRenderer = cfg.renderer
+      this.renderer = cfg.renderer
+    }
+    if (cfg.variant) {
+      this.baseVariant = cfg.variant
+      this.variant = cfg.variant
+    }
+    if (cfg.plugins && cfg.plugins.length) {
+      for (let i = 0; i < cfg.plugins.length; i++) {
+        this.use(cfg.plugins[i])
+      }
     }
   }
 
@@ -443,7 +503,11 @@ export default class ZhChess {
    * 初始化象棋个数
    */
   protected initPiece() {
-    this.setPenCodeList(initBoardPen)
+    if (this.variant && typeof this.variant.initBoard === 'function') {
+      this.variant.initBoard(this as unknown as ChessGameHost)
+    } else {
+      this.setPenCodeList(initBoardPen)
+    }
     this.choosePiece = null
     this.checkDraw()
   }
@@ -566,6 +630,15 @@ export default class ZhChess {
     const movPeice = findPiece(this.livePieceList, mov)
     const moveFlag = this.choosePiece.move(mov, this.livePieceList)
     const moveCheck: (cp: CheckPoint) => UpdateResult = (cp: CheckPoint) => {
+      if (this.variant && typeof this.variant.beforeMove === 'function') {
+        const before = this.variant.beforeMove(pos, mov, side, this as unknown as ChessGameHost)
+        if (before === false) {
+          return { flag: false, message: '变体规则不允许此走法' }
+        }
+        if (typeof before === 'string') {
+          return { flag: false, message: before }
+        }
+      }
       const isMove = 'move' in cp
       // 一次走子判定构建一份棋盘位表，两次将军检测复用（消除重复构建热点）
       const board = buildBoardIndex(this.livePieceList)
@@ -615,6 +688,18 @@ export default class ZhChess {
           this.winner = side
         }
       }
+      if (this.variant && typeof this.variant.checkWinner === 'function') {
+        // 先把模拟后的局面临时挂上，供变体判定（不触发绘画）
+        const prevList = this.livePieceList
+        this.livePieceList = movedPeiceList
+        const customWinner = this.variant.checkWinner(this as unknown as ChessGameHost)
+        this.livePieceList = prevList
+        if (customWinner === 'RED' || customWinner === 'BLACK') {
+          isOver = true
+          this.winner = customWinner
+        }
+      }
+      const captured: ChessOfPeice | null = isMove ? null : movPeice || null
       const cb = () => {
         const newPeice = chessOfPeiceMap[posPeice.name]({ ...posPeice, ...pos })
         if (!isMove) {
@@ -634,8 +719,23 @@ export default class ZhChess {
         this.moveEvents.forEach(f =>
           f(newPeice, cp, isOver || enemyhasTrouble, this.getCurrentPenCode(enemySide))
         )
+        if (this.variant && typeof this.variant.afterMove === 'function') {
+          this.variant.afterMove(
+            {
+              side,
+              from: new Point(pos.x, pos.y),
+              to: new Point(mov.x, mov.y),
+              checkpoint: cp,
+              captured,
+              moved: posPeice,
+              enemyInTrouble: enemyhasTrouble,
+              isOver
+            },
+            this as unknown as ChessGameHost
+          )
+        }
         if (isOver) {
-          this.overEvents.forEach(f => f(side))
+          this.overEvents.forEach(f => f(this.winner || side))
         }
         this.clearMoveChoosePeiece()
         this.changeSide()
@@ -713,83 +813,130 @@ export default class ZhChess {
       redPeiceTextColor,
       blackPeiceTextColor
     } = this
+    const layout = this.getDrawLayout()
+    const host = this as unknown as ChessGameHost
     this.livePieceList.forEach(item => {
       const textColor = item.side === 'BLACK' ? blackPeiceTextColor : redPeiceTextColor,
         bgColor = item.side === 'BLACK' ? blackPeiceBackground : redPeiceBackground
       if (this.choosePiece === item || this.lastMovePiece === item) {
         return true
       }
-      item.draw(
-        ctx,
-        startX,
-        startY,
-        gridWidth,
-        gridHeight,
-        gridDiffX,
-        gridDiffY,
-        radius,
-        textColor,
-        bgColor,
-        choosePeiceBorderColor
-      )
+      this.drawOnePiece(ctx, item, textColor, bgColor, choosePeiceBorderColor, layout, host)
     })
 
     if (this.lastMovePiece) {
       const textColor =
           this.lastMovePiece.side === 'BLACK' ? blackPeiceTextColor : redPeiceTextColor,
         bgColor = this.lastMovePiece.side === 'BLACK' ? blackPeiceBackground : redPeiceBackground
-      this.lastMovePiece.draw(
+      this.drawOnePiece(
         ctx,
-        startX,
-        startY,
-        gridWidth,
-        gridHeight,
-        gridDiffX,
-        gridDiffY,
-        radius,
+        this.lastMovePiece,
         textColor,
         bgColor,
-        choosePeiceBorderColor
+        choosePeiceBorderColor,
+        layout,
+        host
       )
     }
 
     if (this.choosePiece) {
       const textColor = this.choosePiece.side === 'BLACK' ? blackPeiceTextColor : redPeiceTextColor,
         bgColor = this.choosePiece.side === 'BLACK' ? blackPeiceBackground : redPeiceBackground
-      this.choosePiece.draw(
+      this.drawOnePiece(
         ctx,
-        startX,
-        startY,
-        gridWidth,
-        gridHeight,
-        gridDiffX,
-        gridDiffY,
-        radius,
+        this.choosePiece,
         textColor,
         bgColor,
-        choosePeiceBorderColor
+        choosePeiceBorderColor,
+        layout,
+        host
       )
       if (this.drawMovePoint && this.gameState !== 'MOVE') {
-        this.choosePiece.drawMovePoints(
-          ctx,
-          this.livePieceList,
-          startX,
-          startY,
-          gridWidth,
-          gridHeight,
-          gridDiffX,
-          gridDiffY,
-          radius,
-          movePointColor
-        )
+        const points = this.choosePiece.getMovePoints(this.livePieceList)
+        const customMovePts =
+          this.renderer &&
+          typeof this.renderer.drawMovePoints === 'function' &&
+          this.renderer.drawMovePoints(ctx, this.choosePiece, points, layout, host) === true
+        if (!customMovePts) {
+          this.choosePiece.drawMovePoints(
+            ctx,
+            this.livePieceList,
+            startX,
+            startY,
+            gridWidth,
+            gridHeight,
+            gridDiffX,
+            gridDiffY,
+            radius,
+            movePointColor
+          )
+        }
       }
     }
+  }
+
+  /**
+   * 绘制单枚棋子（优先走自定义渲染器）
+   */
+  protected drawOnePiece(
+    ctx: CTX,
+    piece: ChessOfPeice,
+    textColor: string,
+    bgColor: string,
+    choosePeiceBorderColor: string,
+    layout: DrawLayout,
+    host: ChessGameHost
+  ) {
+    const displayName = this.resolvePieceDisplayName(piece)
+    const style: PieceDrawStyle = { textColor, bgColor, displayName }
+    if (
+      this.renderer &&
+      typeof this.renderer.drawPiece === 'function' &&
+      this.renderer.drawPiece(ctx, piece, style, layout, host) === true
+    ) {
+      return
+    }
+    piece.draw(
+      ctx,
+      layout.startX,
+      layout.startY,
+      layout.gridWidth,
+      layout.gridHeight,
+      layout.gridDiffX,
+      layout.gridDiffY,
+      layout.radius,
+      textColor,
+      bgColor,
+      choosePeiceBorderColor,
+      displayName
+    )
+  }
+
+  /**
+   * 解析棋子显示名（变体可改写）
+   */
+  protected resolvePieceDisplayName(piece: ChessOfPeice): string {
+    if (this.variant && typeof this.variant.getPieceDisplayName === 'function') {
+      return this.variant.getPieceDisplayName(
+        piece,
+        this.gameSide,
+        this as unknown as ChessGameHost
+      )
+    }
+    return piece.name
   }
 
   /**
    * 画棋盘
    */
   protected drawChessLine(ctx: CTX) {
+    if (
+      this.renderer &&
+      typeof this.renderer.drawBoard === 'function' &&
+      this.renderer.drawBoard(ctx, this.getDrawLayout(), this as unknown as ChessGameHost) === true
+    ) {
+      return
+    }
     const { startX, startY, endX, endY, gridWidth, gridHeight, scaleRatio } = this
     // 画背景
     ctx.fillStyle = this.checkerboardBackground
@@ -1476,6 +1623,9 @@ export default class ZhChess {
         })
       }
     }
+    if (this.variant && typeof this.variant.filterMoves === 'function') {
+      return this.variant.filterMoves(side, result, this as unknown as ChessGameHost)
+    }
     return result
   }
 
@@ -1500,7 +1650,17 @@ export default class ZhChess {
     if (!mp) return false
     const hasEat = !!b[posIdx(mp.x, mp.y)]
     const cp: CheckPoint = hasEat ? { eat: mp } : { move: mp }
-    return !this.checkGeneralInTrouble(side, item, cp, pl, b)
+    if (this.checkGeneralInTrouble(side, item, cp, pl, b)) return false
+    if (this.variant && typeof this.variant.filterMoves === 'function') {
+      const move: Move = {
+        from: new Point(from.x, from.y),
+        to: new Point(to.x, to.y),
+        captured: hasEat ? b[posIdx(mp.x, mp.y)] ?? null : null
+      }
+      const filtered = this.variant.filterMoves(side, [move], this as unknown as ChessGameHost)
+      return filtered.some(m => m.from.x === from.x && m.from.y === from.y && m.to.x === to.x && m.to.y === to.y)
+    }
+    return true
   }
   getCurrentPenCode(side: PieceSide): string {
     return gen_PEN_Str(this.livePieceList, side)
@@ -1573,12 +1733,122 @@ export default class ZhChess {
     this.livePieceList = data.list.map(p => chessOfPeiceMap[p.name](p))
     this.currentSide = data.side
   }
+
+  /**
+   * 获取当前绘制布局（供插件/渲染器使用）
+   */
+  getDrawLayout(): DrawLayout {
+    return {
+      startX: this.startX,
+      startY: this.startY,
+      endX: this.endX,
+      endY: this.endY,
+      gridWidth: this.gridWidth,
+      gridHeight: this.gridHeight,
+      gridDiffX: this.gridDiffX,
+      gridDiffY: this.gridDiffY,
+      radius: this.radius,
+      width: this.width,
+      height: this.height,
+      scaleRatio: this.scaleRatio,
+      colors: {
+        checkerboardBackground: this.checkerboardBackground,
+        boardTextColor: this.boardTextColor,
+        redPeiceBackground: this.redPeiceBackground,
+        blackPeiceBackground: this.blackPeiceBackground,
+        redPeiceTextColor: this.redPeiceTextColor,
+        blackPeiceTextColor: this.blackPeiceTextColor,
+        choosePeiceBorderColor: this.choosePeiceBorderColor,
+        movePointColor: this.movePointColor
+      }
+    }
+  }
+
+  /**
+   * 导出当前棋盘的文字版布局
+   * @param options 导出选项
+   */
+  exportTextBoard(options?: TextBoardOptions): string {
+    const pluginFormat = chainFormatCells(this.plugins.map(p => p.formatCell))
+    const formatCell = options?.formatCell
+      ? chainFormatCells([options.formatCell, pluginFormat])
+      : pluginFormat
+    return formatTextBoard(this.livePieceList, {
+      ...options,
+      formatCell,
+      resolveDisplayName: piece => this.resolvePieceDisplayName(piece)
+    })
+  }
+
+  /**
+   * 注册扩展插件
+   *
+   * - `renderer` / `variant`：后者覆盖前者
+   * - `formatCell`：按注册顺序链式生效
+   */
+  use(plugin: ChessPlugin): this {
+    if (!plugin || typeof plugin.name !== 'string' || !plugin.name) {
+      throw new Error('插件必须包含非空 name')
+    }
+    const existed = this.plugins.findIndex(p => p.name === plugin.name)
+    if (existed >= 0) {
+      this.unuse(plugin.name)
+    }
+    this.plugins.push(plugin)
+    if (plugin.renderer) {
+      this.renderer = plugin.renderer
+    }
+    if (plugin.variant) {
+      this.variant = plugin.variant
+    }
+    if (typeof plugin.install === 'function') {
+      plugin.install(this as unknown as ChessGameHost)
+    }
+    return this
+  }
+
+  /**
+   * 卸载扩展插件
+   * @param name 插件名
+   */
+  unuse(name: string): this {
+    const idx = this.plugins.findIndex(p => p.name === name)
+    if (idx < 0) return this
+    const [plugin] = this.plugins.splice(idx, 1)
+    if (typeof plugin.uninstall === 'function') {
+      plugin.uninstall(this as unknown as ChessGameHost)
+    }
+    // 重算 renderer / variant：构造直传为基底，再按剩余插件顺序覆盖
+    let nextRenderer: ChessRenderer | undefined = this.baseRenderer
+    let nextVariant: ChessVariant | undefined = this.baseVariant
+    for (let i = 0; i < this.plugins.length; i++) {
+      const p = this.plugins[i]
+      if (p.renderer) nextRenderer = p.renderer
+      if (p.variant) nextVariant = p.variant
+    }
+    this.renderer = nextRenderer
+    this.variant = nextVariant
+    return this
+  }
   /**
    * 绘画上次移动点，可自行重写该函数
    * @param ctx canvas 2d 渲染上下文
    */
   drawLastMovePoint(ctx: CTX) {
     if (!this.choosePiece && this.lastMovePoint && ctx) {
+      const layout = this.getDrawLayout()
+      if (
+        this.renderer &&
+        typeof this.renderer.drawLastMovePoint === 'function' &&
+        this.renderer.drawLastMovePoint(
+          ctx,
+          this.lastMovePoint,
+          layout,
+          this as unknown as ChessGameHost
+        ) === true
+      ) {
+        return
+      }
       const x = this.startX + Math.abs(this.lastMovePoint.x - this.gridDiffX) * this.gridWidth
       const y = this.startY + Math.abs(this.lastMovePoint.y - this.gridDiffY) * this.gridHeight
       ctx.beginPath()
@@ -1602,6 +1872,7 @@ export default class ZhChess {
 }
 export * from './piece'
 export * from './types'
+export * from './framework'
 export {
   parse_PEN_Str,
   gen_PEN_Str,

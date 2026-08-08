@@ -101,6 +101,7 @@ export class Piece implements PieceInfo {
    * @param textColor 象棋字体颜色
    * @param bgColor 象棋背景颜色
    * @param choosePeiceBorderColor 选中的边框色
+   * @param displayName 可选显示名（变体可改写，例如揭棋「暗」）
    */
   draw(
     ctx: CanvasRenderingContext2D,
@@ -113,7 +114,8 @@ export class Piece implements PieceInfo {
     radius: number,
     textColor: string,
     bgColor: string,
-    choosePeiceBorderColor: string
+    choosePeiceBorderColor: string,
+    displayName?: string
   ) {
     const borderColor = this.isChoose ? choosePeiceBorderColor : textColor
     const x = startX + Math.abs(this.x - gridDiffX) * gridWidth
@@ -161,7 +163,7 @@ export class Piece implements PieceInfo {
     ctx.textBaseline = 'middle'
     ctx.fillStyle = textColor
     ctx.font = radius + 'px yahei'
-    ctx.fillText(this.name, x, y + ty)
+    ctx.fillText(displayName ?? this.name, x, y + ty)
   }
   /**
    * 根据棋子列表判断 当前棋子可移动的点

@@ -53,8 +53,9 @@ declare class Piece implements PieceInfo {
      * @param textColor 象棋字体颜色
      * @param bgColor 象棋背景颜色
      * @param choosePeiceBorderColor 选中的边框色
+     * @param displayName 可选显示名（变体可改写，例如揭棋「暗」）
      */
-    draw(ctx: CanvasRenderingContext2D, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: GamePieceGridDiffX, gridDiffY: GamePieceGridDiffY, radius: number, textColor: string, bgColor: string, choosePeiceBorderColor: string): void;
+    draw(ctx: CanvasRenderingContext2D, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: GamePieceGridDiffX, gridDiffY: GamePieceGridDiffY, radius: number, textColor: string, bgColor: string, choosePeiceBorderColor: string, displayName?: string): void;
     /**
      * 根据棋子列表判断 当前棋子可移动的点
      * @param _pl 棋子列表
@@ -551,6 +552,240 @@ type UpdateSuccess = {
 type updateSuccess = UpdateSuccess;
 type UpdateMoveCallback = (posPeice: ChessOfPeice, newPoint: Point) => void;
 
+/**
+ * 棋盘绘制布局信息（供自定义渲染器使用，避免直接访问 protected 字段）
+ */
+interface DrawLayout {
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
+    gridWidth: number;
+    gridHeight: number;
+    gridDiffX: GamePieceGridDiffX;
+    gridDiffY: GamePieceGridDiffY;
+    radius: number;
+    width: number;
+    height: number;
+    scaleRatio: number;
+    colors: DrawLayoutColors;
+}
+/**
+ * 棋盘/棋子配色
+ */
+interface DrawLayoutColors {
+    checkerboardBackground: string;
+    boardTextColor: string;
+    redPeiceBackground: string;
+    blackPeiceBackground: string;
+    redPeiceTextColor: string;
+    blackPeiceTextColor: string;
+    choosePeiceBorderColor: string;
+    movePointColor: string;
+}
+/**
+ * 单枚棋子绘制时的样式上下文
+ */
+interface PieceDrawStyle {
+    textColor: string;
+    bgColor: string;
+    /**
+     * 显示用名称（可由变体 `getPieceDisplayName` 改写，例如揭棋未翻开显示「暗」）
+     */
+    displayName: string;
+}
+/**
+ * 游戏主机只读/可调用表面（插件与变体钩子中的 `game` 参数）
+ *
+ * 与 {@link ZhChess} 公共 API 对齐；实现类为 ZhChess 本身。
+ */
+interface ChessGameHost {
+    readonly currentLivePieceList: PieceList;
+    readonly currentGameSide: PieceSide | null;
+    readonly winnerSide: PieceSide | null;
+    readonly currentRadius: number;
+    readonly duration: number;
+    setLivePieceList(pl: PieceList): void;
+    setPenCodeList(penCode: string): void;
+    getCurrentPenCode(side: PieceSide): string;
+    generateLegalMoves(side: PieceSide): Move[];
+    generateMoves(side: PieceSide): MovePointList[];
+    isLegalMove(side: PieceSide, from: Point, to: Point): boolean;
+    getPiecesOfSide(side: PieceSide): PieceList;
+    exportTextBoard(options?: TextBoardOptions): string;
+    draw(ctx: CanvasRenderingContext2D): void;
+    gameStart(side: PieceSide): void;
+    getDrawLayout(): DrawLayout;
+    use(plugin: ChessPlugin): this;
+    unuse(name: string): this;
+}
+/**
+ * 自定义渲染器
+ *
+ * 钩子返回 `true` 表示已自行绘制并跳过默认实现；返回 `false` / `void` 则继续默认绘制。
+ */
+interface ChessRenderer {
+    /**
+     * 绘制棋盘（背景、线条、楚河汉界等）
+     */
+    drawBoard?(ctx: CanvasRenderingContext2D, layout: DrawLayout, game: ChessGameHost): boolean | void;
+    /**
+     * 绘制单枚棋子（可自定义形状、贴图等）
+     */
+    drawPiece?(ctx: CanvasRenderingContext2D, piece: ChessOfPeice, style: PieceDrawStyle, layout: DrawLayout, game: ChessGameHost): boolean | void;
+    /**
+     * 绘制可走点提示
+     */
+    drawMovePoints?(ctx: CanvasRenderingContext2D, piece: ChessOfPeice, points: MovePointList, layout: DrawLayout, game: ChessGameHost): boolean | void;
+    /**
+     * 绘制上一步落点
+     */
+    drawLastMovePoint?(ctx: CanvasRenderingContext2D, point: Point, layout: DrawLayout, game: ChessGameHost): boolean | void;
+}
+/**
+ * 走子完成后的上下文（供变体 `afterMove` 使用）
+ */
+interface VariantAfterMoveContext {
+    /**
+     * 走子方
+     */
+    side: PieceSide;
+    /**
+     * 起始坐标（走子前）
+     */
+    from: Point;
+    /**
+     * 目标坐标
+     */
+    to: Point;
+    /**
+     * 移动或吃子
+     */
+    checkpoint: CheckPoint;
+    /**
+     * 被吃掉的棋子（无吃子时为 null）
+     */
+    captured: ChessOfPeice | null;
+    /**
+     * 走子后的棋子实例（已更新坐标）
+     */
+    moved: ChessOfPeice;
+    /**
+     * 敌方是否被将军（或变体自定义终局前的将军态）
+     */
+    enemyInTrouble: boolean;
+    /**
+     * 是否已判定终局
+     */
+    isOver: boolean;
+}
+/**
+ * 变体规则钩子（揭棋等自定义玩法由此扩展；框架不内置完整揭棋）
+ *
+ * 扩展数据（如暗子真实身份）建议变体自行用 WeakMap 管理，不必改棋子类字段。
+ */
+interface ChessVariant {
+    /**
+     * 变体名称
+     */
+    name: string;
+    /**
+     * 自定义开局；若提供则跳过默认 `initBoardPen` 布局
+     */
+    initBoard?(game: ChessGameHost): void;
+    /**
+     * 走子前拦截：返回 `false` 或错误信息字符串则阻止本次走子
+     */
+    beforeMove?(from: Point, to: Point, side: PieceSide, game: ChessGameHost): boolean | string | void;
+    /**
+     * 过滤/改写合法走法列表（作用于 `generateLegalMoves` / `isLegalMove`）
+     */
+    filterMoves?(side: PieceSide, moves: Move[], game: ChessGameHost): Move[];
+    /**
+     * 走子提交后回调（翻面、揭示暗棋等）
+     */
+    afterMove?(ctx: VariantAfterMoveContext, game: ChessGameHost): void;
+    /**
+     * 自定义胜负；返回胜方则结束对局；返回 `null`/`undefined` 表示不干预默认判定
+     */
+    checkWinner?(game: ChessGameHost): PieceSide | null | undefined;
+    /**
+     * 棋子显示名（文字导出与默认 Canvas 字共用）
+     */
+    getPieceDisplayName?(piece: ChessOfPeice, viewer: PieceSide | null, game: ChessGameHost): string;
+}
+/**
+ * 文字棋盘单元格格式化函数
+ *
+ * 返回 `undefined` 表示交给下一个 formatter / 默认样式处理
+ */
+type TextBoardCellFormatter = (piece: ChessOfPeice | null, x: number, y: number) => string | undefined;
+/**
+ * 文字棋盘导出选项
+ */
+interface TextBoardOptions {
+    /**
+     * 导出样式
+     * - `chinese`：中文棋子名（默认）
+     * - `ascii`：PEN 风格字母（红大写 / 黑小写）
+     */
+    style?: 'ascii' | 'chinese';
+    /**
+     * 空格占位符
+     * @defaultValue `·`（chinese）或 `.`（ascii）
+     */
+    emptyCell?: string;
+    /**
+     * 是否显示坐标轴
+     * @defaultValue `true`
+     */
+    showCoords?: boolean;
+    /**
+     * 单元格自定义格式化（优先于 style）
+     */
+    formatCell?: TextBoardCellFormatter;
+    /**
+     * 视角方：影响变体 `getPieceDisplayName` 的 viewer 参数
+     */
+    viewer?: PieceSide | null;
+    /**
+     * 由实例方法注入：变体显示名解析
+     * @internal
+     */
+    resolveDisplayName?: (piece: ChessOfPeice) => string;
+}
+/**
+ * 插件：可捆绑渲染器、变体与文字导出 formatter
+ *
+ * - 多个插件的 `renderer` / `variant`：后者覆盖前者（各仅保留一个生效实例）
+ * - `formatCell`：按注册顺序链式调用，第一个返回非 `undefined` 的生效
+ */
+interface ChessPlugin {
+    name: string;
+    install?(game: ChessGameHost): void;
+    uninstall?(game: ChessGameHost): void;
+    renderer?: ChessRenderer;
+    variant?: ChessVariant;
+    formatCell?: TextBoardCellFormatter;
+}
+/**
+ * 棋子中文名 → PEN 字母（小写）；导出时再按 side 决定大小写
+ */
+declare const asciiLetterByPieceName: Record<string, string>;
+/**
+ * 将存活棋子列表导出为文字棋盘（9 列 × 10 行）
+ *
+ * @example
+ * ```ts
+ * console.log(exportTextBoard(game.currentLivePieceList, { style: 'chinese' }))
+ * ```
+ */
+declare function exportTextBoard(pieces: PieceList, options?: TextBoardOptions): string;
+/**
+ * 合并多个 formatCell：按顺序调用，取第一个非 undefined 结果
+ */
+declare function chainFormatCells(formatters: Array<TextBoardCellFormatter | undefined>): TextBoardCellFormatter | undefined;
+
 declare function parse_PEN_Str(penStr: string): ParsePENStrData;
 declare function gen_PEN_Str(pl: PieceList, side: PieceSide): string;
 declare function gen_PEN_Point_Str(p: Point | MovePoint | ChessOfPeice): string;
@@ -647,6 +882,18 @@ interface GameInfo {
      * @defaultValue `true`
      */
     drawMovePoint?: boolean;
+    /**
+     * 扩展插件列表（构造时按顺序 `use`）
+     */
+    plugins?: ChessPlugin[];
+    /**
+     * 自定义渲染器（也可通过插件的 `renderer` 注入；后者覆盖前者）
+     */
+    renderer?: ChessRenderer;
+    /**
+     * 变体规则（也可通过插件的 `variant` 注入；后者覆盖前者）
+     */
+    variant?: ChessVariant;
 }
 declare class ZhChess {
     /**
@@ -803,6 +1050,26 @@ declare class ZhChess {
      * 上次移动象棋：棋盘上的上一次移动棋子
      */
     protected lastMovePiece: ChessOfPeice | undefined;
+    /**
+     * 已注册插件（按 use 顺序）
+     */
+    protected plugins: ChessPlugin[];
+    /**
+     * 当前生效的自定义渲染器
+     */
+    protected renderer: ChessRenderer | undefined;
+    /**
+     * 当前生效的变体规则
+     */
+    protected variant: ChessVariant | undefined;
+    /**
+     * 构造时直传的渲染器（插件全部卸载后回退）
+     */
+    protected baseRenderer: ChessRenderer | undefined;
+    /**
+     * 构造时直传的变体（插件全部卸载后回退）
+     */
+    protected baseVariant: ChessVariant | undefined;
     constructor(inputCfg?: GameInfo);
     /**
      * 设置游戏窗口 棋盘 棋子大小
@@ -870,6 +1137,14 @@ declare class ZhChess {
      * @param ctx 画布
      */
     draw(ctx: CTX): void;
+    /**
+     * 绘制单枚棋子（优先走自定义渲染器）
+     */
+    protected drawOnePiece(ctx: CTX, piece: ChessOfPeice, textColor: string, bgColor: string, choosePeiceBorderColor: string, layout: DrawLayout, host: ChessGameHost): void;
+    /**
+     * 解析棋子显示名（变体可改写）
+     */
+    protected resolvePieceDisplayName(piece: ChessOfPeice): string;
     /**
      * 画棋盘
      */
@@ -1062,6 +1337,27 @@ declare class ZhChess {
      */
     setPenCodeList(penCode: string): void;
     /**
+     * 获取当前绘制布局（供插件/渲染器使用）
+     */
+    getDrawLayout(): DrawLayout;
+    /**
+     * 导出当前棋盘的文字版布局
+     * @param options 导出选项
+     */
+    exportTextBoard(options?: TextBoardOptions): string;
+    /**
+     * 注册扩展插件
+     *
+     * - `renderer` / `variant`：后者覆盖前者
+     * - `formatCell`：按注册顺序链式生效
+     */
+    use(plugin: ChessPlugin): this;
+    /**
+     * 卸载扩展插件
+     * @param name 插件名
+     */
+    unuse(name: string): this;
+    /**
      * 绘画上次移动点，可自行重写该函数
      * @param ctx canvas 2d 渲染上下文
      */
@@ -1072,4 +1368,4 @@ declare class ZhChess {
     protected setLastMovePeiceStatus(status: boolean): void;
 }
 
-export { Board, CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameErrorCallback, GameEventCallback, GameEventMap, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GamePieceGridDiffX, GamePieceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, Move, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, PENPieceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PiecePosInfo, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateFail, UpdateMoveCallback, UpdateResult, UpdateSuccess, buildBoardIndex, chessOfPeiceMap, ZhChess as default, diffPenStr, gen_PEN_Point_Str, gen_PEN_Str, initBoardPen, parse_PEN_Str, peiceSideMap, pieceSideMap, posIdx, updateSuccess };
+export { Board, CannonPiece, CheckPoint, ChessGameHost, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ChessPlugin, ChessRenderer, ChessVariant, DrawLayout, DrawLayoutColors, ElephantPiece, Ep, GameErrorCallback, GameEventCallback, GameEventMap, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GamePieceGridDiffX, GamePieceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, Move, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, PENPieceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceDrawStyle, PieceInfo, PieceList, PiecePosInfo, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, TextBoardCellFormatter, TextBoardOptions, UpdateFail, UpdateMoveCallback, UpdateResult, UpdateSuccess, VariantAfterMoveContext, asciiLetterByPieceName, buildBoardIndex, chainFormatCells, chessOfPeiceMap, ZhChess as default, diffPenStr, exportTextBoard, gen_PEN_Point_Str, gen_PEN_Str, initBoardPen, parse_PEN_Str, peiceSideMap, pieceSideMap, posIdx, updateSuccess };

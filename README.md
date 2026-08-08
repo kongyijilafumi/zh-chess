@@ -13,6 +13,13 @@
 
 ## 更新日志
 
+### v3.2.0
+
+* 新增**扩展框架**（`ChessPlugin` / `ChessRenderer` / `ChessVariant`）：可自定义棋盘与棋子外观、变体规则（如揭棋骨架），默认中国象棋行为不变。
+* 新增文字棋盘导出：`exportTextBoard(pieces, options)` 与实例方法 `game.exportTextBoard(options)`，支持 `chinese` / `ascii` 与自定义 `formatCell`。
+* 新增 `game.use(plugin)` / `game.unuse(name)` / `game.getDrawLayout()`；`GameInfo` 支持 `plugins` / `renderer` / `variant`。
+* 示例见 `example/framework-demo.js`（文字导出、方形棋子、揭棋钩子骨架）。
+
 ### v3.1.0
 
 * 新增 `generateMoves(side)` 批量走法生成 API，作为 AI 搜索入口（内部仅构建一次棋盘位表并交由本方棋子复用，比逐个调用 `getMovePoints(pl)` 更高效）。
@@ -359,6 +366,46 @@ const redPieces = game.getPiecesOfSide("RED") // PieceList
 ##### getCurrentPenCode(side: PieceSide): string
 
 获取当前棋盘的 `PEN` 格式位置代码
+
+##### exportTextBoard(options?: TextBoardOptions): string
+
+导出当前棋盘文字布局。`style` 可为 `chinese`（默认）或 `ascii`；也可用独立函数 `exportTextBoard(pieces, options)`。
+
+```js
+game.gameStart("RED")
+console.log(game.exportTextBoard({ style: "chinese" }))
+console.log(game.exportTextBoard({ style: "ascii", showCoords: false }))
+```
+
+##### use(plugin: ChessPlugin) / unuse(name: string)
+
+注册/卸载扩展插件。插件可携带 `renderer`（自定义棋盘/棋子绘制）、`variant`（变体规则钩子，如揭棋）、`formatCell`（文字导出单元格）。
+
+```js
+game.use({
+  name: "my-theme",
+  renderer: {
+    drawPiece(ctx, piece, style, layout) {
+      // 自定义棋子外形，返回 true 跳过默认圆形
+      return true
+    }
+  },
+  variant: {
+    name: "jieqi",
+    getPieceDisplayName(piece) {
+      return "暗" // 未翻开时显示
+    },
+    initBoard(game) { /* 自定义开局 */ },
+    afterMove(ctx, game) { /* 翻子、揭示等 */ }
+  }
+})
+```
+
+`GameInfo` 也可直接传入 `plugins` / `renderer` / `variant`。更多见 `example/framework-demo.js`。
+
+##### getDrawLayout(): DrawLayout
+
+返回当前棋盘绘制布局（格子尺寸、偏移、配色等），供自定义渲染器使用。
 
 ##### listenClick(e: MouseEvent): void
 
