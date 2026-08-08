@@ -1,10 +1,14 @@
 import { PieceInfo, PieceSide, Point, MovePoint, MoveResult, MovePointList, PeicePosInfo, GamePeiceGridDiffX, GamePeiceGridDiffY } from './types';
 const notExistPoint = { x: 10, y: 10 }
 /**
+ * 棋盘位表索引类型：90 格，每格存棋子或 undefined
+ */
+export type Board = Array<ChessOfPeice | undefined>
+/**
  * 构建棋盘位表索引（90 格），实现 O(1) 查格，替代 pl.find 的 O(n) 线性扫描
  */
-export const buildBoardIndex = (pl: PieceList): Array<ChessOfPeice | undefined> => {
-  const board: Array<ChessOfPeice | undefined> = new Array(90)
+export const buildBoardIndex = (pl: PieceList): Board => {
+  const board: Board = new Array(90)
   for (let i = 0; i < pl.length; i++) {
     const item = pl[i]
     board[item.x + item.y * 9] = item
@@ -43,11 +47,11 @@ export class Piece implements PieceInfo {
    * @param pl 棋子列表
    * @returns 返回这个棋子可以移动点列表
    */
-  filterMovePoints(list: MovePointList, pl: PieceList): MovePointList {
-    const board = buildBoardIndex(pl)
+  filterMovePoints(list: MovePointList, pl: PieceList, board?: Board): MovePointList {
+    const b = board || buildBoardIndex(pl)
     return list.filter(i => {
       if (i.x < 0 || i.x > 8 || i.y < 0 || i.y > 9) return false
-      const atItem = board[posIdx(i.x, i.y)]
+      const atItem = b[posIdx(i.x, i.y)]
       if (atItem && atItem.side === this.side) return false
       return true
     })
@@ -145,7 +149,7 @@ export class Piece implements PieceInfo {
    * @param _pl 棋子列表
    * @returns 
    */
-  getMovePoints(_pl: PieceList): MovePointList {
+  getMovePoints(_pl: PieceList, _board?: Board): MovePointList {
     return []
   }
   /**
@@ -231,7 +235,7 @@ export class RookPiece extends Piece {
    * @param pl 棋子列表
    * @returns 返回移动点列表
    */
-  getMovePoints(pl: PieceList): MovePointList {
+  getMovePoints(pl: PieceList, board?: Board): MovePointList {
     const xpoints: MovePointList = []
     const ypoints: MovePointList = []
     // 无棋子列表时返回全部同线点（保留原语义）
@@ -244,10 +248,10 @@ export class RookPiece extends Piece {
       }
       return xpoints.concat(ypoints)
     }
-    const board = buildBoardIndex(pl)
+    const b = board || buildBoardIndex(pl)
     // 从自身位置向两侧扫描：左侧 x 递减，遇棋即止（敌方可吃，己方挡路）
     for (let x = this.x - 1; x >= 0; x--) {
-      const pc = board[x + this.y * 9]
+      const pc = b[x + this.y * 9]
       if (!pc) {
         xpoints.push(new MovePoint(x, this.y, notExistPoint))
       } else {
@@ -259,7 +263,7 @@ export class RookPiece extends Piece {
     }
     // 右侧 x 递增
     for (let x = this.x + 1; x < 9; x++) {
-      const pc = board[x + this.y * 9]
+      const pc = b[x + this.y * 9]
       if (!pc) {
         xpoints.push(new MovePoint(x, this.y, notExistPoint))
       } else {
@@ -271,7 +275,7 @@ export class RookPiece extends Piece {
     }
     // 上侧 y 递减
     for (let y = this.y - 1; y >= 0; y--) {
-      const pc = board[this.x + y * 9]
+      const pc = b[this.x + y * 9]
       if (!pc) {
         ypoints.push(new MovePoint(this.x, y, notExistPoint))
       } else {
@@ -283,7 +287,7 @@ export class RookPiece extends Piece {
     }
     // 下侧 y 递增
     for (let y = this.y + 1; y < 10; y++) {
-      const pc = board[this.x + y * 9]
+      const pc = b[this.x + y * 9]
       if (!pc) {
         ypoints.push(new MovePoint(this.x, y, notExistPoint))
       } else {
@@ -310,7 +314,7 @@ export class HorsePiece extends Piece {
    * @param pl 棋子列表
    * @returns 返回移动点列表
    */
-  getMovePoints(pl: PieceList): MovePointList {
+  getMovePoints(pl: PieceList, board?: Board): MovePointList {
     const mps: MovePointList = []
     for (let index = 0; index < 2; index++) {
       // 左
@@ -335,7 +339,7 @@ export class HorsePiece extends Piece {
       mps.push(new MovePoint(bx, by, { x: this.x, y: this.y + 1 }))
 
     }
-    return this.filterMovePoints(mps, pl)
+    return this.filterMovePoints(mps, pl, board)
   }
   /**
    * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
@@ -343,16 +347,16 @@ export class HorsePiece extends Piece {
    * @param pl 棋子列表
    * @returns 返回这个棋子可以移动点列表
    */
-  filterMovePoints(list: MovePointList, pl: PieceList): MovePointList {
-    const board = buildBoardIndex(pl)
+  filterMovePoints(list: MovePointList, pl: PieceList, board?: Board): MovePointList {
+    const b = board || buildBoardIndex(pl)
     const result: MovePointList = []
     for (let i = 0; i < list.length; i++) {
       const item = list[i]
       if (item.x < 0 || item.x > 8 || item.y < 0 || item.y > 9) continue
-      const atItem = board[posIdx(item.x, item.y)]
+      const atItem = b[posIdx(item.x, item.y)]
       if (atItem && atItem.side === this.side) continue
       // 蹩马腿：disPoint 位置有任意棋子则不可达
-      if (board[posIdx(item.disPoint.x, item.disPoint.y)]) continue
+      if (b[posIdx(item.disPoint.x, item.disPoint.y)]) continue
       result.push(item)
     }
     return result
@@ -387,7 +391,7 @@ export class ElephantPiece extends HorsePiece {
   * @param pl 棋子列表
   * @returns 返回移动点列表
   */
-  getMovePoints(pl: PieceList): MovePointList {
+  getMovePoints(pl: PieceList, board?: Board): MovePointList {
     const mps: MovePointList = []
     for (let index = 0; index < 2; index++) {
       // 上
@@ -404,7 +408,7 @@ export class ElephantPiece extends HorsePiece {
       const bdy = this.y + 1
       mps.push(new MovePoint(bx, by, { x: bdx, y: bdy }))
     }
-    return this.filterMovePoints(mps, pl)
+    return this.filterMovePoints(mps, pl, board)
   }
   /**
    * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
@@ -412,8 +416,8 @@ export class ElephantPiece extends HorsePiece {
    * @param pl 棋子列表
    * @returns 返回这个棋子可以移动点列表
    */
-  filterMovePoints(list: MovePointList, pl: PieceList) {
-    const board = buildBoardIndex(pl)
+  filterMovePoints(list: MovePointList, pl: PieceList, board?: Board) {
+    const b = board || buildBoardIndex(pl)
     const result: MovePointList = []
     const minY = this.side === "RED" ? 5 : 0
     const maxY = this.side === "RED" ? 9 : 4
@@ -421,10 +425,10 @@ export class ElephantPiece extends HorsePiece {
       const item = list[i]
       if (item.x < 0 || item.x > 8 || item.y < 0 || item.y > 9) continue
       if (item.y < minY || item.y > maxY) continue
-      const atItem = board[posIdx(item.x, item.y)]
+      const atItem = b[posIdx(item.x, item.y)]
       if (atItem && atItem.side === this.side) continue
       // 塞象眼：disPoint 位置有任意棋子则不可达
-      if (board[posIdx(item.disPoint.x, item.disPoint.y)]) continue
+      if (b[posIdx(item.disPoint.x, item.disPoint.y)]) continue
       result.push(item)
     }
     return result
@@ -441,7 +445,7 @@ export class KnightPiece extends ElephantPiece {
     * @param pl 棋子列表
     * @returns 返回移动点列表
     */
-  getMovePoints(pl: PieceList): MovePointList {
+  getMovePoints(pl: PieceList, board?: Board): MovePointList {
     const mps: MovePointList = []
     for (let index = 0; index < 2; index++) {
       // 上
@@ -454,7 +458,7 @@ export class KnightPiece extends ElephantPiece {
       const by = this.y + 1
       mps.push(new MovePoint(bx, by, notExistPoint))
     }
-    return this.filterMovePoints(mps, pl)
+    return this.filterMovePoints(mps, pl, board)
   }
   /**
     * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
@@ -462,8 +466,8 @@ export class KnightPiece extends ElephantPiece {
     * @param pl 棋子列表
     * @returns 返回这个棋子可以移动点列表
     */
-  filterMovePoints(list: MovePointList, pl: PieceList) {
-    const board = buildBoardIndex(pl)
+  filterMovePoints(list: MovePointList, pl: PieceList, board?: Board) {
+    const b = board || buildBoardIndex(pl)
     const result: MovePointList = []
     const minY = this.side === "RED" ? 7 : 0
     const maxY = this.side === "RED" ? 9 : 2
@@ -472,7 +476,7 @@ export class KnightPiece extends ElephantPiece {
       // 九宫范围限制
       if (item.x < 3 || item.x > 5) continue
       if (item.y < minY || item.y > maxY) continue
-      const atItem = board[posIdx(item.x, item.y)]
+      const atItem = b[posIdx(item.x, item.y)]
       if (atItem && atItem.side === this.side) continue
       result.push(item)
     }
@@ -490,14 +494,14 @@ export class GeneralPiece extends KnightPiece {
     * @param pl 棋子列表
     * @returns 返回移动点列表
     */
-  getMovePoints(pl: PieceList): MovePointList {
+  getMovePoints(pl: PieceList, board?: Board): MovePointList {
     const mps: MovePointList = [
       new MovePoint(this.x - 1, this.y, notExistPoint),
       new MovePoint(this.x + 1, this.y, notExistPoint),
       new MovePoint(this.x, this.y - 1, notExistPoint),
       new MovePoint(this.x, this.y + 1, notExistPoint),
     ]
-    return this.filterMovePoints(mps, pl)
+    return this.filterMovePoints(mps, pl, board)
   }
 }
 
@@ -511,7 +515,7 @@ export class CannonPiece extends RookPiece {
    * @param pl 棋子列表
    * @returns 返回移动点列表
    */
-  getMovePoints(pl: PieceList): MovePointList {
+  getMovePoints(pl: PieceList, board?: Board): MovePointList {
     const xpoints: MovePointList = []
     const ypoints: MovePointList = []
     if (!pl) {
@@ -523,12 +527,12 @@ export class CannonPiece extends RookPiece {
       }
       return xpoints.concat(ypoints)
     }
-    const board = buildBoardIndex(pl)
+    const b = board || buildBoardIndex(pl)
     // 分方向扫描：炮架 = 离炮最近的棋子，必须从自身向两侧扫描
     // 左侧：x 递减，遇到第一个棋子为炮架，炮架之后的下一个敌方可吃
     let mountX = false
     for (let x = this.x - 1; x >= 0; x--) {
-      const pc = board[x + this.y * 9]
+      const pc = b[x + this.y * 9]
       if (!mountX) {
         if (!pc) {
           xpoints.push(new MovePoint(x, this.y, notExistPoint))
@@ -547,7 +551,7 @@ export class CannonPiece extends RookPiece {
     // 右侧：x 递增（独立炮架）
     mountX = false
     for (let x = this.x + 1; x < 9; x++) {
-      const pc = board[x + this.y * 9]
+      const pc = b[x + this.y * 9]
       if (!mountX) {
         if (!pc) {
           xpoints.push(new MovePoint(x, this.y, notExistPoint))
@@ -566,7 +570,7 @@ export class CannonPiece extends RookPiece {
     // 上侧：y 递减（独立炮架）
     let mountY = false
     for (let y = this.y - 1; y >= 0; y--) {
-      const pc = board[this.x + y * 9]
+      const pc = b[this.x + y * 9]
       if (!mountY) {
         if (!pc) {
           ypoints.push(new MovePoint(this.x, y, notExistPoint))
@@ -585,7 +589,7 @@ export class CannonPiece extends RookPiece {
     // 下侧：y 递增（独立炮架）
     mountY = false
     for (let y = this.y + 1; y < 10; y++) {
-      const pc = board[this.x + y * 9]
+      const pc = b[this.x + y * 9]
       if (!mountY) {
         if (!pc) {
           ypoints.push(new MovePoint(this.x, y, notExistPoint))
@@ -657,7 +661,7 @@ export class SoldierPiece extends HorsePiece {
     * @param pl 棋子列表
     * @returns 返回移动点列表
     */
-  getMovePoints(pl: PieceList): MovePointList {
+  getMovePoints(pl: PieceList, board?: Board): MovePointList {
     const isCross = this.side === "RED" ? (this.y <= 4) : (this.y >= 5)
     const step = this.side === "RED" ? -1 : +1
     const startMp = new MovePoint(this.x, this.y + step, notExistPoint)
@@ -668,7 +672,7 @@ export class SoldierPiece extends HorsePiece {
         new MovePoint(this.x + 1, this.y, notExistPoint),
       ] :
       [startMp]
-    return this.filterMovePoints(mps, pl)
+    return this.filterMovePoints(mps, pl, board)
   }
 }
 

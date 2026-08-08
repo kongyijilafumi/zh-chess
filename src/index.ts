@@ -2,7 +2,7 @@ import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallbac
 import { Point, PieceInfo, MoveResult } from './types';
 import { gameDefaultCfg, gen_PEN_Str, initBoardPen, parseStrToPoint, parse_PEN_Str } from '../utils';
 import { getSquarePoints } from '../utils/draw';
-import { ChessOfPeice, GeneralPiece, PieceList, RookPiece, CannonPiece, HorsePiece, SoldierPiece, chessOfPeiceMap, buildBoardIndex, posIdx } from './piece';
+import { ChessOfPeice, GeneralPiece, PieceList, RookPiece, CannonPiece, HorsePiece, SoldierPiece, chessOfPeiceMap, buildBoardIndex, posIdx, Board } from './piece';
 import "core-js/proposals/global-this"
 const findPiece = (pl: PieceList, p: Point) => pl.find(item => item.x === p.x && item.y === p.y)
 
@@ -507,25 +507,28 @@ export default class ZhChess {
     const moveFlag = this.choosePiece.move(mov, this.livePieceList)
     const moveCheck: (cp: CheckPoint) => UpdateResult = (cp: CheckPoint) => {
       const isMove = "move" in cp
-      const hasTrouble = this.checkGeneralInTrouble(side, posPeice, cp, this.livePieceList)
+      // 一次走子判定构建一份棋盘位表，两次将军检测复用（消除重复构建热点）
+      const board = buildBoardIndex(this.livePieceList)
+      const hasTrouble = this.checkGeneralInTrouble(side, posPeice, cp, this.livePieceList, board)
       if (hasTrouble) {
         return { flag: false, message: "不可以送将！" }
       }
       const enemySide: PieceSide = side === "RED" ? "BLACK" : "RED"
       let isOver = false
-      const enemyhasTrouble = this.checkGeneralInTrouble(enemySide, posPeice, cp, this.livePieceList)
+      const enemyhasTrouble = this.checkGeneralInTrouble(enemySide, posPeice, cp, this.livePieceList, board)
       const movedPeiceList = isMove ? this.livePieceList.filter(i => !(i.x === posPeice.x && i.y === posPeice.y)) :
         this.livePieceList.filter(i => !((i.x === posPeice.x && i.y === posPeice.y) || (i.x === cp.eat.x && i.y === cp.eat.y)))
       const newMp = chessOfPeiceMap[posPeice.name]({ ...posPeice, ...mov })
       movedPeiceList.push(newMp)
+      const movedBoard = buildBoardIndex(movedPeiceList)
       if (enemyhasTrouble) {
-        const hasSolution = this.checkEnemySideInTroubleHasSolution(enemySide, movedPeiceList)
+        const hasSolution = this.checkEnemySideInTroubleHasSolution(enemySide, movedPeiceList, movedBoard)
         if (!hasSolution) {
           isOver = true
           this.winner = side
         }
       } else {
-        const hasMovePoints = this.checkEnemySideHasMovePoints(enemySide, movedPeiceList)
+        const hasMovePoints = this.checkEnemySideHasMovePoints(enemySide, movedPeiceList, movedBoard)
         if (!hasMovePoints) {
           isOver = true
           this.winner = side
@@ -870,133 +873,149 @@ export default class ZhChess {
    * @param pl 当前棋盘列表
    * @returns 是否安全
    */
-  protected checkGeneralInTrouble(side: PieceSide, pos: ChessOfPeice, cp: CheckPoint, pl: PieceList) {
+  protected checkGeneralInTrouble(side: PieceSide, pos: ChessOfPeice, cp: CheckPoint, pl: PieceList, board?: Board) {
     const enemySide: PieceSide = side === "BLACK" ? "RED" : "BLACK"
-    let list: PieceList;
-    if ("move" in cp) {
-      const pieceInfo = { ...pos, ...cp.move } as PieceInfo
-      const piece = chessOfPeiceMap[pieceInfo.name](pieceInfo)
-      list = pl.filter(i => !(i.x === pos.x && i.y === pos.y))
-      list.push(piece)
-    } else {
-      const pieceInfo = { ...pos, ...cp.eat } as PieceInfo
-      const piece = chessOfPeiceMap[pieceInfo.name](pieceInfo)
-      list = pl.filter(i => !(i.x === cp.eat.x && i.y === cp.eat.y) && !(i.x === pos.x && i.y === pos.y))
-      list.push(piece)
-    }
-    // 将帅对脸检测
-    if (this.checkGeneralsFaceToFaceInTrouble(list)) {
-      return true
-    }
-    const sideGeneralPiece = list.find(i => i.side === side && i.constructor === GeneralPiece) as GeneralPiece
-    if (!sideGeneralPiece) {
-      return false
-    }
-    const gx = sideGeneralPiece.x
-    const gy = sideGeneralPiece.y
-    // 棋盘位表，O(1) 查格
-    const board = buildBoardIndex(list)
-    const isEnemy = (pc: ChessOfPeice) => pc.side === enemySide
-    // 注意：继承链 RookPiece<-CannonPiece、HorsePiece<-ElephantPiece/SoldierPiece，
-    // instanceof 会误判，必须用精确的 constructor 判断
-    const isAttackLine = (pc: ChessOfPeice) => (pc.constructor === RookPiece || pc.constructor === GeneralPiece) && pc.side === enemySide
-    const isCannon = (pc: ChessOfPeice) => pc.constructor === CannonPiece && pc.side === enemySide
-    // 反向攻击检测（替代遍历敌方棋子逐一 move 验证）：
-    // 沿 4 个方向扫描，第一个棋子若是敌方车/将则可直攻；
-    // 任意棋子作为炮架，炮架之后的第一个棋子若是敌方炮则可隔架打将
-    // 左方向
-    let mount = false
-    for (let x = gx - 1; x >= 0; x--) {
-      const pc = board[x + gy * 9]
-      if (!pc) continue
-      if (!mount) {
-        if (isAttackLine(pc)) return true
-        mount = true
-      } else {
-        if (isCannon(pc)) return true
-        break
-      }
-    }
-    // 右方向
-    mount = false
-    for (let x = gx + 1; x <= 8; x++) {
-      const pc = board[x + gy * 9]
-      if (!pc) continue
-      if (!mount) {
-        if (isAttackLine(pc)) return true
-        mount = true
-      } else {
-        if (isCannon(pc)) return true
-        break
-      }
-    }
-    // 上方向
-    mount = false
-    for (let y = gy - 1; y >= 0; y--) {
-      const pc = board[gx + y * 9]
-      if (!pc) continue
-      if (!mount) {
-        if (isAttackLine(pc)) return true
-        mount = true
-      } else {
-        if (isCannon(pc)) return true
-        break
-      }
-    }
-    // 下方向
-    mount = false
-    for (let y = gy + 1; y <= 9; y++) {
-      const pc = board[gx + y * 9]
-      if (!pc) continue
-      if (!mount) {
-        if (isAttackLine(pc)) return true
-        mount = true
-      } else {
-        if (isCannon(pc)) return true
-        break
-      }
-    }
-    // 马攻击：8 个马位，且蹩腿点无棋子
-    // [dx, dy, 蹩腿dx, 蹩腿dy]
-    const horseOffsets: Array<[number, number, number, number]> = [
-      [1, 2, 0, 1], [2, 1, 1, 0], [2, -1, 1, 0], [1, -2, 0, -1],
-      [-1, -2, 0, -1], [-2, -1, -1, 0], [-2, 1, -1, 0], [-1, 2, 0, 1],
-    ]
-    for (let i = 0; i < 8; i++) {
-      const o = horseOffsets[i]
-      const hx = gx + o[0]
-      const hy = gy + o[1]
-      if (hx < 0 || hx > 8 || hy < 0 || hy > 9) continue
-      const horse = board[hx + hy * 9]
-      if (horse && horse.side === enemySide && horse.constructor === HorsePiece && !board[gx + o[2] + (gy + o[3]) * 9]) {
+    const isMove = "move" in cp
+    const toP = isMove ? cp.move : cp.eat
+    // 棋盘位表：调用方可复用已构建的索引，避免每次判定重建（最热点优化）
+    const b = board || buildBoardIndex(pl)
+    const fromIdx = posIdx(pos.x, pos.y)
+    const toIdx = posIdx(toP.x, toP.y)
+    const eatIdx = isMove ? -1 : toIdx
+    const fromPiece = b[fromIdx]
+    const eatPiece = eatIdx >= 0 ? b[eatIdx] : undefined
+    const pieceInfo = { ...pos, ...toP } as PieceInfo
+    const piece = chessOfPeiceMap[pieceInfo.name](pieceInfo)
+    // 双槽位增量模拟走子：from 置空，eat 移除被吃子，to 放入新棋子
+    b[fromIdx] = undefined
+    if (eatIdx >= 0) b[eatIdx] = undefined
+    b[toIdx] = piece
+    try {
+      // 将帅对脸检测
+      if (this.checkGeneralsFaceToFaceInTrouble(b)) {
         return true
       }
-    }
-    // 兵/卒攻击
-    if (enemySide === "BLACK") {
-      // 黑卒在将正下方一格，直走可攻
-      const fwd = board[posIdx(gx, gy - 1)]
-      if (fwd && isEnemy(fwd) && fwd.constructor === SoldierPiece) return true
-      // 黑卒过河（y >= 5）后可横向攻击
-      if (gy >= 5) {
-        const lf = board[posIdx(gx - 1, gy)]
-        if (lf && isEnemy(lf) && lf.constructor === SoldierPiece) return true
-        const rf = board[posIdx(gx + 1, gy)]
-        if (rf && isEnemy(rf) && rf.constructor === SoldierPiece) return true
+      // 己方将帅（精确 constructor 判断，避免继承链误判）
+      let sideGeneralPiece: GeneralPiece | undefined
+      for (let i = 0; i < b.length; i++) {
+        const pc = b[i]
+        if (pc && pc.side === side && pc.constructor === GeneralPiece) {
+          sideGeneralPiece = pc
+          break
+        }
       }
-    } else {
-      // 红兵在将正上方一格，直走可攻
-      const fwd = board[posIdx(gx, gy + 1)]
-      if (fwd && isEnemy(fwd) && fwd.constructor === SoldierPiece) return true
-      // 红兵过河（y <= 4）后可横向攻击
-      if (gy <= 4) {
-        const lf = board[posIdx(gx - 1, gy)]
-        if (lf && isEnemy(lf) && lf.constructor === SoldierPiece) return true
-        const rf = board[posIdx(gx + 1, gy)]
-        if (rf && isEnemy(rf) && rf.constructor === SoldierPiece) return true
+      if (!sideGeneralPiece) {
+        return false
       }
+      const gx = sideGeneralPiece.x
+      const gy = sideGeneralPiece.y
+      const isEnemy = (pc: ChessOfPeice) => pc.side === enemySide
+      // 注意：继承链 RookPiece<-CannonPiece、HorsePiece<-ElephantPiece/SoldierPiece，
+      // instanceof 会误判，必须用精确的 constructor 判断
+      const isAttackLine = (pc: ChessOfPeice) => (pc.constructor === RookPiece || pc.constructor === GeneralPiece) && pc.side === enemySide
+      const isCannon = (pc: ChessOfPeice) => pc.constructor === CannonPiece && pc.side === enemySide
+      // 反向攻击检测（替代遍历敌方棋子逐一 move 验证）：
+      // 沿 4 个方向扫描，第一个棋子若是敌方车/将则可直攻；
+      // 任意棋子作为炮架，炮架之后的第一个棋子若是敌方炮则可隔架打将
+      // 左方向
+      let mount = false
+      for (let x = gx - 1; x >= 0; x--) {
+        const pc = b[x + gy * 9]
+        if (!pc) continue
+        if (!mount) {
+          if (isAttackLine(pc)) return true
+          mount = true
+        } else {
+          if (isCannon(pc)) return true
+          break
+        }
+      }
+      // 右方向
+      mount = false
+      for (let x = gx + 1; x <= 8; x++) {
+        const pc = b[x + gy * 9]
+        if (!pc) continue
+        if (!mount) {
+          if (isAttackLine(pc)) return true
+          mount = true
+        } else {
+          if (isCannon(pc)) return true
+          break
+        }
+      }
+      // 上方向
+      mount = false
+      for (let y = gy - 1; y >= 0; y--) {
+        const pc = b[gx + y * 9]
+        if (!pc) continue
+        if (!mount) {
+          if (isAttackLine(pc)) return true
+          mount = true
+        } else {
+          if (isCannon(pc)) return true
+          break
+        }
+      }
+      // 下方向
+      mount = false
+      for (let y = gy + 1; y <= 9; y++) {
+        const pc = b[gx + y * 9]
+        if (!pc) continue
+        if (!mount) {
+          if (isAttackLine(pc)) return true
+          mount = true
+        } else {
+          if (isCannon(pc)) return true
+          break
+        }
+      }
+      // 马攻击：8 个马位，且蹩腿点无棋子
+      // [dx, dy, 蹩腿dx, 蹩腿dy]
+      const horseOffsets: Array<[number, number, number, number]> = [
+        [1, 2, 0, 1], [2, 1, 1, 0], [2, -1, 1, 0], [1, -2, 0, -1],
+        [-1, -2, 0, -1], [-2, -1, -1, 0], [-2, 1, -1, 0], [-1, 2, 0, 1],
+      ]
+      for (let i = 0; i < 8; i++) {
+        const o = horseOffsets[i]
+        const hx = gx + o[0]
+        const hy = gy + o[1]
+        if (hx < 0 || hx > 8 || hy < 0 || hy > 9) continue
+        const horse = b[hx + hy * 9]
+        if (horse && horse.side === enemySide && horse.constructor === HorsePiece && !b[gx + o[2] + (gy + o[3]) * 9]) {
+          return true
+        }
+      }
+      // 兵/卒攻击
+      if (enemySide === "BLACK") {
+        // 黑卒在将正下方一格，直走可攻
+        const fwd = b[posIdx(gx, gy - 1)]
+        if (fwd && isEnemy(fwd) && fwd.constructor === SoldierPiece) return true
+        // 黑卒过河（y >= 5）后可横向攻击
+        if (gy >= 5) {
+          const lf = b[posIdx(gx - 1, gy)]
+          if (lf && isEnemy(lf) && lf.constructor === SoldierPiece) return true
+          const rf = b[posIdx(gx + 1, gy)]
+          if (rf && isEnemy(rf) && rf.constructor === SoldierPiece) return true
+        }
+      } else {
+        // 红兵在将正上方一格，直走可攻
+        const fwd = b[posIdx(gx, gy + 1)]
+        if (fwd && isEnemy(fwd) && fwd.constructor === SoldierPiece) return true
+        // 红兵过河（y <= 4）后可横向攻击
+        if (gy <= 4) {
+          const lf = b[posIdx(gx - 1, gy)]
+          if (lf && isEnemy(lf) && lf.constructor === SoldierPiece) return true
+          const rf = b[posIdx(gx + 1, gy)]
+          if (rf && isEnemy(rf) && rf.constructor === SoldierPiece) return true
+        }
+      }
+      return false
+    } finally {
+      // 还原模拟：to 清空 → eat 放回被吃子 → from 放回原棋子
+      b[toIdx] = undefined
+      if (eatIdx >= 0) b[eatIdx] = eatPiece
+      b[fromIdx] = fromPiece
     }
-    return false
   }
 
   /**
@@ -1005,20 +1024,31 @@ export default class ZhChess {
    * @param side 当前下棋方
    * @returns 是否危险
    */
-  protected checkGeneralsFaceToFaceInTrouble(pl: PieceList) {
-    const points = pl.filter(i => i instanceof GeneralPiece).map(i => ({ x: i.x, y: i.y }))
-    const max = points[0].y > points[1].y ? points[0].y : points[1].y
-    const min = points[0].y < points[1].y ? points[0].y : points[1].y
-    // 在同一条直线上
-    if (points[0].x === points[1].x) {
-      const hasPeice = pl.find(i => i.y < max && i.y > min && i.x === points[0].x)
-      // 如果有棋子 说明可以安全移动 
-      if (hasPeice) {
-        return false
+  protected checkGeneralsFaceToFaceInTrouble(board: Board) {
+    // 从棋盘位表中找两枚将帅（精确 constructor 判断，避免继承链误判）
+    let g1: ChessOfPeice | undefined
+    let g2: ChessOfPeice | undefined
+    for (let i = 0; i < board.length; i++) {
+      const pc = board[i]
+      if (pc && pc.constructor === GeneralPiece) {
+        if (!g1) {
+          g1 = pc
+        } else {
+          g2 = pc
+          break
+        }
       }
-      return true
     }
-    return false
+    if (!g1 || !g2) return false
+    // 不在同一条直线上则安全
+    if (g1.x !== g2.x) return false
+    const min = Math.min(g1.y, g2.y)
+    const max = Math.max(g1.y, g2.y)
+    // 两将之间有棋子则安全，否则对脸危险
+    for (let y = min + 1; y < max; y++) {
+      if (board[g1.x + y * 9]) return false
+    }
+    return true
   }
   /**
    * 判断敌方被将军时，是否有解
@@ -1026,20 +1056,19 @@ export default class ZhChess {
    * @param pl 当前棋盘列表
    * @returns  返回是否有解
    */
-  protected checkEnemySideInTroubleHasSolution(enemySide: PieceSide, pl: PieceList) {
-    const board = buildBoardIndex(pl)
+  protected checkEnemySideInTroubleHasSolution(enemySide: PieceSide, pl: PieceList, board?: Board) {
+    const b = board || buildBoardIndex(pl)
     return pl.filter(i => i.side === enemySide).some(item => {
-      const mps = item.getMovePoints(pl)
+      const mps = item.getMovePoints(pl, b)
       // 是否有解法
       return mps.some(p => {
-        const isDis = board[posIdx(p.disPoint.x, p.disPoint.y)]
+        const isDis = b[posIdx(p.disPoint.x, p.disPoint.y)]
         if (isDis) {
           return false
         }
-        const hasEat = board[posIdx(p.x, p.y)]
+        const hasEat = b[posIdx(p.x, p.y)]
         const checkPoint: CheckPoint = hasEat ? { eat: p } : { move: p }
-        const hasSolution = !this.checkGeneralInTrouble(enemySide, item, checkPoint, pl)
-        // console.log(`${item} 移动到 ${p}点 ${enemySide}方 ${!hasSolution ? '有' : '没有'} 危险！${hasSolution ? "有" : "无"}解法`);
+        const hasSolution = !this.checkGeneralInTrouble(enemySide, item, checkPoint, pl, b)
         return hasSolution
       })
     })
@@ -1049,19 +1078,19 @@ export default class ZhChess {
    * @param enemySide 敌方
    * @returns {boolean}
    */
-  protected checkEnemySideHasMovePoints(enemySide: PieceSide, pl: PieceList) {
+  protected checkEnemySideHasMovePoints(enemySide: PieceSide, pl: PieceList, board?: Board) {
     // 当前棋子列表
     const currentList = pl
     // 敌方棋子列表
     const enemyList = currentList.filter(p => p.side === enemySide)
-    const board = buildBoardIndex(currentList)
+    const b = board || buildBoardIndex(currentList)
     const hasPeice = enemyList.find(p => {
-      // 获取当前棋子可移动位置列表
-      const mps = p.getMovePoints(currentList)
+      // 获取当前棋子可移动位置列表（复用棋盘位表）
+      const mps = p.getMovePoints(currentList, b)
       return mps.find(mp => {
         // 移动点 是否有棋子
-        const checkPoint: CheckPoint = board[posIdx(mp.x, mp.y)] ? { eat: mp } : { move: mp }
-        const hasTrouble = this.checkGeneralInTrouble(enemySide, p, checkPoint, currentList)
+        const checkPoint: CheckPoint = b[posIdx(mp.x, mp.y)] ? { eat: mp } : { move: mp }
+        const hasTrouble = this.checkGeneralInTrouble(enemySide, p, checkPoint, currentList, b)
         // 如果 移动存在危险表示 不可以移动此移动点
         if (hasTrouble) {
           return false

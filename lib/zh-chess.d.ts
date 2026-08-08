@@ -1,7 +1,11 @@
 /**
+ * 棋盘位表索引类型：90 格，每格存棋子或 undefined
+ */
+type Board = Array<ChessOfPeice | undefined>;
+/**
  * 构建棋盘位表索引（90 格），实现 O(1) 查格，替代 pl.find 的 O(n) 线性扫描
  */
-declare const buildBoardIndex: (pl: PieceList) => Array<ChessOfPeice | undefined>;
+declare const buildBoardIndex: (pl: PieceList) => Board;
 /**
  * 坐标 -> 棋盘位表索引，越界返回 -1
  */
@@ -25,7 +29,7 @@ declare class Piece implements PieceInfo {
      * @param pl 棋子列表
      * @returns 返回这个棋子可以移动点列表
      */
-    filterMovePoints(list: MovePointList, pl: PieceList): MovePointList;
+    filterMovePoints(list: MovePointList, pl: PieceList, board?: Board): MovePointList;
     /**
      * 返回当前棋子的坐标信息
      * @returns 包含 name side x y 信息
@@ -56,7 +60,7 @@ declare class Piece implements PieceInfo {
      * @param _pl 棋子列表
      * @returns
      */
-    getMovePoints(_pl: PieceList): MovePointList;
+    getMovePoints(_pl: PieceList, _board?: Board): MovePointList;
     /**
      * 画出棋子可移动的点
      * @param ctx canvas画布
@@ -95,7 +99,7 @@ declare class RookPiece extends Piece {
      * @param pl 棋子列表
      * @returns 返回移动点列表
      */
-    getMovePoints(pl: PieceList): MovePointList;
+    getMovePoints(pl: PieceList, board?: Board): MovePointList;
 }
 /**
  * 象棋：马
@@ -106,14 +110,14 @@ declare class HorsePiece extends Piece {
      * @param pl 棋子列表
      * @returns 返回移动点列表
      */
-    getMovePoints(pl: PieceList): MovePointList;
+    getMovePoints(pl: PieceList, board?: Board): MovePointList;
     /**
      * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
      * @param list 移动点列表
      * @param pl 棋子列表
      * @returns 返回这个棋子可以移动点列表
      */
-    filterMovePoints(list: MovePointList, pl: PieceList): MovePointList;
+    filterMovePoints(list: MovePointList, pl: PieceList, board?: Board): MovePointList;
     /**
      * 根据象棋自己的移动规律以及棋子列表的位置得出是否可以移动到指定的坐标上
      * @param p 坐标点 或 移动点
@@ -131,14 +135,14 @@ declare class ElephantPiece extends HorsePiece {
     * @param pl 棋子列表
     * @returns 返回移动点列表
     */
-    getMovePoints(pl: PieceList): MovePointList;
+    getMovePoints(pl: PieceList, board?: Board): MovePointList;
     /**
      * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
      * @param list 移动点列表
      * @param pl 棋子列表
      * @returns 返回这个棋子可以移动点列表
      */
-    filterMovePoints(list: MovePointList, pl: PieceList): MovePointList;
+    filterMovePoints(list: MovePointList, pl: PieceList, board?: Board): MovePointList;
 }
 /**
  * 象棋：士
@@ -149,14 +153,14 @@ declare class KnightPiece extends ElephantPiece {
       * @param pl 棋子列表
       * @returns 返回移动点列表
       */
-    getMovePoints(pl: PieceList): MovePointList;
+    getMovePoints(pl: PieceList, board?: Board): MovePointList;
     /**
       * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
       * @param list 移动点列表
       * @param pl 棋子列表
       * @returns 返回这个棋子可以移动点列表
       */
-    filterMovePoints(list: MovePointList, pl: PieceList): MovePointList;
+    filterMovePoints(list: MovePointList, pl: PieceList, board?: Board): MovePointList;
 }
 /**
  * 象棋：将领
@@ -167,7 +171,7 @@ declare class GeneralPiece extends KnightPiece {
       * @param pl 棋子列表
       * @returns 返回移动点列表
       */
-    getMovePoints(pl: PieceList): MovePointList;
+    getMovePoints(pl: PieceList, board?: Board): MovePointList;
 }
 /**
  * 象棋：炮
@@ -178,7 +182,7 @@ declare class CannonPiece extends RookPiece {
      * @param pl 棋子列表
      * @returns 返回移动点列表
      */
-    getMovePoints(pl: PieceList): MovePointList;
+    getMovePoints(pl: PieceList, board?: Board): MovePointList;
     /**
      * 根据象棋自己的移动规律以及棋子列表的位置得出是否可以移动到指定的坐标上
      * @param p 坐标点 或 移动点
@@ -196,7 +200,7 @@ declare class SoldierPiece extends HorsePiece {
       * @param pl 棋子列表
       * @returns 返回移动点列表
       */
-    getMovePoints(pl: PieceList): MovePointList;
+    getMovePoints(pl: PieceList, board?: Board): MovePointList;
 }
 /**
  * 象棋棋子，包含了车、马、炮、象、士、将、兵
@@ -882,27 +886,27 @@ declare class ZhChess {
      * @param pl 当前棋盘列表
      * @returns 是否安全
      */
-    protected checkGeneralInTrouble(side: PieceSide, pos: ChessOfPeice, cp: CheckPoint, pl: PieceList): boolean;
+    protected checkGeneralInTrouble(side: PieceSide, pos: ChessOfPeice, cp: CheckPoint, pl: PieceList, board?: Board): boolean;
     /**
      * 检查棋子移动 双方将领在一条直线上 false 不危险 true 危险
      * @param pl 假设移动后的棋子列表
      * @param side 当前下棋方
      * @returns 是否危险
      */
-    protected checkGeneralsFaceToFaceInTrouble(pl: PieceList): boolean;
+    protected checkGeneralsFaceToFaceInTrouble(board: Board): boolean;
     /**
      * 判断敌方被将军时，是否有解
      * @param enemySide 敌方
      * @param pl 当前棋盘列表
      * @returns  返回是否有解
      */
-    protected checkEnemySideInTroubleHasSolution(enemySide: PieceSide, pl: PieceList): boolean;
+    protected checkEnemySideInTroubleHasSolution(enemySide: PieceSide, pl: PieceList, board?: Board): boolean;
     /**
      * 判断敌方是否还有下一步走法 无走法就是绝杀
      * @param enemySide 敌方
      * @returns {boolean}
      */
-    protected checkEnemySideHasMovePoints(enemySide: PieceSide, pl: PieceList): boolean;
+    protected checkEnemySideHasMovePoints(enemySide: PieceSide, pl: PieceList, board?: Board): boolean;
     /**
      * 棋子运动前检查游戏状态是否可以运动
      * @returns 是否可以运动
@@ -972,4 +976,4 @@ declare class ZhChess {
     protected setLastMovePeiceStatus(status: boolean): void;
 }
 
-export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameErrorCallback, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateFail, UpdateMoveCallback, UpdateResult, buildBoardIndex, chessOfPeiceMap, ZhChess as default, diffPenStr, gen_PEN_Point_Str, gen_PEN_Str, initBoardPen, parse_PEN_Str, peiceSideMap, posIdx, updateSuccess };
+export { Board, CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameErrorCallback, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateFail, UpdateMoveCallback, UpdateResult, buildBoardIndex, chessOfPeiceMap, ZhChess as default, diffPenStr, gen_PEN_Point_Str, gen_PEN_Str, initBoardPen, parse_PEN_Str, peiceSideMap, posIdx, updateSuccess };
