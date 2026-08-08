@@ -1062,10 +1062,6 @@ export default class ZhChess {
       const mps = item.getMovePoints(pl, b)
       // 是否有解法
       return mps.some(p => {
-        const isDis = b[posIdx(p.disPoint.x, p.disPoint.y)]
-        if (isDis) {
-          return false
-        }
         const hasEat = b[posIdx(p.x, p.y)]
         const checkPoint: CheckPoint = hasEat ? { eat: p } : { move: p }
         const hasSolution = !this.checkGeneralInTrouble(enemySide, item, checkPoint, pl, b)
