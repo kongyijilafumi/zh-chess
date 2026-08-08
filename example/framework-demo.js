@@ -48,9 +48,7 @@ const jieqiVariantSkeleton = {
   initBoard(game) {
     // 完整揭棋应在此：打乱棋子身份、全部暗置、按揭棋布局落子
     // 骨架：仍走标准 PEN 开局，并把非将帅棋标记为「未翻开」
-    game.setPenCodeList(
-      'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w'
-    )
+    game.setPenCodeList('rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w')
     faceUpByPos.clear()
     game.currentLivePieceList.forEach(p => {
       const isGeneral = p.name === '帅' || p.name === '将'

@@ -1658,7 +1658,9 @@ export default class ZhChess {
         captured: hasEat ? b[posIdx(mp.x, mp.y)] ?? null : null
       }
       const filtered = this.variant.filterMoves(side, [move], this as unknown as ChessGameHost)
-      return filtered.some(m => m.from.x === from.x && m.from.y === from.y && m.to.x === to.x && m.to.y === to.y)
+      return filtered.some(
+        m => m.from.x === from.x && m.from.y === from.y && m.to.x === to.x && m.to.y === to.y
+      )
     }
     return true
   }

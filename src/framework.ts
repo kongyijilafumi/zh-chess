@@ -88,11 +88,7 @@ export interface ChessRenderer {
   /**
    * 绘制棋盘（背景、线条、楚河汉界等）
    */
-  drawBoard?(
-    ctx: CanvasRenderingContext2D,
-    layout: DrawLayout,
-    game: ChessGameHost
-  ): boolean | void
+  drawBoard?(ctx: CanvasRenderingContext2D, layout: DrawLayout, game: ChessGameHost): boolean | void
   /**
    * 绘制单枚棋子（可自定义形状、贴图等）
    */
@@ -179,12 +175,7 @@ export interface ChessVariant {
   /**
    * 走子前拦截：返回 `false` 或错误信息字符串则阻止本次走子
    */
-  beforeMove?(
-    from: Point,
-    to: Point,
-    side: PieceSide,
-    game: ChessGameHost
-  ): boolean | string | void
+  beforeMove?(from: Point, to: Point, side: PieceSide, game: ChessGameHost): boolean | string | void
   /**
    * 过滤/改写合法走法列表（作用于 `generateLegalMoves` / `isLegalMove`）
    */
@@ -200,11 +191,7 @@ export interface ChessVariant {
   /**
    * 棋子显示名（文字导出与默认 Canvas 字共用）
    */
-  getPieceDisplayName?(
-    piece: ChessOfPeice,
-    viewer: PieceSide | null,
-    game: ChessGameHost
-  ): string
+  getPieceDisplayName?(piece: ChessOfPeice, viewer: PieceSide | null, game: ChessGameHost): string
 }
 
 /**
@@ -347,11 +334,7 @@ export function exportTextBoard(pieces: PieceList, options?: TextBoardOptions): 
           const display = resolveDisplayName(piece)
           if (style === 'ascii') {
             const letter = asciiLetterByPieceName[display]
-            cell = letter
-              ? piece.side === 'RED'
-                ? letter.toUpperCase()
-                : letter
-              : display
+            cell = letter ? (piece.side === 'RED' ? letter.toUpperCase() : letter) : display
           } else {
             cell = display
           }
