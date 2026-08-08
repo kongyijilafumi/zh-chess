@@ -1,3 +1,11 @@
+/**
+ * 构建棋盘位表索引（90 格），实现 O(1) 查格，替代 pl.find 的 O(n) 线性扫描
+ */
+declare const buildBoardIndex: (pl: PieceList) => Array<ChessOfPeice | undefined>;
+/**
+ * 坐标 -> 棋盘位表索引，越界返回 -1
+ */
+declare const posIdx: (x: number, y: number) => number;
 declare class Piece implements PieceInfo {
     x: number;
     y: number;
@@ -125,12 +133,12 @@ declare class ElephantPiece extends HorsePiece {
     */
     getMovePoints(pl: PieceList): MovePointList;
     /**
-      * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
-      * @param list 移动点列表
-      * @param pl 棋子列表
-      * @returns 返回这个棋子可以移动点列表
-      */
-    filterMovePoints(list: MovePointList, pl: PieceList): MovePoint[];
+     * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
+     * @param list 移动点列表
+     * @param pl 棋子列表
+     * @returns 返回这个棋子可以移动点列表
+     */
+    filterMovePoints(list: MovePointList, pl: PieceList): MovePointList;
 }
 /**
  * 象棋：士
@@ -148,7 +156,7 @@ declare class KnightPiece extends ElephantPiece {
       * @param pl 棋子列表
       * @returns 返回这个棋子可以移动点列表
       */
-    filterMovePoints(list: MovePointList, pl: PieceList): MovePoint[];
+    filterMovePoints(list: MovePointList, pl: PieceList): MovePointList;
 }
 /**
  * 象棋：将领
@@ -165,6 +173,12 @@ declare class GeneralPiece extends KnightPiece {
  * 象棋：炮
  */
 declare class CannonPiece extends RookPiece {
+    /**
+     * 根据棋子列表的坐标获取当前棋子的可以移动点列表（炮：直行空位 + 隔一子打吃）
+     * @param pl 棋子列表
+     * @returns 返回移动点列表
+     */
+    getMovePoints(pl: PieceList): MovePointList;
     /**
      * 根据象棋自己的移动规律以及棋子列表的位置得出是否可以移动到指定的坐标上
      * @param p 坐标点 或 移动点
@@ -958,4 +972,4 @@ declare class ZhChess {
     protected setLastMovePeiceStatus(status: boolean): void;
 }
 
-export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameErrorCallback, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateFail, UpdateMoveCallback, UpdateResult, chessOfPeiceMap, ZhChess as default, diffPenStr, gen_PEN_Point_Str, gen_PEN_Str, initBoardPen, parse_PEN_Str, peiceSideMap, updateSuccess };
+export { CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameErrorCallback, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateFail, UpdateMoveCallback, UpdateResult, buildBoardIndex, chessOfPeiceMap, ZhChess as default, diffPenStr, gen_PEN_Point_Str, gen_PEN_Str, initBoardPen, parse_PEN_Str, peiceSideMap, posIdx, updateSuccess };
