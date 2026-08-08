@@ -16,8 +16,15 @@
 ### v3.1.0
 
 * 新增 `generateMoves(side)` 批量走法生成 API，作为 AI 搜索入口（内部仅构建一次棋盘位表并交由本方棋子复用，比逐个调用 `getMovePoints(pl)` 更高效）。
+* 新增 `generateLegalMoves(side)` 合法走法生成 API：对每个伪合法走法做送将过滤（`checkGeneralInTrouble` 增量模拟），返回扁平化 `Move[]`（`{ from, to, captured }`），AI 搜索可直接使用。
+* 新增 `isLegalMove(side, from, to)` 单步合法性判定（含送将过滤）。
+* 新增 `getPiecesOfSide(side)` 获取指定方存活棋子列表。
+* 新增 `isGameOver()`，旧 `gameOver()` 保留为 `@deprecated` 委托。
+* `checkGeneralInTrouble` 由 protected 改为 public，便于引擎侧复用判定逻辑。
+* 事件 API 由 5 个重载改为泛型签名 `on<K extends GameEventName>(e: K, fn: GameEventMap[K])`，类型更严格。
+* 修正历史类型拼写错误：`PiecePosInfo`（原 `PeicePosInfo`）、`GamePieceGridDiffX/Y`、`PENPieceNameCode`（原 `PENPeiceNameCode`）、`UpdateSuccess`（原 `updateSuccess`），旧名保留为 `@deprecated` 别名以兼容既有代码。
 * 项目工程化：新增 ESLint / Prettier 配置与 GitHub Actions CI（install / lint / format / build / test），清理存量 lint 告警。
-* 等价性测试黄金快照化，新增 `generateMoves` 与逐子 `getMovePoints` 的一致性断言。
+* 等价性测试黄金快照化，新增 `generateMoves` 与逐子 `getMovePoints` 的一致性断言；新增 `assertLegalMovesConsistency` 校验 `generateLegalMoves` / `isLegalMove` 与 `update` 逐走法判定的一致性。
 
 ### v3.0.0
 
@@ -296,9 +303,13 @@ export default function App() {
 
 根据当前棋子状态绘画 棋盘状态 游戏数据 画出布局
 
-##### gameOver(): boolean
+##### isGameOver(): boolean
 
 游戏是否结束
+
+##### gameOver(): boolean
+
+游戏是否结束（`@deprecated` 请使用 `isGameOver()`）
 
 ##### gameStart(side: PieceSide): void
 
@@ -313,6 +324,36 @@ game.gameStart("RED")
 const moves = game.generateMoves("RED") // MovePointList[]
 const redPieces = game.currentLivePieceList.filter(p => p.side === "RED")
 // moves[i] 对应 redPieces[i] 的走法列表
+```
+
+> **注意**：`generateMoves` 返回伪合法走法（不包含送将过滤）。需要严格合法走法请使用 `generateLegalMoves`。
+
+##### generateLegalMoves(side: PieceSide): Move[]
+
+批量生成指定方所有存活棋子的**合法**走法列表（AI 搜索可直接使用）。与 `generateMoves` 的区别：对每个伪合法走法执行送将检测（`checkGeneralInTrouble`），只返回走子后己方将帅不会被攻击、也不会与敌方将帅对脸的走法。内部仅构建一次棋盘位表并复用，送将检测使用增量模拟（双槽位），无额外棋盘分配。
+
+```js
+game.gameStart("RED")
+const legalMoves = game.generateLegalMoves("RED") // Move[]
+// legalMoves[i] = { from: Point, to: Point, captured: ChessOfPeice | null }
+```
+
+##### isLegalMove(side: PieceSide, from: Point, to: Point): boolean
+
+判断指定方棋子从 `from` 走到 `to` 是否为合法走法（含送将过滤）。若 `from` 处没有该方棋子、或 `to` 不在该棋子可走范围内、或走子后己方将帅不安全，均返回 `false`。
+
+```js
+game.gameStart("RED")
+const ok = game.isLegalMove("RED", new Point(8, 9), new Point(8, 8))
+```
+
+##### getPiecesOfSide(side: PieceSide): PieceList
+
+获取指定方的存活棋子列表，顺序与 `currentLivePieceList` 中该方棋子的顺序一致（可直接与 `generateMoves(side)` 对齐棋子与走法）。
+
+```js
+game.gameStart("RED")
+const redPieces = game.getPiecesOfSide("RED") // PieceList
 ```
 
 ##### getCurrentPenCode(side: PieceSide): string
@@ -383,9 +424,9 @@ game.moveStr("车1进1", "RED") // 红方 车1进1 返回 { flag:true } 或者 {
 
 跟moveStr方法作用一样，不过是异步的，有动画效果。 `refreshCtx` 表示 是否每次移动都更新画布。
 
-##### on(e: GameEventName, fn: GameEventCallback):void
+##### on<K extends GameEventName>(e: K, fn: GameEventMap[K]): void
 
-游戏监听事件
+游戏监听事件（泛型签名，回调参数类型随事件名自动推导）
 
 * e为`move`时，fn函数的参数有 `(peice: ChessOfPeice, cp: CheckPoint, enemyhasTrouble: boolean)`
 
@@ -397,7 +438,7 @@ game.moveStr("车1进1", "RED") // 红方 车1进1 返回 { flag:true } 或者 {
 
 * e为`error`时，fn函数的参数有`(error: any)`
 
-##### removeEvent(e: GameEventName, fn: GameEventCallback):void
+##### removeEvent<K extends GameEventName>(e: K, fn: GameEventMap[K]): void
 
 移除游戏的监听函数
 

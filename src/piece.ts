@@ -5,9 +5,9 @@ import {
   MovePoint,
   MoveResult,
   MovePointList,
-  PeicePosInfo,
-  GamePeiceGridDiffX,
-  GamePeiceGridDiffY
+  PiecePosInfo,
+  GamePieceGridDiffX,
+  GamePieceGridDiffY
 } from './types'
 const notExistPoint = { x: 10, y: 10 }
 /**
@@ -71,7 +71,7 @@ export class Piece implements PieceInfo {
    * 返回当前棋子的坐标信息
    * @returns 包含 name side x y 信息
    */
-  getCurrentInfo(): PeicePosInfo {
+  getCurrentInfo(): PiecePosInfo {
     return {
       side: this.side,
       name: this.name,
@@ -108,8 +108,8 @@ export class Piece implements PieceInfo {
     startY: number,
     gridWidth: number,
     gridHeight: number,
-    gridDiffX: GamePeiceGridDiffX,
-    gridDiffY: GamePeiceGridDiffY,
+    gridDiffX: GamePieceGridDiffX,
+    gridDiffY: GamePieceGridDiffY,
     radius: number,
     textColor: string,
     bgColor: string,

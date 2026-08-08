@@ -2,8 +2,8 @@ import type { ChessOfPeice, ChessOfPeiceName, PieceList } from './../src/piece'
 import type {
   MovePoint,
   ParsePENStrData,
-  PeicePosInfo,
-  PENPeiceNameCode,
+  PiecePosInfo,
+  PENPieceNameCode,
   PieceSide
 } from '../src/types'
 import { Point } from '../src/types'
@@ -352,7 +352,7 @@ function formatChooseNum(str: string): number {
   }
 }
 
-export function parse_PEN_PeiceName(penPeiceNameCode: PENPeiceNameCode): ChessOfPeiceName | null {
+export function parse_PEN_PeiceName(penPeiceNameCode: PENPieceNameCode): ChessOfPeiceName | null {
   switch (penPeiceNameCode) {
     case 'K':
       return '帅'
@@ -386,7 +386,7 @@ export function parse_PEN_PeiceName(penPeiceNameCode: PENPeiceNameCode): ChessOf
       return null
   }
 }
-function get_PEN_PieceName(str: ChessOfPeiceName): PENPeiceNameCode | null {
+function get_PEN_PieceName(str: ChessOfPeiceName): PENPieceNameCode | null {
   switch (str) {
     case '将':
     case '帅':
@@ -461,7 +461,7 @@ export function parse_PEN_Str(penStr: string): ParsePENStrData {
       throw new Error('不符合 PEN 棋盘布局代码格式!')
     }
     for (let j = 0; j < strLen; j++, px--) {
-      const str = pieceCodeStr[j] as PENPeiceNameCode
+      const str = pieceCodeStr[j] as PENPieceNameCode
       const pieceName = parse_PEN_PeiceName(str)
       if (pieceName) {
         const p_side: PieceSide = str.toLocaleLowerCase() === str ? 'BLACK' : 'RED'
@@ -480,7 +480,7 @@ export function parse_PEN_Str(penStr: string): ParsePENStrData {
 }
 
 export function gen_PEN_Str(pl: PieceList, side: PieceSide): string {
-  let PENList = Array.from({ length: 10 }, () => [] as Array<PeicePosInfo>)
+  let PENList = Array.from({ length: 10 }, () => [] as Array<PiecePosInfo>)
   pl.forEach(p => {
     const data = p.getCurrentInfo()
     const index = data.y
@@ -553,7 +553,7 @@ export function diffPenStr(oldStr: string, newStr: string) {
   const { list: oldList } = parse_PEN_Str(oldStr)
   const { list: newList } = parse_PEN_Str(newStr)
   const plList = oldList.map(item => chessOfPeiceMap[item.name](item))
-  const delList: PeicePosInfo[] = []
+  const delList: PiecePosInfo[] = []
   // 被吃了
   const moveList: { point: Point; move: Point; side: PieceSide }[] = []
 

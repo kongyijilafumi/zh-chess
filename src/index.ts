@@ -6,14 +6,15 @@ import type {
   MoveFailCallback,
   GameLogCallback,
   GameOverCallback,
-  GameEventCallback,
+  GameEventMap,
   CheckPoint,
-  GamePeiceGridDiffX,
-  GamePeiceGridDiffY,
+  GamePieceGridDiffX,
+  GamePieceGridDiffY,
   UpdateResult,
   UpdateMoveCallback,
   GameErrorCallback,
-  MovePointList
+  MovePointList,
+  Move
 } from './types'
 import { Point, PieceInfo, MoveResult } from './types'
 import { gameDefaultCfg, gen_PEN_Str, initBoardPen, parseStrToPoint, parse_PEN_Str } from '../utils'
@@ -189,11 +190,11 @@ export default class ZhChess {
   /**
    * 玩家 x轴 格子距离相差
    */
-  protected gridDiffX!: GamePeiceGridDiffX
+  protected gridDiffX!: GamePieceGridDiffX
   /**
    * 玩家 y轴 格子距离相差
    */
-  protected gridDiffY!: GamePeiceGridDiffY
+  protected gridDiffY!: GamePieceGridDiffY
   /**
    * 游戏进行状态
    */
@@ -388,7 +389,7 @@ export default class ZhChess {
    * @param key 坐标轴
    * @returns
    */
-  protected getGridDiff(side: PieceSide, key: 'x' | 'y'): GamePeiceGridDiffX | GamePeiceGridDiffY {
+  protected getGridDiff(side: PieceSide, key: 'x' | 'y'): GamePieceGridDiffX | GamePieceGridDiffY {
     if (side === 'BLACK') {
       if (key === 'x') {
         return 8
@@ -402,8 +403,8 @@ export default class ZhChess {
    * @param side 玩家方
    */
   protected setGridDiff(side: PieceSide) {
-    this.gridDiffX = this.getGridDiff(side, 'x') as GamePeiceGridDiffX
-    this.gridDiffY = this.getGridDiff(side, 'y') as GamePeiceGridDiffY
+    this.gridDiffX = this.getGridDiff(side, 'x') as GamePieceGridDiffX
+    this.gridDiffY = this.getGridDiff(side, 'y') as GamePieceGridDiffY
   }
 
   /**
@@ -1015,8 +1016,14 @@ export default class ZhChess {
   /**
    * 游戏是否结束
    */
-  gameOver() {
+  isGameOver() {
     return this.gameState === 'OVER'
+  }
+  /**
+   * @deprecated 请使用 {@link isGameOver}
+   */
+  gameOver() {
+    return this.isGameOver()
   }
   /**
    * 根据某方移动棋子判断自己将领是否安全
@@ -1026,7 +1033,7 @@ export default class ZhChess {
    * @param pl 当前棋盘列表
    * @returns 是否安全
    */
-  protected checkGeneralInTrouble(
+  checkGeneralInTrouble(
     side: PieceSide,
     pos: ChessOfPeice,
     cp: CheckPoint,
@@ -1379,9 +1386,6 @@ export default class ZhChess {
   get currentGameSide(): PieceSide | null {
     return this.gameSide
   }
-  set currentGameSide(val: any) {
-    console.log(`设置值无效：${val}`)
-  }
   /**
    * 获取当前存活的棋子列表
    */
@@ -1391,16 +1395,33 @@ export default class ZhChess {
     })
   }
   /**
+   * 获取指定方当前存活的棋子列表（内部仍做浅拷贝，避免外部修改内部状态）
+   *
+   * 与 `currentLivePieceList` 相比省去了手动 `filter`，且可配合
+   * {@link generateMoves} 直接对齐棋子与走法。
+   *
+   * @param side 玩家方，`"RED"` 或 `"BLACK"`
+   */
+  getPiecesOfSide(side: PieceSide): PieceList {
+    return this.livePieceList
+      .filter(item => item.side === side)
+      .map(item => chessOfPeiceMap[item.name]({ ...item }))
+  }
+  /**
    * 获取当前象棋绘制半径
    */
   get currentRadius(): number {
     return this.radius
   }
   /**
-   * 批量生成指定方所有存活棋子的走法列表（AI 搜索入口）
+   * 批量生成指定方所有存活棋子的**伪合法**走法列表（AI 搜索入口）
    *
    * 内部仅构建一次棋盘位表并交由本方全部棋子复用，比逐个调用
    * `getMovePoints(pl)`（每次调用都重建位表）在搜索类场景下更高效。
+   *
+   * **注意**：该接口返回的是伪合法走法，**不包含送将过滤**（允许走出
+   * 后己方将帅暴露在被吃/对脸的局面）。需要严格合法走法请使用
+   * {@link generateLegalMoves}。
    *
    * @param side 玩家方，`"RED"` 或 `"BLACK"`
    * @returns 该方存活棋子按其在本方棋子序列中的顺序对应的走法列表数组；
@@ -1419,21 +1440,78 @@ export default class ZhChess {
     }
     return result
   }
+
+  /**
+   * 批量生成指定方所有存活棋子的**合法**走法列表（AI 搜索可直接使用）
+   *
+   * 与 {@link generateMoves} 的区别在于：本接口对每个伪合法走法执行
+   * 送将检测（{@link checkGeneralInTrouble}），只返回走子后己方将帅
+   * 不会被攻击、也不会与敌方将帅对脸的走法。
+   *
+   * 内部仅构建一次棋盘位表，全部棋子复用；送将检测同样复用该位表做
+   * 增量模拟（双槽位），无额外棋盘分配，适合搜索树热路径。
+   *
+   * @param side 玩家方，`"RED"` 或 `"BLACK"`
+   * @returns 扁平化的合法走法列表，每个走法包含起止点与被吃子信息：
+   *   `{ from: Point, to: Point, captured: ChessOfPeice | null }`
+   */
+  generateLegalMoves(side: PieceSide): Move[] {
+    const pl = this.livePieceList
+    const b = buildBoardIndex(pl)
+    const result: Move[] = []
+    for (let i = 0; i < pl.length; i++) {
+      const item = pl[i]
+      if (item.side !== side) continue
+      const mps = item.getMovePoints(pl, b)
+      for (let j = 0; j < mps.length; j++) {
+        const p = mps[j]
+        const hasEat = !!b[posIdx(p.x, p.y)]
+        const cp: CheckPoint = hasEat ? { eat: p } : { move: p }
+        // 送将过滤：走子后己方将帅不安全则舍弃
+        if (this.checkGeneralInTrouble(side, item, cp, pl, b)) continue
+        result.push({
+          from: new Point(item.x, item.y),
+          to: new Point(p.x, p.y),
+          captured: hasEat ? b[posIdx(p.x, p.y)] ?? null : null
+        })
+      }
+    }
+    return result
+  }
+
+  /**
+   * 判断指定方棋子从 `from` 走到 `to` 是否为合法走法（含送将过滤）
+   *
+   * 要求 `from` 处存在属于 `side` 的棋子，且该走法在
+   * `getMovePoints` 中可用（不越界、不占己方子、不蹩腿/塞象眼），
+   * 且走子后己方将帅不被攻击、不与敌方将帅对脸。
+   *
+   * @param side 玩家方，`"RED"` 或 `"BLACK"`
+   * @param from 起始坐标
+   * @param to 目标坐标
+   * @returns 是否合法走法
+   */
+  isLegalMove(side: PieceSide, from: Point, to: Point): boolean {
+    const pl = this.livePieceList
+    const item = pl.find(p => p.side === side && p.x === from.x && p.y === from.y)
+    if (!item) return false
+    const b = buildBoardIndex(pl)
+    const mp = item.getMovePoints(pl, b).find(p => p.x === to.x && p.y === to.y)
+    if (!mp) return false
+    const hasEat = !!b[posIdx(mp.x, mp.y)]
+    const cp: CheckPoint = hasEat ? { eat: mp } : { move: mp }
+    return !this.checkGeneralInTrouble(side, item, cp, pl, b)
+  }
   getCurrentPenCode(side: PieceSide): string {
     return gen_PEN_Str(this.livePieceList, side)
   }
 
-  on(e: 'move', fn: MoveCallback): void
-  on(e: 'moveFail', fn: MoveFailCallback): void
-  on(e: 'log', fn: GameLogCallback): void
-  on(e: 'over', fn: GameOverCallback): void
-  on(e: 'error', fn: GameErrorCallback): void
   /**
    * 象棋事件监听
    * @param e 监听事件
    * @param fn 监听函数
    */
-  on(e: GameEventName, fn: GameEventCallback) {
+  on<K extends GameEventName>(e: K, fn: GameEventMap[K]) {
     if (typeof fn === 'function') {
       if (e === 'log') {
         this.logEvents.push(fn as GameLogCallback)
@@ -1450,17 +1528,12 @@ export default class ZhChess {
       throw new Error('监听函数值应该为 function 类型')
     }
   }
-  removeEvent(e: 'move', fn: MoveCallback): void
-  removeEvent(e: 'moveFail', fn: MoveFailCallback): void
-  removeEvent(e: 'log', fn: GameLogCallback): void
-  removeEvent(e: 'over', fn: GameOverCallback): void
-  removeEvent(e: 'error', fn: GameErrorCallback): void
   /**
    * 移除象棋事件监听
    * @param e 监听事件
    * @param fn 监听函数
    */
-  removeEvent(e: GameEventName, fn: GameEventCallback) {
+  removeEvent<K extends GameEventName>(e: K, fn: GameEventMap[K]) {
     if (typeof fn === 'function') {
       if (e === 'log') {
         this.logEvents = this.logEvents.filter(f => f !== fn)

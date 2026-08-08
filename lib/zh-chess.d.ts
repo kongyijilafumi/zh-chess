@@ -34,7 +34,7 @@ declare class Piece implements PieceInfo {
      * 返回当前棋子的坐标信息
      * @returns 包含 name side x y 信息
      */
-    getCurrentInfo(): PeicePosInfo;
+    getCurrentInfo(): PiecePosInfo;
     /**
      * 更新自己坐标点
      * @param p 坐标点
@@ -54,7 +54,7 @@ declare class Piece implements PieceInfo {
      * @param bgColor 象棋背景颜色
      * @param choosePeiceBorderColor 选中的边框色
      */
-    draw(ctx: CanvasRenderingContext2D, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: GamePeiceGridDiffX, gridDiffY: GamePeiceGridDiffY, radius: number, textColor: string, bgColor: string, choosePeiceBorderColor: string): void;
+    draw(ctx: CanvasRenderingContext2D, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: GamePieceGridDiffX, gridDiffY: GamePieceGridDiffY, radius: number, textColor: string, bgColor: string, choosePeiceBorderColor: string): void;
     /**
      * 根据棋子列表判断 当前棋子可移动的点
      * @param _pl 棋子列表
@@ -258,8 +258,12 @@ type PieceSideMap = {
 };
 /**
  * 玩家Map数据 根据 英文 映射中文名称
- * @example peiceSideMap["RED"] // 返回 红方
- * @example peiceSideMap["BLACK"] // 返回 黑方
+ * @example pieceSideMap["RED"] // 返回 红方
+ * @example pieceSideMap["BLACK"] // 返回 黑方
+ */
+declare const pieceSideMap: PieceSideMap;
+/**
+ * @deprecated 拼写错误，请使用 `pieceSideMap`
  */
 declare const peiceSideMap: PieceSideMap;
 /**
@@ -332,6 +336,23 @@ declare class MovePoint extends Point {
  * 棋子移动点列表
  */
 type MovePointList = Array<MovePoint>;
+/**
+ * 一步合法走法（AI 搜索可直接使用）
+ */
+type Move = {
+    /**
+     * 起始坐标
+     */
+    from: Point;
+    /**
+     * 目标坐标
+     */
+    to: Point;
+    /**
+     * 被吃掉的棋子（无吃子时为 `null`）
+     */
+    captured: ChessOfPeice | null;
+};
 /**
  * 移动成功的结果
  */
@@ -424,17 +445,35 @@ type GameErrorCallback = (error: any) => void;
  */
 type GameEventName = 'move' | 'moveFail' | 'log' | 'over' | 'error';
 /**
+ * 事件名到回调函数的映射
+ */
+type GameEventMap = {
+    move: MoveCallback;
+    moveFail: MoveFailCallback;
+    log: GameLogCallback;
+    over: GameOverCallback;
+    error: GameErrorCallback;
+};
+/**
  * 游戏监听函数
  */
-type GameEventCallback = MoveCallback | MoveFailCallback | GameLogCallback | GameOverCallback;
+type GameEventCallback = GameEventMap[GameEventName];
 /**
  * 游戏象棋玩家格子x轴差值
  */
-type GamePeiceGridDiffX = 8 | 0;
+type GamePieceGridDiffX = 8 | 0;
+/**
+ * @deprecated 拼写错误，请使用 `GamePieceGridDiffX`
+ */
+type GamePeiceGridDiffX = GamePieceGridDiffX;
 /**
  * 游戏象棋玩家格子y轴差值
  */
-type GamePeiceGridDiffY = 9 | 0;
+type GamePieceGridDiffY = 9 | 0;
+/**
+ * @deprecated 拼写错误，请使用 `GamePieceGridDiffY`
+ */
+type GamePeiceGridDiffY = GamePieceGridDiffY;
 /**
  * 棋子PEN代码 小写表示黑方，大写表示红方
  *
@@ -446,14 +485,18 @@ type GamePeiceGridDiffY = 9 | 0;
  * https://www.xqbase.com/protocol/cchess_fen.htm
  *
  */
-type PENPeiceNameCode = 'K' | 'A' | 'B' | 'N' | 'R' | 'C' | 'P' | 'k' | 'a' | 'b' | 'n' | 'r' | 'c' | 'p';
+type PENPieceNameCode = 'K' | 'A' | 'B' | 'N' | 'R' | 'C' | 'P' | 'k' | 'a' | 'b' | 'n' | 'r' | 'c' | 'p';
+/**
+ * @deprecated 拼写错误，请使用 `PENPieceNameCode`
+ */
+type PENPeiceNameCode = PENPieceNameCode;
 type ParsePENStrData = {
     side: PieceSide;
     notEatRound?: string;
     round?: string;
-    list: Array<PeicePosInfo>;
+    list: Array<PiecePosInfo>;
 };
-type PeicePosInfo = {
+type PiecePosInfo = {
     side: PieceSide;
     name: ChessOfPeiceName;
     x: number;
@@ -461,9 +504,13 @@ type PeicePosInfo = {
     isLastMove: boolean;
 };
 /**
+ * @deprecated 拼写错误，请使用 `PiecePosInfo`
+ */
+type PeicePosInfo = PiecePosInfo;
+/**
  * 更新结果
  */
-type UpdateResult = UpdateFail | updateSuccess;
+type UpdateResult = UpdateFail | UpdateSuccess;
 /**
  * 更新失败
  */
@@ -480,7 +527,7 @@ type UpdateFail = {
 /**
  * 更新成功
  */
-type updateSuccess = {
+type UpdateSuccess = {
     /**
      * 更新成功
      */
@@ -498,6 +545,10 @@ type updateSuccess = {
      */
     cb?: () => void;
 };
+/**
+ * @deprecated 拼写错误，请使用 `UpdateSuccess`
+ */
+type updateSuccess = UpdateSuccess;
 type UpdateMoveCallback = (posPeice: ChessOfPeice, newPoint: Point) => void;
 
 declare function parse_PEN_Str(penStr: string): ParsePENStrData;
@@ -509,7 +560,7 @@ declare function diffPenStr(oldStr: string, newStr: string): {
         move: Point;
         side: PieceSide;
     }[];
-    delList: PeicePosInfo[];
+    delList: PiecePosInfo[];
 };
 declare const initBoardPen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w";
 
@@ -662,11 +713,11 @@ declare class ZhChess {
     /**
      * 玩家 x轴 格子距离相差
      */
-    protected gridDiffX: GamePeiceGridDiffX;
+    protected gridDiffX: GamePieceGridDiffX;
     /**
      * 玩家 y轴 格子距离相差
      */
-    protected gridDiffY: GamePeiceGridDiffY;
+    protected gridDiffY: GamePieceGridDiffY;
     /**
      * 游戏进行状态
      */
@@ -763,7 +814,7 @@ declare class ZhChess {
      * @param key 坐标轴
      * @returns
      */
-    protected getGridDiff(side: PieceSide, key: 'x' | 'y'): GamePeiceGridDiffX | GamePeiceGridDiffY;
+    protected getGridDiff(side: PieceSide, key: 'x' | 'y'): GamePieceGridDiffX | GamePieceGridDiffY;
     /**
      * 根据玩家方 设置 x，y轴差值
      * @param side 玩家方
@@ -864,6 +915,10 @@ declare class ZhChess {
     /**
      * 游戏是否结束
      */
+    isGameOver(): boolean;
+    /**
+     * @deprecated 请使用 {@link isGameOver}
+     */
     gameOver(): boolean;
     /**
      * 根据某方移动棋子判断自己将领是否安全
@@ -873,7 +928,7 @@ declare class ZhChess {
      * @param pl 当前棋盘列表
      * @returns 是否安全
      */
-    protected checkGeneralInTrouble(side: PieceSide, pos: ChessOfPeice, cp: CheckPoint, pl: PieceList, board?: Board): boolean;
+    checkGeneralInTrouble(side: PieceSide, pos: ChessOfPeice, cp: CheckPoint, pl: PieceList, board?: Board): boolean;
     /**
      * 检查棋子移动 双方将领在一条直线上 false 不危险 true 危险
      * @param pl 假设移动后的棋子列表
@@ -919,20 +974,32 @@ declare class ZhChess {
      * 获取游戏方
      */
     get currentGameSide(): PieceSide | null;
-    set currentGameSide(val: any);
     /**
      * 获取当前存活的棋子列表
      */
     get currentLivePieceList(): PieceList;
     /**
+     * 获取指定方当前存活的棋子列表（内部仍做浅拷贝，避免外部修改内部状态）
+     *
+     * 与 `currentLivePieceList` 相比省去了手动 `filter`，且可配合
+     * {@link generateMoves} 直接对齐棋子与走法。
+     *
+     * @param side 玩家方，`"RED"` 或 `"BLACK"`
+     */
+    getPiecesOfSide(side: PieceSide): PieceList;
+    /**
      * 获取当前象棋绘制半径
      */
     get currentRadius(): number;
     /**
-     * 批量生成指定方所有存活棋子的走法列表（AI 搜索入口）
+     * 批量生成指定方所有存活棋子的**伪合法**走法列表（AI 搜索入口）
      *
      * 内部仅构建一次棋盘位表并交由本方全部棋子复用，比逐个调用
      * `getMovePoints(pl)`（每次调用都重建位表）在搜索类场景下更高效。
+     *
+     * **注意**：该接口返回的是伪合法走法，**不包含送将过滤**（允许走出
+     * 后己方将帅暴露在被吃/对脸的局面）。需要严格合法走法请使用
+     * {@link generateLegalMoves}。
      *
      * @param side 玩家方，`"RED"` 或 `"BLACK"`
      * @returns 该方存活棋子按其在本方棋子序列中的顺序对应的走法列表数组；
@@ -940,17 +1007,47 @@ declare class ZhChess {
      *   `currentLivePieceList.filter(p => p.side === side)` 对齐棋子与走法
      */
     generateMoves(side: PieceSide): MovePointList[];
+    /**
+     * 批量生成指定方所有存活棋子的**合法**走法列表（AI 搜索可直接使用）
+     *
+     * 与 {@link generateMoves} 的区别在于：本接口对每个伪合法走法执行
+     * 送将检测（{@link checkGeneralInTrouble}），只返回走子后己方将帅
+     * 不会被攻击、也不会与敌方将帅对脸的走法。
+     *
+     * 内部仅构建一次棋盘位表，全部棋子复用；送将检测同样复用该位表做
+     * 增量模拟（双槽位），无额外棋盘分配，适合搜索树热路径。
+     *
+     * @param side 玩家方，`"RED"` 或 `"BLACK"`
+     * @returns 扁平化的合法走法列表，每个走法包含起止点与被吃子信息：
+     *   `{ from: Point, to: Point, captured: ChessOfPeice | null }`
+     */
+    generateLegalMoves(side: PieceSide): Move[];
+    /**
+     * 判断指定方棋子从 `from` 走到 `to` 是否为合法走法（含送将过滤）
+     *
+     * 要求 `from` 处存在属于 `side` 的棋子，且该走法在
+     * `getMovePoints` 中可用（不越界、不占己方子、不蹩腿/塞象眼），
+     * 且走子后己方将帅不被攻击、不与敌方将帅对脸。
+     *
+     * @param side 玩家方，`"RED"` 或 `"BLACK"`
+     * @param from 起始坐标
+     * @param to 目标坐标
+     * @returns 是否合法走法
+     */
+    isLegalMove(side: PieceSide, from: Point, to: Point): boolean;
     getCurrentPenCode(side: PieceSide): string;
-    on(e: 'move', fn: MoveCallback): void;
-    on(e: 'moveFail', fn: MoveFailCallback): void;
-    on(e: 'log', fn: GameLogCallback): void;
-    on(e: 'over', fn: GameOverCallback): void;
-    on(e: 'error', fn: GameErrorCallback): void;
-    removeEvent(e: 'move', fn: MoveCallback): void;
-    removeEvent(e: 'moveFail', fn: MoveFailCallback): void;
-    removeEvent(e: 'log', fn: GameLogCallback): void;
-    removeEvent(e: 'over', fn: GameOverCallback): void;
-    removeEvent(e: 'error', fn: GameErrorCallback): void;
+    /**
+     * 象棋事件监听
+     * @param e 监听事件
+     * @param fn 监听函数
+     */
+    on<K extends GameEventName>(e: K, fn: GameEventMap[K]): void;
+    /**
+     * 移除象棋事件监听
+     * @param e 监听事件
+     * @param fn 监听函数
+     */
+    removeEvent<K extends GameEventName>(e: K, fn: GameEventMap[K]): void;
     /**
      * 设置当前存活棋子列表
      * @param pl 当前存活棋子列表
@@ -975,4 +1072,4 @@ declare class ZhChess {
     protected setLastMovePeiceStatus(status: boolean): void;
 }
 
-export { Board, CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameErrorCallback, GameEventCallback, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateFail, UpdateMoveCallback, UpdateResult, buildBoardIndex, chessOfPeiceMap, ZhChess as default, diffPenStr, gen_PEN_Point_Str, gen_PEN_Str, initBoardPen, parse_PEN_Str, peiceSideMap, posIdx, updateSuccess };
+export { Board, CannonPiece, CheckPoint, ChessOfPeice, ChessOfPeiceMap, ChessOfPeiceName, ElephantPiece, Ep, GameErrorCallback, GameEventCallback, GameEventMap, GameEventName, GameInfo, GameLogCallback, GameOverCallback, GamePeiceGridDiffX, GamePeiceGridDiffY, GamePieceGridDiffX, GamePieceGridDiffY, GameState, GeneralPiece, HorsePiece, KnightPiece, Move, MoveCallback, MoveFail, MoveFailCallback, MovePoint, MovePointList, MoveResult, MoveResultAsync, MoveSuccess, Mp, PENPeiceNameCode, PENPieceNameCode, ParsePENStrData, PeicePosInfo, Piece, PieceInfo, PieceList, PiecePosInfo, PieceSide, PieceSideCN, PieceSideMap, Point, RookPiece, SoldierPiece, SquarePoints, UpdateFail, UpdateMoveCallback, UpdateResult, UpdateSuccess, buildBoardIndex, chessOfPeiceMap, ZhChess as default, diffPenStr, gen_PEN_Point_Str, gen_PEN_Str, initBoardPen, parse_PEN_Str, peiceSideMap, pieceSideMap, posIdx, updateSuccess };

@@ -17,13 +17,17 @@ export type PieceSideMap = {
 
 /**
  * 玩家Map数据 根据 英文 映射中文名称
- * @example peiceSideMap["RED"] // 返回 红方
- * @example peiceSideMap["BLACK"] // 返回 黑方
+ * @example pieceSideMap["RED"] // 返回 红方
+ * @example pieceSideMap["BLACK"] // 返回 黑方
  */
-export const peiceSideMap: PieceSideMap = {
+export const pieceSideMap: PieceSideMap = {
   RED: '红方',
   BLACK: '黑方'
 }
+/**
+ * @deprecated 拼写错误，请使用 `pieceSideMap`
+ */
+export const peiceSideMap: PieceSideMap = pieceSideMap
 
 /**
  * 象棋棋子信息
@@ -109,6 +113,24 @@ export class MovePoint extends Point {
  * 棋子移动点列表
  */
 export type MovePointList = Array<MovePoint>
+
+/**
+ * 一步合法走法（AI 搜索可直接使用）
+ */
+export type Move = {
+  /**
+   * 起始坐标
+   */
+  from: Point
+  /**
+   * 目标坐标
+   */
+  to: Point
+  /**
+   * 被吃掉的棋子（无吃子时为 `null`）
+   */
+  captured: ChessOfPeice | null
+}
 
 /**
  * 移动成功的结果
@@ -218,18 +240,37 @@ export type GameErrorCallback = (error: any) => void
 export type GameEventName = 'move' | 'moveFail' | 'log' | 'over' | 'error'
 
 /**
+ * 事件名到回调函数的映射
+ */
+export type GameEventMap = {
+  move: MoveCallback
+  moveFail: MoveFailCallback
+  log: GameLogCallback
+  over: GameOverCallback
+  error: GameErrorCallback
+}
+
+/**
  * 游戏监听函数
  */
-export type GameEventCallback = MoveCallback | MoveFailCallback | GameLogCallback | GameOverCallback
+export type GameEventCallback = GameEventMap[GameEventName]
 
 /**
  * 游戏象棋玩家格子x轴差值
  */
-export type GamePeiceGridDiffX = 8 | 0
+export type GamePieceGridDiffX = 8 | 0
+/**
+ * @deprecated 拼写错误，请使用 `GamePieceGridDiffX`
+ */
+export type GamePeiceGridDiffX = GamePieceGridDiffX
 /**
  * 游戏象棋玩家格子y轴差值
  */
-export type GamePeiceGridDiffY = 9 | 0
+export type GamePieceGridDiffY = 9 | 0
+/**
+ * @deprecated 拼写错误，请使用 `GamePieceGridDiffY`
+ */
+export type GamePeiceGridDiffY = GamePieceGridDiffY
 
 /**
  * 棋子PEN代码 小写表示黑方，大写表示红方
@@ -242,7 +283,7 @@ export type GamePeiceGridDiffY = 9 | 0
  * https://www.xqbase.com/protocol/cchess_fen.htm
  *
  */
-export type PENPeiceNameCode =
+export type PENPieceNameCode =
   | 'K' //帅
   | 'A' //士
   | 'B' //相
@@ -258,26 +299,34 @@ export type PENPeiceNameCode =
   | 'r' //車
   | 'c' //砲
   | 'p' //卒
+/**
+ * @deprecated 拼写错误，请使用 `PENPieceNameCode`
+ */
+export type PENPeiceNameCode = PENPieceNameCode
 
 export type ParsePENStrData = {
   side: PieceSide
   notEatRound?: string
   round?: string
-  list: Array<PeicePosInfo>
+  list: Array<PiecePosInfo>
 }
 
-export type PeicePosInfo = {
+export type PiecePosInfo = {
   side: PieceSide
   name: ChessOfPeiceName
   x: number
   y: number
   isLastMove: boolean
 }
+/**
+ * @deprecated 拼写错误，请使用 `PiecePosInfo`
+ */
+export type PeicePosInfo = PiecePosInfo
 
 /**
  * 更新结果
  */
-export type UpdateResult = UpdateFail | updateSuccess
+export type UpdateResult = UpdateFail | UpdateSuccess
 /**
  * 更新失败
  */
@@ -295,7 +344,7 @@ export type UpdateFail = {
 /**
  * 更新成功
  */
-export type updateSuccess = {
+export type UpdateSuccess = {
   /**
    * 更新成功
    */
@@ -313,4 +362,8 @@ export type updateSuccess = {
    */
   cb?: () => void
 }
+/**
+ * @deprecated 拼写错误，请使用 `UpdateSuccess`
+ */
+export type updateSuccess = UpdateSuccess
 export type UpdateMoveCallback = (posPeice: ChessOfPeice, newPoint: Point) => void

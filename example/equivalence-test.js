@@ -115,11 +115,59 @@ function assertGenerateMovesConsistency(g) {
   }
 }
 
+/**
+ * 一致性断言（仅对当前行棋方，因 update() 要求 currentSide === side）：
+ * 1) generateLegalMoves(side) 集合 == 逐走法 update 判定（含送将过滤）
+ * 2) isLegalMove(side, from, to) 与 update 判定一致
+ */
+function assertLegalMovesConsistency(g) {
+  const pl = g.currentLivePieceList
+  const sideKey = g.currentSide
+  const legal = g.generateLegalMoves(sideKey)
+  const expected = []
+  for (const pc of pl) {
+    if (pc.side !== sideKey) continue
+    for (const mp of pc.getMovePoints(pl)) {
+      const res = g.update(pc.getPoint(), mp, sideKey, false)
+      if (res.flag && res.move) expected.push(`${pc.x},${pc.y},${mp.x},${mp.y}`)
+    }
+  }
+  const keyOf = m => `${m.from.x},${m.from.y},${m.to.x},${m.to.y}`
+  const legalKeys = new Set(legal.map(keyOf))
+  if (legal.length !== expected.length) {
+    throw new Error(
+      `generateLegalMoves(${sideKey}) 返回 ${legal.length} 个合法走法，但 update 判定为 ${expected.length} 个`
+    )
+  }
+  for (const e of expected) {
+    if (!legalKeys.has(e)) {
+      throw new Error(`generateLegalMoves(${sideKey}) 缺少合法走法 ${e}`)
+    }
+  }
+  // isLegalMove 反向一致性：所有 getMovePoints 走法均应被 isLegalMove 正确判定
+  for (const pc of pl) {
+    if (pc.side !== sideKey) continue
+    for (const mp of pc.getMovePoints(pl)) {
+      const from = new lib.Point(pc.x, pc.y)
+      const to = new lib.Point(mp.x, mp.y)
+      const res = g.update(pc.getPoint(), mp, sideKey, false)
+      const expect = res.flag && res.move
+      const actual = g.isLegalMove(sideKey, from, to)
+      if (actual !== expect) {
+        throw new Error(
+          `isLegalMove(${sideKey}, ${from},${to}) 返回 ${actual} 但 update 判定为 ${expect}`
+        )
+      }
+    }
+  }
+}
+
 /** 计算局面指纹：按位置排序的每枚棋子 (x,y,side,kind):moves:judges */
 function fingerprint(pen) {
   const g = makeGame()
   g.setPenCodeList(pen)
   assertGenerateMovesConsistency(g)
+  assertLegalMovesConsistency(g)
   const pl = g.currentLivePieceList
   const side = g.currentSide
   const sorted = [...pl].sort((a, b) => a.x - b.x || a.y - b.y)
