@@ -75,10 +75,51 @@ function genRandomPosition(rand, steps) {
   return g.getCurrentPenCode(g.currentSide)
 }
 
+/** 一致性断言：generateMoves(side) 展开 == 逐子 getMovePoints 展开 */
+function assertGenerateMovesConsistency(g) {
+  const pl = g.currentLivePieceList
+  for (const side of ["RED", "BLACK"]) {
+    const batch = g.generateMoves(side)
+    const pieces = pl.filter((p) => p.side === side)
+    if (batch.length !== pieces.length) {
+      throw new Error(
+        `generateMoves(${side}) 返回 ${batch.length} 组走法，但该方有 ${pieces.length} 枚棋子`
+      )
+    }
+    for (let i = 0; i < pieces.length; i++) {
+      const pc = pieces[i]
+      const expected = pc.getMovePoints(pl)
+      const actual = batch[i]
+      if (actual.length !== expected.length) {
+        throw new Error(
+          `generateMoves(${side}) 第 ${i} 枚棋子(${pc.getPoint()}) 走法数 ${actual.length} != 逐子 ${expected.length}`
+        )
+      }
+      for (let j = 0; j < expected.length; j++) {
+        const a = actual[j]
+        const e = expected[j]
+        if (
+          a.x !== e.x ||
+          a.y !== e.y ||
+          a.disPoint.x !== e.disPoint.x ||
+          a.disPoint.y !== e.disPoint.y
+        ) {
+          throw new Error(
+            `generateMoves(${side}) 第 ${i} 枚棋子(${pc.getPoint()}) 第 ${j} 个走法不一致: ` +
+              `got (${a.x},${a.y})<${a.disPoint.x},${a.disPoint.y}> ` +
+              `expected (${e.x},${e.y})<${e.disPoint.x},${e.disPoint.y}>`
+          )
+        }
+      }
+    }
+  }
+}
+
 /** 计算局面指纹：按位置排序的每枚棋子 (x,y,side,kind):moves:judges */
 function fingerprint(pen) {
   const g = makeGame()
   g.setPenCodeList(pen)
+  assertGenerateMovesConsistency(g)
   const pl = g.currentLivePieceList
   const side = g.currentSide
   const sorted = [...pl].sort((a, b) => a.x - b.x || a.y - b.y)

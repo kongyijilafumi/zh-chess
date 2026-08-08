@@ -1,4 +1,4 @@
-import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint, GamePeiceGridDiffX, GamePeiceGridDiffY, UpdateResult, UpdateMoveCallback, GameErrorCallback } from './types';
+import type { GameState, PieceSide, GameEventName, MoveCallback, MoveFailCallback, GameLogCallback, GameOverCallback, GameEventCallback, CheckPoint, GamePeiceGridDiffX, GamePeiceGridDiffY, UpdateResult, UpdateMoveCallback, GameErrorCallback, MovePointList } from './types';
 import { Point, PieceInfo, MoveResult } from './types';
 import { gameDefaultCfg, gen_PEN_Str, initBoardPen, parseStrToPoint, parse_PEN_Str } from '../utils';
 import { getSquarePoints } from '../utils/draw';
@@ -1222,6 +1222,29 @@ export default class ZhChess {
    */
   get currentRadius(): number {
     return this.radius
+  }
+  /**
+   * 批量生成指定方所有存活棋子的走法列表（AI 搜索入口）
+   *
+   * 内部仅构建一次棋盘位表并交由本方全部棋子复用，比逐个调用
+   * `getMovePoints(pl)`（每次调用都重建位表）在搜索类场景下更高效。
+   *
+   * @param side 玩家方，`"RED"` 或 `"BLACK"`
+   * @returns 该方存活棋子按其在本方棋子序列中的顺序对应的走法列表数组；
+   *   第 i 个元素对应第 i 枚属于该方的棋子，可结合
+   *   `currentLivePieceList.filter(p => p.side === side)` 对齐棋子与走法
+   */
+  generateMoves(side: PieceSide): MovePointList[] {
+    const pl = this.livePieceList
+    const b = buildBoardIndex(pl)
+    const result: MovePointList[] = []
+    for (let i = 0; i < pl.length; i++) {
+      const item = pl[i]
+      if (item.side === side) {
+        result.push(item.getMovePoints(pl, b))
+      }
+    }
+    return result
   }
   getCurrentPenCode(side: PieceSide): string {
     return gen_PEN_Str(this.livePieceList, side)

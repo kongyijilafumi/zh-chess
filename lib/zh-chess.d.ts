@@ -941,6 +941,18 @@ declare class ZhChess {
      * 获取当前象棋绘制半径
      */
     get currentRadius(): number;
+    /**
+     * 批量生成指定方所有存活棋子的走法列表（AI 搜索入口）
+     *
+     * 内部仅构建一次棋盘位表并交由本方全部棋子复用，比逐个调用
+     * `getMovePoints(pl)`（每次调用都重建位表）在搜索类场景下更高效。
+     *
+     * @param side 玩家方，`"RED"` 或 `"BLACK"`
+     * @returns 该方存活棋子按其在本方棋子序列中的顺序对应的走法列表数组；
+     *   第 i 个元素对应第 i 枚属于该方的棋子，可结合
+     *   `currentLivePieceList.filter(p => p.side === side)` 对齐棋子与走法
+     */
+    generateMoves(side: PieceSide): MovePointList[];
     getCurrentPenCode(side: PieceSide): string;
     on(e: "move", fn: MoveCallback): void;
     on(e: "moveFail", fn: MoveFailCallback): void;
