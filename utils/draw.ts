@@ -1,4 +1,4 @@
-import type { Point, SquarePoints } from '../src/types';
+import type { Point, SquarePoints } from '../src/types'
 
 /**
  * 根据左上点得出方形的四个点的坐标
@@ -11,6 +11,6 @@ export function getSquarePoints(lt: Point, width: number, height: number): Squar
     { ...lt },
     { x: width + lt.x, y: lt.y },
     { x: width + lt.x, y: lt.y + height },
-    { x: lt.x, y: lt.y + height },
+    { x: lt.x, y: lt.y + height }
   ]
 }

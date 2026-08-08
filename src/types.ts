@@ -1,13 +1,13 @@
-import type { ChessOfPeiceName, ChessOfPeice } from './piece';
+import type { ChessOfPeiceName, ChessOfPeice } from './piece'
 
 /**
  * 游戏玩家方 固定为 `RED` | `BLACK`
  */
-export type PieceSide = "RED" | "BLACK"
+export type PieceSide = 'RED' | 'BLACK'
 /**
  * 游戏玩家方(中文) 固定为 `红方` | `黑方`
  */
-export type PieceSideCN = "红方" | "黑方"
+export type PieceSideCN = '红方' | '黑方'
 /**
  * 玩家Map数据类型
  */
@@ -21,8 +21,8 @@ export type PieceSideMap = {
  * @example peiceSideMap["BLACK"] // 返回 黑方
  */
 export const peiceSideMap: PieceSideMap = {
-  "RED": "红方",
-  "BLACK": "黑方"
+  RED: '红方',
+  BLACK: '黑方'
 }
 
 /**
@@ -32,15 +32,15 @@ export interface PieceInfo {
   /**
    * x坐标位置
    */
-  x: number,
+  x: number
   /**
    * y坐标位置
    */
-  y: number,
+  y: number
   /**
    * 棋子名称
    */
-  name: ChessOfPeiceName,
+  name: ChessOfPeiceName
   /**
    * 棋子所在的玩家方
    */
@@ -81,7 +81,6 @@ export class Point {
   toString() {
     return `(${this.x},${this.y})`
   }
-
 }
 
 /**
@@ -110,8 +109,6 @@ export class MovePoint extends Point {
  * 棋子移动点列表
  */
 export type MovePointList = Array<MovePoint>
-
-
 
 /**
  * 移动成功的结果
@@ -142,7 +139,6 @@ export type MoveFail = {
  */
 export type MoveResult = MoveSuccess | MoveFail
 
-
 /**
  * 象棋运动目标移动点
  */
@@ -168,18 +164,23 @@ export type CheckPoint = Mp | Ep
  * @example "MOVE" //游戏棋子正在运动状态
  * @example "OVER" //游戏已经结束状态
  */
-export type GameState = "INIT" | "START" | "OVER" | "MOVE"
+export type GameState = 'INIT' | 'START' | 'OVER' | 'MOVE'
 
 /**
  * 监听棋子移动函数
  * @param pos 运动的象棋
  * @param cp
- * if("move" in cp) 成立 说明是 移动点 使用cp.move访问 
+ * if("move" in cp) 成立 说明是 移动点 使用cp.move访问
  * 否则是 吃掉坐标上点的棋子 使用 cp.eat 访问改坐标点
  * @param enemyhasTrouble 敌方是否被将军
  * @param penCode 移动后的penCode格式代码
  */
-export type MoveCallback = (pos: ChessOfPeice, cp: CheckPoint, enemyhasTrouble: boolean, penCode: string) => void
+export type MoveCallback = (
+  pos: ChessOfPeice,
+  cp: CheckPoint,
+  enemyhasTrouble: boolean,
+  penCode: string
+) => void
 
 /**
  * 监听棋子移动失败函数
@@ -214,7 +215,7 @@ export type GameErrorCallback = (error: any) => void
  * @example "over" //游戏结束事件名称
  * @example "error" //游戏报错事件名称
  */
-export type GameEventName = "move" | "moveFail" | "log" | "over" | "error"
+export type GameEventName = 'move' | 'moveFail' | 'log' | 'over' | 'error'
 
 /**
  * 游戏监听函数
@@ -232,31 +233,31 @@ export type GamePeiceGridDiffY = 9 | 0
 
 /**
  * 棋子PEN代码 小写表示黑方，大写表示红方
- * 
+ *
  * 博客介绍
  * https://www.cnblogs.com/royhoo/p/6424395.html
- * 
+ *
  * 规则介绍
  * https://www.xqbase.com/protocol/cchess_move.htm
  * https://www.xqbase.com/protocol/cchess_fen.htm
- * 
+ *
  */
 export type PENPeiceNameCode =
-  "K" |//帅
-  "A" | //士
-  "B" | //相
-  "N" | //马
-  "R" | //车
-  "C" | //炮
-  "P" | //兵
-  // 黑棋 小写 
-  "k" | //将
-  "a" | //仕
-  "b" | //象
-  "n" | //馬
-  "r" | //車
-  "c" | //砲
-  "p"  //卒
+  | 'K' //帅
+  | 'A' //士
+  | 'B' //相
+  | 'N' //马
+  | 'R' //车
+  | 'C' //炮
+  | 'P' //兵
+  // 黑棋 小写
+  | 'k' //将
+  | 'a' //仕
+  | 'b' //象
+  | 'n' //馬
+  | 'r' //車
+  | 'c' //砲
+  | 'p' //卒
 
 export type ParsePENStrData = {
   side: PieceSide
@@ -266,10 +267,10 @@ export type ParsePENStrData = {
 }
 
 export type PeicePosInfo = {
-  side: PieceSide;
-  name: ChessOfPeiceName;
-  x: number;
-  y: number;
+  side: PieceSide
+  name: ChessOfPeiceName
+  x: number
+  y: number
   isLastMove: boolean
 }
 
@@ -296,14 +297,14 @@ export type UpdateFail = {
  */
 export type updateSuccess = {
   /**
-  * 更新成功
-  */
+   * 更新成功
+   */
   flag: true
   /**
    * 更新后是否需要 移动刷新布局
-   * 
+   *
    * `false` 表示 无回调函数 当前布局暂无移动
-   * 
+   *
    * `true` 表示 有回调函数`cb` 当前布局需要调用回调函数`cb()` 更新布局且游戏状态
    */
   move: boolean

@@ -1,4 +1,14 @@
-import { PieceInfo, PieceSide, Point, MovePoint, MoveResult, MovePointList, PeicePosInfo, GamePeiceGridDiffX, GamePeiceGridDiffY } from './types';
+import {
+  PieceInfo,
+  PieceSide,
+  Point,
+  MovePoint,
+  MoveResult,
+  MovePointList,
+  PeicePosInfo,
+  GamePeiceGridDiffX,
+  GamePeiceGridDiffY
+} from './types'
 const notExistPoint = { x: 10, y: 10 }
 /**
  * 棋盘位表索引类型：90 格，每格存棋子或 undefined
@@ -18,7 +28,8 @@ export const buildBoardIndex = (pl: PieceList): Board => {
 /**
  * 坐标 -> 棋盘位表索引，越界返回 -1
  */
-export const posIdx = (x: number, y: number): number => (x < 0 || x > 8 || y < 0 || y > 9) ? -1 : x + y * 9
+export const posIdx = (x: number, y: number): number =>
+  x < 0 || x > 8 || y < 0 || y > 9 ? -1 : x + y * 9
 export class Piece implements PieceInfo {
   x: number
   y: number
@@ -78,7 +89,7 @@ export class Piece implements PieceInfo {
     this.y = p.y
   }
   /**
-   * 
+   *
    * @param ctx 画布
    * @param startX 画布x轴起始位置
    * @param startY 画布y轴起始位置
@@ -91,23 +102,31 @@ export class Piece implements PieceInfo {
    * @param bgColor 象棋背景颜色
    * @param choosePeiceBorderColor 选中的边框色
    */
-  draw(ctx: CanvasRenderingContext2D,
-    startX: number, startY: number,
-    gridWidth: number, gridHeight: number,
-    gridDiffX: GamePeiceGridDiffX, gridDiffY: GamePeiceGridDiffY,
+  draw(
+    ctx: CanvasRenderingContext2D,
+    startX: number,
+    startY: number,
+    gridWidth: number,
+    gridHeight: number,
+    gridDiffX: GamePeiceGridDiffX,
+    gridDiffY: GamePeiceGridDiffY,
     radius: number,
-    textColor: string, bgColor: string, choosePeiceBorderColor: string) {
-    const borderColor = this.isChoose ? choosePeiceBorderColor : textColor;
-    let x = startX + Math.abs(this.x - gridDiffX) * gridWidth;
-    let y = startY + Math.abs(this.y - gridDiffY) * gridHeight;
-    let r = radius, ty = 0;
-    ctx.fillStyle = bgColor;
+    textColor: string,
+    bgColor: string,
+    choosePeiceBorderColor: string
+  ) {
+    const borderColor = this.isChoose ? choosePeiceBorderColor : textColor
+    const x = startX + Math.abs(this.x - gridDiffX) * gridWidth
+    const y = startY + Math.abs(this.y - gridDiffY) * gridHeight
+    let r = radius
+    const ty = 0
+    ctx.fillStyle = bgColor
 
     const drawBoder = (x: number, y: number, r: number, startAngle: number, endAngle: number) => {
-      ctx.beginPath();
-      ctx.arc(x, y, r, startAngle, endAngle);
-      ctx.closePath();
-      ctx.stroke();
+      ctx.beginPath()
+      ctx.arc(x, y, r, startAngle, endAngle)
+      ctx.closePath()
+      ctx.stroke()
     }
 
     // 选中动画
@@ -118,36 +137,36 @@ export class Piece implements PieceInfo {
     }
 
     // 象棋背景
-    ctx.beginPath();
-    ctx.arc(x, y + ty, r, 0, 2 * Math.PI);
+    ctx.beginPath()
+    ctx.arc(x, y + ty, r, 0, 2 * Math.PI)
     // if (piece.isChoose) {
-    ctx.shadowOffsetX = 3;
-    ctx.shadowOffsetY = 4;
-    ctx.shadowColor = '#333';
-    ctx.shadowBlur = 5;
+    ctx.shadowOffsetX = 3
+    ctx.shadowOffsetY = 4
+    ctx.shadowColor = '#333'
+    ctx.shadowBlur = 5
     // }
-    ctx.fill();
-    ctx.closePath();
+    ctx.fill()
+    ctx.closePath()
 
     ctx.shadowBlur = 0
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
+    ctx.shadowOffsetX = 0
+    ctx.shadowOffsetY = 0
     // 象棋圆圈
-    ctx.strokeStyle = borderColor;
-    drawBoder(x, y + ty, r, 0, 2 * Math.PI);
-    drawBoder(x, y + ty, r - 3, 0, 2 * Math.PI);
+    ctx.strokeStyle = borderColor
+    drawBoder(x, y + ty, r, 0, 2 * Math.PI)
+    drawBoder(x, y + ty, r - 3, 0, 2 * Math.PI)
 
     // 字
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = textColor;
-    ctx.font = radius + "px yahei";
-    ctx.fillText(this.name, x, y + ty);
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = textColor
+    ctx.font = radius + 'px yahei'
+    ctx.fillText(this.name, x, y + ty)
   }
   /**
    * 根据棋子列表判断 当前棋子可移动的点
    * @param _pl 棋子列表
-   * @returns 
+   * @returns
    */
   getMovePoints(_pl: PieceList, _board?: Board): MovePointList {
     return []
@@ -158,20 +177,31 @@ export class Piece implements PieceInfo {
    * @param pl 当前棋子列表
    * @param startX x
    * @param startY y
-   * @param gridWidth 棋盘格子宽度 
+   * @param gridWidth 棋盘格子宽度
    * @param gridHeight 棋盘格子高度
    * @param gridDiffX 棋子x轴差值
    * @param gridDiffY 棋子y轴差值
    * @param radius 棋子半径
    */
-  drawMovePoints(ctx: CanvasRenderingContext2D, pl: PieceList, startX: number, startY: number, gridWidth: number, gridHeight: number, gridDiffX: number, gridDiffY: number, radius: number, moveColor: string) {
+  drawMovePoints(
+    ctx: CanvasRenderingContext2D,
+    pl: PieceList,
+    startX: number,
+    startY: number,
+    gridWidth: number,
+    gridHeight: number,
+    gridDiffX: number,
+    gridDiffY: number,
+    radius: number,
+    moveColor: string
+  ) {
     ctx.fillStyle = moveColor
     this.getMovePoints(pl).forEach(p => {
-      let x = startX + Math.abs(p.x - gridDiffX) * gridWidth;
-      let y = startY + Math.abs(p.y - gridDiffY) * gridHeight;
-      ctx.beginPath();
-      ctx.arc(x, y, radius * .25, 0, 2 * Math.PI);
-      ctx.closePath();
+      const x = startX + Math.abs(p.x - gridDiffX) * gridWidth
+      const y = startY + Math.abs(p.y - gridDiffY) * gridHeight
+      ctx.beginPath()
+      ctx.arc(x, y, radius * 0.25, 0, 2 * Math.PI)
+      ctx.closePath()
       ctx.fill()
     })
   }
@@ -183,7 +213,6 @@ export class Piece implements PieceInfo {
  * 象棋：车
  */
 export class RookPiece extends Piece {
-
   /**
    * 根据车移动的方向得出障碍棋子列表
    * @param p 坐标点或者移动点
@@ -192,8 +221,8 @@ export class RookPiece extends Piece {
    */
   getMoveObstaclePieceList(p: Point | MovePoint, pieceList: PieceList): PieceList {
     // x 或者 y 轴
-    const diffKey = this.x === p.x ? "y" : "x"
-    const key = diffKey === "x" ? "y" : "x"
+    const diffKey = this.x === p.x ? 'y' : 'x'
+    const key = diffKey === 'x' ? 'y' : 'x'
     // 移动步数
     const diff = this[diffKey] - p[diffKey]
     const min = diff > 0 ? p[diffKey] : this[diffKey]
@@ -205,7 +234,10 @@ export class RookPiece extends Piece {
       const inRangeY = item[diffKey] > min && item[diffKey] < max
       const isSameSide = item.side === this.side
       const inSameRangeY = item[diffKey] >= min && item[diffKey] <= max
-      return (isOnSameLine && notSelf && inRangeY) || (isOnSameLine && notSelf && isSameSide && inSameRangeY)
+      return (
+        (isOnSameLine && notSelf && inRangeY) ||
+        (isOnSameLine && notSelf && isSameSide && inSameRangeY)
+      )
     })
     return list
   }
@@ -217,18 +249,18 @@ export class RookPiece extends Piece {
    */
   move(p: Point | MovePoint, pieceList: PieceList): MoveResult {
     if (p.x < 0 || p.x > 8 || p.y < 0 || p.y > 9) {
-      return { flag: false, message: "移动位置不符合规则" }
+      return { flag: false, message: '移动位置不符合规则' }
     }
     // 如果在 x,y 轴上移动
     if (this.y === p.y || this.x === p.x) {
       const list = this.getMoveObstaclePieceList(p, pieceList)
       if (list.length > 0) {
-        return { flag: false, message: "移动距离中存在障碍物：" + list.join("---") }
+        return { flag: false, message: '移动距离中存在障碍物：' + list.join('---') }
       }
       return { flag: true }
     }
     // console.log("无效移动");
-    return { flag: false, message: "移动位置不符合规则" }
+    return { flag: false, message: '移动位置不符合规则' }
   }
   /**
    * 根据棋子列表的坐标获取当前棋子的可以移动点列表
@@ -308,7 +340,6 @@ export class RookPiece extends Piece {
  * 象棋：马
  */
 export class HorsePiece extends Piece {
-
   /**
    * 根据棋子列表的坐标获取当前棋子的可以移动点列表
    * @param pl 棋子列表
@@ -327,7 +358,6 @@ export class HorsePiece extends Piece {
       const ry = ly
       mps.push(new MovePoint(rx, ry, { x: this.x + 1, y: this.y }))
 
-
       // 上
       const tx = index * 2 + (this.x - 1)
       const ty = this.y - 2
@@ -337,7 +367,6 @@ export class HorsePiece extends Piece {
       const bx = tx
       const by = this.y + 2
       mps.push(new MovePoint(bx, by, { x: this.x, y: this.y + 1 }))
-
     }
     return this.filterMovePoints(mps, pl, board)
   }
@@ -385,12 +414,11 @@ export class HorsePiece extends Piece {
  * 象棋：象
  */
 export class ElephantPiece extends HorsePiece {
-
   /**
-  * 根据棋子列表的坐标获取当前棋子的可以移动点列表
-  * @param pl 棋子列表
-  * @returns 返回移动点列表
-  */
+   * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+   * @param pl 棋子列表
+   * @returns 返回移动点列表
+   */
   getMovePoints(pl: PieceList, board?: Board): MovePointList {
     const mps: MovePointList = []
     for (let index = 0; index < 2; index++) {
@@ -419,8 +447,8 @@ export class ElephantPiece extends HorsePiece {
   filterMovePoints(list: MovePointList, pl: PieceList, board?: Board) {
     const b = board || buildBoardIndex(pl)
     const result: MovePointList = []
-    const minY = this.side === "RED" ? 5 : 0
-    const maxY = this.side === "RED" ? 9 : 4
+    const minY = this.side === 'RED' ? 5 : 0
+    const maxY = this.side === 'RED' ? 9 : 4
     for (let i = 0; i < list.length; i++) {
       const item = list[i]
       if (item.x < 0 || item.x > 8 || item.y < 0 || item.y > 9) continue
@@ -439,12 +467,11 @@ export class ElephantPiece extends HorsePiece {
  * 象棋：士
  */
 export class KnightPiece extends ElephantPiece {
-
   /**
-    * 根据棋子列表的坐标获取当前棋子的可以移动点列表
-    * @param pl 棋子列表
-    * @returns 返回移动点列表
-    */
+   * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+   * @param pl 棋子列表
+   * @returns 返回移动点列表
+   */
   getMovePoints(pl: PieceList, board?: Board): MovePointList {
     const mps: MovePointList = []
     for (let index = 0; index < 2; index++) {
@@ -461,16 +488,16 @@ export class KnightPiece extends ElephantPiece {
     return this.filterMovePoints(mps, pl, board)
   }
   /**
-    * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
-    * @param list 移动点列表
-    * @param pl 棋子列表
-    * @returns 返回这个棋子可以移动点列表
-    */
+   * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
+   * @param list 移动点列表
+   * @param pl 棋子列表
+   * @returns 返回这个棋子可以移动点列表
+   */
   filterMovePoints(list: MovePointList, pl: PieceList, board?: Board) {
     const b = board || buildBoardIndex(pl)
     const result: MovePointList = []
-    const minY = this.side === "RED" ? 7 : 0
-    const maxY = this.side === "RED" ? 9 : 2
+    const minY = this.side === 'RED' ? 7 : 0
+    const maxY = this.side === 'RED' ? 9 : 2
     for (let i = 0; i < list.length; i++) {
       const item = list[i]
       // 九宫范围限制
@@ -488,18 +515,17 @@ export class KnightPiece extends ElephantPiece {
  * 象棋：将领
  */
 export class GeneralPiece extends KnightPiece {
-
   /**
-    * 根据棋子列表的坐标获取当前棋子的可以移动点列表
-    * @param pl 棋子列表
-    * @returns 返回移动点列表
-    */
+   * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+   * @param pl 棋子列表
+   * @returns 返回移动点列表
+   */
   getMovePoints(pl: PieceList, board?: Board): MovePointList {
     const mps: MovePointList = [
       new MovePoint(this.x - 1, this.y, notExistPoint),
       new MovePoint(this.x + 1, this.y, notExistPoint),
       new MovePoint(this.x, this.y - 1, notExistPoint),
-      new MovePoint(this.x, this.y + 1, notExistPoint),
+      new MovePoint(this.x, this.y + 1, notExistPoint)
     ]
     return this.filterMovePoints(mps, pl, board)
   }
@@ -509,7 +535,6 @@ export class GeneralPiece extends KnightPiece {
  * 象棋：炮
  */
 export class CannonPiece extends RookPiece {
-
   /**
    * 根据棋子列表的坐标获取当前棋子的可以移动点列表（炮：直行空位 + 隔一子打吃）
    * @param pl 棋子列表
@@ -619,7 +644,7 @@ export class CannonPiece extends RookPiece {
    */
   move(p: Point, pieceList: PieceList): MoveResult {
     if (p.x < 0 || p.x > 8 || p.y < 0 || p.y > 9) {
-      return { flag: false, message: "移动位置不符合规则" }
+      return { flag: false, message: '移动位置不符合规则' }
     }
     // 如果在 x, y 轴上移动
     if (this.y === p.y || this.x === p.x) {
@@ -627,27 +652,27 @@ export class CannonPiece extends RookPiece {
       // console.log(list);
       // 炮架 数量超过1个
       if (list.length > 1) {
-        return { flag: false, message: "移动距离存在多个炮架：" + list.join("---") }
+        return { flag: false, message: '移动距离存在多个炮架：' + list.join('---') }
       }
       // 有炮架 且 炮架位置 就是目标位置
-      if (list.length === 1 && (list[0].x === p.x && list[0].y === p.y)) {
-        return { flag: false, message: "无法击中敌方棋子(缺少炮架)，移动无效" }
+      if (list.length === 1 && list[0].x === p.x && list[0].y === p.y) {
+        return { flag: false, message: '无法击中敌方棋子(缺少炮架)，移动无效' }
       }
       const hasPeice = pieceList.find(i => i.x === p.x && i.y === p.y)
       if (list.length === 1) {
         if (hasPeice) {
           return { flag: true }
         }
-        return { flag: false, message: "无法击中敌方棋子，移动无效" }
+        return { flag: false, message: '无法击中敌方棋子，移动无效' }
       }
       // 无炮架  且 目标位置有敌方棋子
       if (list.length === 0 && hasPeice) {
-        return { flag: false, message: "无法击中敌方棋子(缺少炮架)，移动无效" }
+        return { flag: false, message: '无法击中敌方棋子(缺少炮架)，移动无效' }
       }
       // console.log(`${this}可以移动到点${p}`);
       return { flag: true }
     }
-    return { flag: false, message: "移动位置不符合规则" }
+    return { flag: false, message: '移动位置不符合规则' }
   }
 }
 
@@ -655,23 +680,22 @@ export class CannonPiece extends RookPiece {
  * 象棋：兵
  */
 export class SoldierPiece extends HorsePiece {
-
   /**
-    * 根据棋子列表的坐标获取当前棋子的可以移动点列表
-    * @param pl 棋子列表
-    * @returns 返回移动点列表
-    */
+   * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+   * @param pl 棋子列表
+   * @returns 返回移动点列表
+   */
   getMovePoints(pl: PieceList, board?: Board): MovePointList {
-    const isCross = this.side === "RED" ? (this.y <= 4) : (this.y >= 5)
-    const step = this.side === "RED" ? -1 : +1
+    const isCross = this.side === 'RED' ? this.y <= 4 : this.y >= 5
+    const step = this.side === 'RED' ? -1 : +1
     const startMp = new MovePoint(this.x, this.y + step, notExistPoint)
-    const mps: MovePointList = isCross ?
-      [
-        startMp,
-        new MovePoint(this.x - 1, this.y, notExistPoint),
-        new MovePoint(this.x + 1, this.y, notExistPoint),
-      ] :
-      [startMp]
+    const mps: MovePointList = isCross
+      ? [
+          startMp,
+          new MovePoint(this.x - 1, this.y, notExistPoint),
+          new MovePoint(this.x + 1, this.y, notExistPoint)
+        ]
+      : [startMp]
     return this.filterMovePoints(mps, pl, board)
   }
 }
@@ -679,7 +703,14 @@ export class SoldierPiece extends HorsePiece {
 /**
  * 象棋棋子，包含了车、马、炮、象、士、将、兵
  */
-export type ChessOfPeice = RookPiece | HorsePiece | ElephantPiece | KnightPiece | GeneralPiece | CannonPiece | SoldierPiece
+export type ChessOfPeice =
+  | RookPiece
+  | HorsePiece
+  | ElephantPiece
+  | KnightPiece
+  | GeneralPiece
+  | CannonPiece
+  | SoldierPiece
 
 /**
  * 象棋棋子列表
@@ -697,20 +728,20 @@ export type PieceList = Array<ChessOfPeice>
  * @example "兵","卒" // 都是棋子 SoldierPiece 类
  */
 export type ChessOfPeiceName =
-  "車" |
-  "车" |
-  "馬" |
-  "马" |
-  "象" |
-  "相" |
-  "仕" |
-  "士" |
-  "砲" |
-  "炮" |
-  "卒" |
-  "兵" |
-  "将" |
-  "帅"
+  | '車'
+  | '车'
+  | '馬'
+  | '马'
+  | '象'
+  | '相'
+  | '仕'
+  | '士'
+  | '砲'
+  | '炮'
+  | '卒'
+  | '兵'
+  | '将'
+  | '帅'
 
 /**
  * 象棋棋子Map数据类型
@@ -719,8 +750,8 @@ export type ChessOfPeiceName =
  * 返回棋子实例
  */
 export type ChessOfPeiceMap = {
-  [prop in ChessOfPeiceName]: (info: PieceInfo) => ChessOfPeice;
-};
+  [prop in ChessOfPeiceName]: (info: PieceInfo) => ChessOfPeice
+}
 
 /**
  * 象棋棋子map表
@@ -733,18 +764,18 @@ export type ChessOfPeiceMap = {
  * @example chessOfPeiceMap["兵"]({ ... }:PieceInfo) // 返回一个实例棋子 SoldierPiece
  */
 export const chessOfPeiceMap: ChessOfPeiceMap = {
-  "仕": (info: PieceInfo) => new KnightPiece(info),
-  "兵": (info: PieceInfo) => new SoldierPiece(info),
-  "卒": (info: PieceInfo) => new SoldierPiece(info),
-  "士": (info: PieceInfo) => new KnightPiece(info),
-  "将": (info: PieceInfo) => new GeneralPiece(info),
-  "帅": (info: PieceInfo) => new GeneralPiece(info),
-  "炮": (info: PieceInfo) => new CannonPiece(info),
-  "相": (info: PieceInfo) => new ElephantPiece(info),
-  "砲": (info: PieceInfo) => new CannonPiece(info),
-  "象": (info: PieceInfo) => new ElephantPiece(info),
-  "車": (info: PieceInfo) => new RookPiece(info),
-  "车": (info: PieceInfo) => new RookPiece(info),
-  "馬": (info: PieceInfo) => new HorsePiece(info),
-  "马": (info: PieceInfo) => new HorsePiece(info),
+  仕: (info: PieceInfo) => new KnightPiece(info),
+  兵: (info: PieceInfo) => new SoldierPiece(info),
+  卒: (info: PieceInfo) => new SoldierPiece(info),
+  士: (info: PieceInfo) => new KnightPiece(info),
+  将: (info: PieceInfo) => new GeneralPiece(info),
+  帅: (info: PieceInfo) => new GeneralPiece(info),
+  炮: (info: PieceInfo) => new CannonPiece(info),
+  相: (info: PieceInfo) => new ElephantPiece(info),
+  砲: (info: PieceInfo) => new CannonPiece(info),
+  象: (info: PieceInfo) => new ElephantPiece(info),
+  車: (info: PieceInfo) => new RookPiece(info),
+  车: (info: PieceInfo) => new RookPiece(info),
+  馬: (info: PieceInfo) => new HorsePiece(info),
+  马: (info: PieceInfo) => new HorsePiece(info)
 }

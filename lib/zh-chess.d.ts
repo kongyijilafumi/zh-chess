@@ -131,10 +131,10 @@ declare class HorsePiece extends Piece {
  */
 declare class ElephantPiece extends HorsePiece {
     /**
-    * 根据棋子列表的坐标获取当前棋子的可以移动点列表
-    * @param pl 棋子列表
-    * @returns 返回移动点列表
-    */
+     * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+     * @param pl 棋子列表
+     * @returns 返回移动点列表
+     */
     getMovePoints(pl: PieceList, board?: Board): MovePointList;
     /**
      * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
@@ -149,17 +149,17 @@ declare class ElephantPiece extends HorsePiece {
  */
 declare class KnightPiece extends ElephantPiece {
     /**
-      * 根据棋子列表的坐标获取当前棋子的可以移动点列表
-      * @param pl 棋子列表
-      * @returns 返回移动点列表
-      */
+     * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+     * @param pl 棋子列表
+     * @returns 返回移动点列表
+     */
     getMovePoints(pl: PieceList, board?: Board): MovePointList;
     /**
-      * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
-      * @param list 移动点列表
-      * @param pl 棋子列表
-      * @returns 返回这个棋子可以移动点列表
-      */
+     * 根据传入的可以移动点和棋子坐标列表来过滤掉移动点
+     * @param list 移动点列表
+     * @param pl 棋子列表
+     * @returns 返回这个棋子可以移动点列表
+     */
     filterMovePoints(list: MovePointList, pl: PieceList, board?: Board): MovePointList;
 }
 /**
@@ -167,10 +167,10 @@ declare class KnightPiece extends ElephantPiece {
  */
 declare class GeneralPiece extends KnightPiece {
     /**
-      * 根据棋子列表的坐标获取当前棋子的可以移动点列表
-      * @param pl 棋子列表
-      * @returns 返回移动点列表
-      */
+     * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+     * @param pl 棋子列表
+     * @returns 返回移动点列表
+     */
     getMovePoints(pl: PieceList, board?: Board): MovePointList;
 }
 /**
@@ -196,10 +196,10 @@ declare class CannonPiece extends RookPiece {
  */
 declare class SoldierPiece extends HorsePiece {
     /**
-      * 根据棋子列表的坐标获取当前棋子的可以移动点列表
-      * @param pl 棋子列表
-      * @returns 返回移动点列表
-      */
+     * 根据棋子列表的坐标获取当前棋子的可以移动点列表
+     * @param pl 棋子列表
+     * @returns 返回移动点列表
+     */
     getMovePoints(pl: PieceList, board?: Board): MovePointList;
 }
 /**
@@ -220,7 +220,7 @@ type PieceList = Array<ChessOfPeice>;
  * @example "炮","砲" // 都是棋子 CannonPiece 类
  * @example "兵","卒" // 都是棋子 SoldierPiece 类
  */
-type ChessOfPeiceName = "車" | "车" | "馬" | "马" | "象" | "相" | "仕" | "士" | "砲" | "炮" | "卒" | "兵" | "将" | "帅";
+type ChessOfPeiceName = '車' | '车' | '馬' | '马' | '象' | '相' | '仕' | '士' | '砲' | '炮' | '卒' | '兵' | '将' | '帅';
 /**
  * 象棋棋子Map数据类型
  * 根据名字返回一个函数
@@ -245,11 +245,11 @@ declare const chessOfPeiceMap: ChessOfPeiceMap;
 /**
  * 游戏玩家方 固定为 `RED` | `BLACK`
  */
-type PieceSide = "RED" | "BLACK";
+type PieceSide = 'RED' | 'BLACK';
 /**
  * 游戏玩家方(中文) 固定为 `红方` | `黑方`
  */
-type PieceSideCN = "红方" | "黑方";
+type PieceSideCN = '红方' | '黑方';
 /**
  * 玩家Map数据类型
  */
@@ -381,7 +381,7 @@ type CheckPoint = Mp | Ep;
  * @example "MOVE" //游戏棋子正在运动状态
  * @example "OVER" //游戏已经结束状态
  */
-type GameState = "INIT" | "START" | "OVER" | "MOVE";
+type GameState = 'INIT' | 'START' | 'OVER' | 'MOVE';
 /**
  * 监听棋子移动函数
  * @param pos 运动的象棋
@@ -422,7 +422,7 @@ type GameErrorCallback = (error: any) => void;
  * @example "over" //游戏结束事件名称
  * @example "error" //游戏报错事件名称
  */
-type GameEventName = "move" | "moveFail" | "log" | "over" | "error";
+type GameEventName = 'move' | 'moveFail' | 'log' | 'over' | 'error';
 /**
  * 游戏监听函数
  */
@@ -446,20 +446,7 @@ type GamePeiceGridDiffY = 9 | 0;
  * https://www.xqbase.com/protocol/cchess_fen.htm
  *
  */
-type PENPeiceNameCode = "K" | //帅
-"A" | //士
-"B" | //相
-"N" | //马
-"R" | //车
-"C" | //炮
-"P" | //兵
-"k" | //将
-"a" | //仕
-"b" | //象
-"n" | //馬
-"r" | //車
-"c" | //砲
-"p";
+type PENPeiceNameCode = 'K' | 'A' | 'B' | 'N' | 'R' | 'C' | 'P' | 'k' | 'a' | 'b' | 'n' | 'r' | 'c' | 'p';
 type ParsePENStrData = {
     side: PieceSide;
     notEatRound?: string;
@@ -495,8 +482,8 @@ type UpdateFail = {
  */
 type updateSuccess = {
     /**
-    * 更新成功
-    */
+     * 更新成功
+     */
     flag: true;
     /**
      * 更新后是否需要 移动刷新布局
@@ -776,7 +763,7 @@ declare class ZhChess {
      * @param key 坐标轴
      * @returns
      */
-    protected getGridDiff(side: PieceSide, key: "x" | "y"): GamePeiceGridDiffX | GamePeiceGridDiffY;
+    protected getGridDiff(side: PieceSide, key: 'x' | 'y'): GamePeiceGridDiffX | GamePeiceGridDiffY;
     /**
      * 根据玩家方 设置 x，y轴差值
      * @param side 玩家方
@@ -857,8 +844,8 @@ declare class ZhChess {
      */
     gameStart(side: PieceSide): void;
     /**
-    * 清除移动完选中的棋子
-    */
+     * 清除移动完选中的棋子
+     */
     protected clearMoveChoosePeiece(): void;
     /**
      * 更换当前运行玩家
@@ -921,8 +908,8 @@ declare class ZhChess {
      */
     listenClick(e: MouseEvent): void;
     /**
-    * 监听棋盘点击
-    */
+     * 监听棋盘点击
+     */
     listenClickAsync(e: MouseEvent): void;
     /**
      * 获取赢棋方
@@ -954,16 +941,16 @@ declare class ZhChess {
      */
     generateMoves(side: PieceSide): MovePointList[];
     getCurrentPenCode(side: PieceSide): string;
-    on(e: "move", fn: MoveCallback): void;
-    on(e: "moveFail", fn: MoveFailCallback): void;
-    on(e: "log", fn: GameLogCallback): void;
-    on(e: "over", fn: GameOverCallback): void;
-    on(e: "error", fn: GameErrorCallback): void;
-    removeEvent(e: "move", fn: MoveCallback): void;
-    removeEvent(e: "moveFail", fn: MoveFailCallback): void;
-    removeEvent(e: "log", fn: GameLogCallback): void;
-    removeEvent(e: "over", fn: GameOverCallback): void;
-    removeEvent(e: "error", fn: GameErrorCallback): void;
+    on(e: 'move', fn: MoveCallback): void;
+    on(e: 'moveFail', fn: MoveFailCallback): void;
+    on(e: 'log', fn: GameLogCallback): void;
+    on(e: 'over', fn: GameOverCallback): void;
+    on(e: 'error', fn: GameErrorCallback): void;
+    removeEvent(e: 'move', fn: MoveCallback): void;
+    removeEvent(e: 'moveFail', fn: MoveFailCallback): void;
+    removeEvent(e: 'log', fn: GameLogCallback): void;
+    removeEvent(e: 'over', fn: GameOverCallback): void;
+    removeEvent(e: 'error', fn: GameErrorCallback): void;
     /**
      * 设置当前存活棋子列表
      * @param pl 当前存活棋子列表
