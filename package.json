@@ -1,6 +1,6 @@
 {
   "name": "zh-chess",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "A Chinese chess framework that supports browsers and nodejs(一款运行在浏览器和nodejs环境的中国象棋框架)",
   "main": "./lib/zh-chess.cjs.js",
   "module": "./lib/zh-chess.es.js",
@@ -51,7 +51,7 @@
     "rollup-plugin-terser": "^7.0.2",
     "tslib": "^2.4.0",
     "typedoc": "^0.23.15",
-    "typescript": "^4.8.2"
+    "typescript": "^5.4.0"
   },
   "repository": {
     "type": "git",
